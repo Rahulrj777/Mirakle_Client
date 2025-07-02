@@ -12,16 +12,22 @@ const Header = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const [user, setUser] = useState(null);
+const [user, setUser] = useState(() => {
+  const stored = localStorage.getItem("mirakleUser");
+  return stored ? JSON.parse(stored) : null;
+});
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  
 
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser");
     if (stored) {
       setUser(JSON.parse(stored));
+    } else {
+      setUser(null);
     }
-  }, []);
+  }, [location.pathname]); 
 
   const handleLogout = () => {
     localStorage.removeItem("mirakleUser");
