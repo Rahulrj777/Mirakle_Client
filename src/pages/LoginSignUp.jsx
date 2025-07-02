@@ -24,7 +24,7 @@ const LoginSignUp = () => {
       setEmail("");
       setPassword("");
     } catch (error) {
-      alert("❌ " + error.response.data.message);
+        alert("❌ " + (error.response?.data?.message || "Signup failed"));
     }
   };
 
