@@ -92,7 +92,7 @@ const LoginSignUp = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
               <span
-                className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
+                className="absolute right-3 top-5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowSignInPassword(!showSignInPassword)}
               >
                 {showSignInPassword ? <IoIosEye /> : <IoIosEyeOff />}
@@ -138,7 +138,7 @@ const LoginSignUp = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
               <span
-                className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
+                className="absolute right-3 top-5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowSignUpPassword(!showSignUpPassword)}
               >
                 {showSignUpPassword ? <IoIosEye /> : <IoIosEyeOff />}
@@ -154,7 +154,7 @@ const LoginSignUp = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
               <span
-                className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
+                className="absolute right-3 top-5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? <IoIosEye /> : <IoIosEyeOff />}
