@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../Style/login.css";
 import { API_BASE } from '../utils/api';
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { IoIosEye, IoIosEyeOff } from "react-icons/io";
 
 const LoginSignUp = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -13,9 +12,9 @@ const LoginSignUp = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -93,10 +92,10 @@ const LoginSignUp = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
               <span
-                className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
+                className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowSignInPassword(!showSignInPassword)}
               >
-                <FontAwesomeIcon icon={showSignInPassword ? faEyeSlash : faEye} />
+                {showSignInPassword ? <IoIosEyeOff /> : <IoIosEye />}
               </span>
             </div>
             <p
@@ -132,17 +131,17 @@ const LoginSignUp = () => {
             {/* Password */}
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showSignUpPassword ? "text" : "password"}
                 placeholder="Password"
                 className="form-input pr-10"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
               <span
-                className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
-                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
+                onClick={() => setShowSignUpPassword(!showSignUpPassword)}
               >
-                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                {showSignUpPassword ? <IoIosEyeOff /> : <IoIosEye />}
               </span>
             </div>
             {/* Confirm Password */}
@@ -155,10 +154,10 @@ const LoginSignUp = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
               <span
-                className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
+                className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
+                {showConfirmPassword ? <IoIosEyeOff /> : <IoIosEye />}
               </span>
             </div>
             <button className="form-button" onClick={handleSignUp}>
