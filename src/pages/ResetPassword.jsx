@@ -17,14 +17,13 @@ const ResetPassword = () => {
     }
 
     try {
-      await axios.post(`${API_BASE}/api/reset-password`, {
-        token,
+      await axios.post(`${API_BASE}/api/reset-password/${token}`, {
         password,
       });
       alert("✅ Password reset successful!");
-      navigate("/login"); // or homepage
+      navigate("/login_signup"); // Redirect after success
     } catch (err) {
-      alert("❌ " + err.response.data.message);
+      alert("❌ " + (err.response?.data?.message || "Reset failed"));
     }
   };
 
