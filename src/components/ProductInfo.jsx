@@ -1,8 +1,7 @@
-// SliderSection.jsx
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { API_BASE } from "../utils/api"; 
+import { API_BASE } from "../utils/api";
 
 const SliderSection = () => {
   const [originalImages, setOriginalImages] = useState([]);
@@ -76,6 +75,7 @@ const SliderSection = () => {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Slider Images */}
       <div
         ref={sliderRef}
         className="flex h-full"
@@ -90,34 +90,36 @@ const SliderSection = () => {
           <img
             key={`${img._id}-${i}`}
             src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-            alt="slider"
+            alt={img.title || `Slider ${i + 1}`}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover flex-shrink-0"
             style={{ width: `${100 / sliderImages.length}%` }}
           />
         ))}
       </div>
 
-      {/* Arrows */}
+      {/* Navigation Arrows */}
       <button
         onClick={handlePrev}
-        className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-full shadow-md hover:bg-gray-500 cursor-pointer"
+        className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
       >
-        <FiChevronLeft size={24} />
+        <FiChevronLeft size={22} />
       </button>
       <button
         onClick={handleNext}
-        className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-full shadow-md hover:bg-gray-500 cursor-pointer"
+        className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
       >
-        <FiChevronRight size={24} />
+        <FiChevronRight size={22} />
       </button>
 
-      {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-2">
+      {/* Dot Indicators */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
         {originalImages.map((_, i) => (
           <div
             key={i}
             className={`w-3 h-3 rounded-full ${
-              i === currentIndex - 1 ? "bg-gray-500" : "bg-gray-300"
+              i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
             }`}
           ></div>
         ))}

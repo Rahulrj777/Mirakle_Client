@@ -82,6 +82,8 @@ const ProductType = () => {
                         key={`${item._id}-${i}`}
                         src={`${API_BASE}${item.imageUrl}?v=${item._id}`}
                         alt={item.title || "Product"}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-contain"
                       />
                       {item.discountPercent > 0 && (
