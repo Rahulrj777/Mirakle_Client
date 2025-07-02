@@ -9,9 +9,16 @@ const LoginSignUp = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSignUp = async () => {
+    if (password !== confirmPassword) {
+      alert("❌ Passwords do not match!");
+      return;
+    }
+
     try {
       const res = await axios.post(`${API_BASE}/api/signup`, {
         name,
@@ -23,38 +30,39 @@ const LoginSignUp = () => {
       setName("");
       setEmail("");
       setPassword("");
+      setConfirmPassword("");
     } catch (error) {
-        alert("❌ " + (error.response?.data?.message || "Signup failed"));
+      alert("❌ " + (error.response?.data?.message || "Signup failed"));
     }
   };
 
   const handleSignIn = async () => {
     try {
-        const res = await axios.post(`${API_BASE}/api/login`, {
+      const res = await axios.post(`${API_BASE}/api/login`, {
         email,
         password,
-        });
+      });
 
-        localStorage.setItem("token", res.data.token);  // keep this if needed
-        localStorage.setItem("mirakleUser", JSON.stringify(res.data.user)); // 👈 Add this line
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("mirakleUser", JSON.stringify(res.data.user));
 
-        alert("✅ Logged in successfully!");
-        navigate("/"); // Redirect to home
+      alert("✅ Logged in successfully!");
+      navigate("/");
     } catch (error) {
-        alert("❌ " + error.response?.data?.message || "Login failed");
+      alert("❌ " + (error.response?.data?.message || "Login failed"));
     }
-    };
+  };
 
   const handleForgotPassword = () => {
     const userEmail = prompt("Enter your registered email:");
     if (!userEmail) return;
     axios
-        .post(`${API_BASE}/api/forgot-password`, { email: userEmail })
-        .then(() => alert("📩 Reset email sent!"))
-        .catch((err) =>
-        alert("❌ " + err.response?.data?.message || "Error sending reset email")
-        );
-    };
+      .post(`${API_BASE}/api/forgot-password`, { email: userEmail })
+      .then(() => alert("📩 Reset email sent!"))
+      .catch((err) =>
+        alert("❌ " + (err.response?.data?.message || "Error sending reset email"))
+      );
+  };
 
   return (
     <div className="login-container bg-green-100">
@@ -70,13 +78,21 @@ const LoginSignUp = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <input
-              type="password"
-              placeholder="Password"
-              className="form-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                className="form-input pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <span
+                className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </span>
+            </div>
             <p
               className="text-sm text-blue-500 mb-4 cursor-pointer"
               onClick={handleForgotPassword}
@@ -107,13 +123,36 @@ const LoginSignUp = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <input
-              type="password"
-              placeholder="Password"
-              className="form-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                className="form-input pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <span
+                className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                className="form-input pr-10"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <span
+                className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </span>
+            </div>
             <button className="form-button" onClick={handleSignUp}>
               SIGN UP
             </button>
