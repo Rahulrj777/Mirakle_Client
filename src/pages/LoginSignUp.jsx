@@ -71,7 +71,7 @@ const LoginSignUp = () => {
 
   return (
     <div className="login-container bg-green-100">
-      <div className={`login-box ${isSignUp ? "signup-mode" : ""}`}>
+      <div className={`login-box min-h-[400px] ${isSignUp ? "signup-mode" : ""}`}>
         {/* Sign In Form */}
         <div className="form-container sign-in-container">
           <div className="form-content">
