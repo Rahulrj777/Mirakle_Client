@@ -21,7 +21,7 @@ const ProductOffer = () => {
   return (
     <div className="w-[90%] mx-auto py-12 flex flex-col lg:flex-row gap-8">
       {/* Left: Side Images */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col justify-between bg-white rounded-xl shadow-md p-4">
         <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
           🌟 Most Selling Products
         </h2>
@@ -45,7 +45,7 @@ const ProductOffer = () => {
       </div>
 
       {/* Right: Offer Image */}
-      <div className="flex-shrink-0 w-full lg:w-1/3 bg-green-50 rounded-xl shadow-md p-6">
+      <div className="w-full lg:w-1/3 flex flex-col justify-between bg-green-50 rounded-xl shadow-md p-6">
         <h2 className="text-2xl font-bold text-green-700 mb-4 text-center">
           🎁 Offer Zone
         </h2>
