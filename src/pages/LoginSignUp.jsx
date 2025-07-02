@@ -95,7 +95,7 @@ const LoginSignUp = () => {
                 className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowSignInPassword(!showSignInPassword)}
               >
-                {showSignInPassword ? <IoIosEyeOff /> : <IoIosEye />}
+                {showSignInPassword ? <IoIosEye /> : <IoIosEyeOff />}
               </span>
             </div>
             <p
@@ -141,7 +141,7 @@ const LoginSignUp = () => {
                 className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowSignUpPassword(!showSignUpPassword)}
               >
-                {showSignUpPassword ? <IoIosEyeOff /> : <IoIosEye />}
+                {showSignUpPassword ? <IoIosEye /> : <IoIosEyeOff />}
               </span>
             </div>
             {/* Confirm Password */}
@@ -157,7 +157,7 @@ const LoginSignUp = () => {
                 className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-xl"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                {showConfirmPassword ? <IoIosEyeOff /> : <IoIosEye />}
+                {showConfirmPassword ? <IoIosEye /> : <IoIosEyeOff />}
               </span>
             </div>
             <button className="form-button" onClick={handleSignUp}>
