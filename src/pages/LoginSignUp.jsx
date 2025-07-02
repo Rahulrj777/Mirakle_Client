@@ -34,9 +34,12 @@ const LoginSignUp = () => {
         email,
         password,
         });
-        localStorage.setItem("token", res.data.token);
+
+        localStorage.setItem("token", res.data.token);  // keep this if needed
+        localStorage.setItem("mirakleUser", JSON.stringify(res.data.user)); // 👈 Add this line
+
         alert("✅ Logged in successfully!");
-        navigate("/"); // Redirect to home/dashboard
+        navigate("/"); // Redirect to home
     } catch (error) {
         alert("❌ " + error.response?.data?.message || "Login failed");
     }
