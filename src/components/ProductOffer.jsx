@@ -36,7 +36,8 @@ const ProductOffer = () => {
                 className="rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
               >
                 <img
-                  src={`${API_BASE}${img.imageUrl}`}
+                    key={`${img._id}-${i}`}
+        q           src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
                   alt="Best Seller"
                   className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
                 />
@@ -62,7 +63,8 @@ const ProductOffer = () => {
                 className="rounded-lg overflow-hidden shadow hover:shadow-lg transition"
               >
                 <img
-                  src={`${API_BASE}${img.imageUrl}`}
+                  key={`${img._id}-${i}`}
+                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
                   alt="Offer"
                   className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
                 />

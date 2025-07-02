@@ -79,7 +79,8 @@ const ProductType = () => {
                   >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
-                        src={`${API_BASE}${item.imageUrl}`}
+                        key={`${img._id}-${i}`}
+                        src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
                         alt={item.title || "Product"}
                         className="w-full h-full object-contain"
                       />

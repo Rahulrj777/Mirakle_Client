@@ -88,8 +88,8 @@ const SliderSection = () => {
       >
         {sliderImages.map((img, i) => (
           <img
-            key={i}
-            src={`${API_BASE}${img.imageUrl}`}
+            key={`${img._id}-${i}`}
+            src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
             alt="slider"
             className="w-full h-full object-cover flex-shrink-0"
             style={{ width: `${100 / sliderImages.length}%` }}
