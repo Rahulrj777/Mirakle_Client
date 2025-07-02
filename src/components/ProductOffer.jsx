@@ -20,23 +20,31 @@ const ProductOffer = () => {
 
   return (
     <div className="w-[90%] mx-auto py-12 flex flex-col lg:flex-row gap-8">
-      {/* Left Side: 3 Side Images */}
-      <div className="flex-1 flex flex-wrap gap-4" onClick={() => navigate("/shop/allproduct")}>
-        {sideImages.slice(0, 3).map((img, i) => (
-          <div
-            key={img._id}
-            className="w-full md:w-[48%] lg:w-[30%] rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
-          >
-            <img
-              src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-              alt="Best Seller"
-              className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
-            />
-          </div>
-        ))}
+      {/* Left: Side Images */}
+      <div className="flex-1">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+          🌟 Most Selling Products
+        </h2>
+        <div
+          className="flex flex-wrap gap-4"
+          onClick={() => navigate("/shop/allproduct")}
+        >
+          {sideImages.slice(0, 3).map((img, i) => (
+            <div
+              key={img._id}
+              className="w-full md:w-[48%] lg:w-[30%] rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
+            >
+              <img
+                src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                alt="Best Seller"
+                className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Right Side: 1 Offer Image */}
+      {/* Right: Offer Image */}
       <div className="flex-shrink-0 w-full lg:w-1/3 bg-green-50 rounded-xl shadow-md p-6">
         <h2 className="text-2xl font-bold text-green-700 mb-4 text-center">
           🎁 Offer Zone
