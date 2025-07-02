@@ -71,7 +71,7 @@ const ProductType = () => {
               }}
               className="relative"
             >
-              {productTypes.map((item) => (
+              {productTypes.map((item, i) => (
                 <SwiperSlide key={item._id}>
                   <div
                     className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer"
@@ -79,8 +79,8 @@ const ProductType = () => {
                   >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
-                        key={`${img._id}-${i}`}
-                        src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                        key={`${item._id}-${i}`}
+                        src={`${API_BASE}${item.imageUrl}?v=${item._id}`}
                         alt={item.title || "Product"}
                         className="w-full h-full object-contain"
                       />
@@ -92,33 +92,33 @@ const ProductType = () => {
                     </div>
 
                     <div className="text-sm font-medium mb-1">
-                      <div className="flex justify-between items-center">
-                        <div className="text-left">
-                          <span className="text-green-600 mr-1">
-                            ₹ {parseFloat(item.price).toFixed(0)}
-                          </span>
-                          {item.oldPrice > 0 && (
-                            <span className="text-gray-400 line-through text-xs">
-                              ₹ {parseFloat(item.oldPrice).toFixed(0)}
+                        <div className="flex justify-between items-center">
+                          <div className="text-left">
+                            <span className="text-green-600 mr-1">
+                              ₹ {parseFloat(item.price).toFixed(0)}
                             </span>
+                            {item.oldPrice > 0 && (
+                              <span className="text-gray-400 line-through text-xs">
+                                ₹ {parseFloat(item.oldPrice).toFixed(0)}
+                              </span>
+                            )}
+                          </div>
+                          {item.weight?.value > 0 && item.weight?.unit && (
+                            <div className="text-gray-500 text-xs">
+                              {item.weight.value} {item.weight.unit}
+                            </div>
                           )}
                         </div>
-                        {item.weight?.value > 0 && item.weight?.unit && (
-                          <div className="text-gray-500 text-xs">
-                            {item.weight.value} {item.weight.unit}
-                          </div>
-                        )}
                       </div>
-                    </div>
 
-                    {item.title && (
-                      <p
-                        className="text-gray-700 text-sm truncate w-full"
-                        title={item.title}
-                      >
-                        {item.title}
-                      </p>
-                    )}
+                      {item.title && (
+                        <p
+                          className="text-gray-700 text-sm truncate w-full"
+                          title={item.title}
+                        >
+                          {item.title}
+                        </p>
+                      )}
                   </div>
                 </SwiperSlide>
               ))}

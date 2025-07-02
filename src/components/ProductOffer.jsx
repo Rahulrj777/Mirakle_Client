@@ -30,15 +30,15 @@ const ProductOffer = () => {
             className="grid grid-cols-2 md:grid-cols-3 gap-4"
             onClick={() => navigate("/shop/allproduct")}
           >
-            {sideImages.map((img) => (
+            {offerImages.map((img, i) => (
               <div
                 key={img._id}
-                className="rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
+                className="rounded-lg overflow-hidden shadow hover:shadow-lg transition"
               >
                 <img
-                    key={`${img._id}-${i}`}
-        q           src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                  alt="Best Seller"
+                  key={`${img._id}-${i}`}
+                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                  alt="Offer"
                   className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
                 />
               </div>
@@ -57,15 +57,15 @@ const ProductOffer = () => {
             className="gap-4 cursor-pointer"
             onClick={() => navigate("/shop/offerproduct")}
           >
-            {offerImages.map((img) => (
+            {sideImages.map((img, i) => (
               <div
                 key={img._id}
-                className="rounded-lg overflow-hidden shadow hover:shadow-lg transition"
+                className="rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
               >
                 <img
                   key={`${img._id}-${i}`}
                   src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                  alt="Offer"
+                  alt="Best Seller"
                   className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
                 />
               </div>
