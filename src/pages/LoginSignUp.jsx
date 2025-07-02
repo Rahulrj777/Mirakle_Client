@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../Style/login.css";
 import { API_BASE } from '../utils/api';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 const LoginSignUp = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -10,7 +12,11 @@ const LoginSignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+
   const navigate = useNavigate();
 
   const handleSignUp = async () => {
@@ -26,7 +32,7 @@ const LoginSignUp = () => {
         password,
       });
       alert("✅ Account created successfully!");
-      setIsSignUp(false); // go to sign in
+      setIsSignUp(false);
       setName("");
       setEmail("");
       setPassword("");
@@ -80,7 +86,7 @@ const LoginSignUp = () => {
             />
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showSignInPassword ? "text" : "password"}
                 placeholder="Password"
                 className="form-input pr-10"
                 value={password}
@@ -88,9 +94,9 @@ const LoginSignUp = () => {
               />
               <span
                 className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowSignInPassword(!showSignInPassword)}
               >
-                {showPassword ? "🙈" : "👁️"}
+                <FontAwesomeIcon icon={showSignInPassword ? faEyeSlash : faEye} />
               </span>
             </div>
             <p
@@ -123,6 +129,7 @@ const LoginSignUp = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+            {/* Password */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -135,12 +142,13 @@ const LoginSignUp = () => {
                 className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? "🙈" : "👁️"}
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
               </span>
             </div>
+            {/* Confirm Password */}
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm Password"
                 className="form-input pr-10"
                 value={confirmPassword}
@@ -148,9 +156,9 @@ const LoginSignUp = () => {
               />
               <span
                 className="absolute right-3 top-2.5 cursor-pointer text-gray-500"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                {showPassword ? "🙈" : "👁️"}
+                <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
               </span>
             </div>
             <button className="form-button" onClick={handleSignUp}>
