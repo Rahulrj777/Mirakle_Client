@@ -21,58 +21,33 @@ const ProductOffer = () => {
   return (
     <div className="w-[90%] mx-auto py-12 flex flex-col lg:flex-row gap-8">
       {/* Left Side: Most Selling Products */}
-      {sideImages.length > 0 && (
-        <div className="w-full lg:w-2/3 bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-            🌟 Most Selling Products
-          </h2>
-          <div
-            className="grid grid-cols-2 md:grid-cols-3 gap-4"
-            onClick={() => navigate("/shop/allproduct")}
-          >
-            {offerImages.map((img, i) => (
-              <div
-                key={img._id}
-                className="rounded-lg overflow-hidden shadow hover:shadow-lg transition"
-              >
-                <img
-                  key={`${img._id}-${i}`}
-                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                  alt="Offer"
-                  className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-            ))}
-          </div>
+      {sideImages.map((img, i) => (
+        <div
+          key={img._id}
+          className="rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
+        >
+          <img
+            key={`${img._id}-${i}`}
+            src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+            alt="Best Seller"
+            className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
+          />
         </div>
-      )}
+      ))}
 
-      {/* Right Side: Offer Zone */}
-      {offerImages.length > 0 && (
-        <div className="w-full lg:w-1/3 bg-green-50 rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-bold text-green-700 mb-4 text-center">
-            🎁 Offer Zone
-          </h2>
-          <div
-            className="gap-4 cursor-pointer"
-            onClick={() => navigate("/shop/offerproduct")}
-          >
-            {sideImages.map((img, i) => (
-              <div
-                key={img._id}
-                className="rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
-              >
-                <img
-                  key={`${img._id}-${i}`}
-                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                  alt="Best Seller"
-                  className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-            ))}
-          </div>
+      {offerImages.map((img, i) => (
+        <div
+          key={img._id}
+          className="rounded-lg overflow-hidden shadow hover:shadow-lg transition"
+        >
+          <img
+            key={`${img._id}-${i}`}
+            src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+            alt="Offer"
+            className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
+          />
         </div>
-      )}
+      ))}
     </div>
   );
 };
