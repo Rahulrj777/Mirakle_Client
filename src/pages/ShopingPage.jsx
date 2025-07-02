@@ -30,7 +30,7 @@ const ShopingPage = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('${API_BASE}/api/products/all-products');
+      const res = await axios.get(`${API_BASE}/api/products/all-products`);
       setProducts(res.data);
     } catch (err) {
       console.error('Failed to fetch products:', err);
