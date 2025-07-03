@@ -17,6 +17,10 @@ const ProductType = () => {
     const fetchData = async () => {
       try {
         const res = await axios.get(`${API_BASE}/api/banners`);
+        setBanners(res.data.map(b => ({
+          ...b,
+          products: b.products || []
+        })));
         const filtered = res.data.filter((b) => b.type === "product-type");
         setProductTypes(filtered);
       } catch (err) {
