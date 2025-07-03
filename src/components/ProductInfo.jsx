@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { API_BASE } from "../utils/api";
@@ -26,23 +26,23 @@ const SliderSection = () => {
     });
   }, []);
 
+  const startAutoPlay = useCallback(() => {
+    stopAutoPlay();
+    intervalRef.current = setInterval(() => {
+      slideTo(currentIndex + 1);
+    }, 3000);
+  }, [currentIndex]);
+
+  const stopAutoPlay = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  };
+
   useEffect(() => {
     if (!hovered && originalImages.length > 1) {
       startAutoPlay();
     }
     return stopAutoPlay;
-  }, [hovered, currentIndex, originalImages]);
-
-  const startAutoPlay = () => {
-    stopAutoPlay();
-    intervalRef.current = setInterval(() => {
-      slideTo(currentIndex + 1);
-    }, 3000);
-  };
-
-  const stopAutoPlay = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  };
+  }, [hovered, originalImages.length, startAutoPlay]);
 
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
@@ -53,21 +53,31 @@ const SliderSection = () => {
 
   const handleTransitionEnd = () => {
     if (!sliderRef.current) return;
+
     let newIndex = currentIndex;
     sliderRef.current.style.transition = "none";
+
     if (currentIndex === sliderImages.length - 1) {
       newIndex = 1;
     } else if (currentIndex === 0) {
       newIndex = sliderImages.length - 2;
     }
+
     setTimeout(() => {
       setCurrentIndex(newIndex);
       setIsTransitioning(false);
     }, 20);
   };
 
-  const handlePrev = () => slideTo(currentIndex - 1);
-  const handleNext = () => slideTo(currentIndex + 1);
+  const handlePrev = () => {
+    if (currentIndex <= 0) return;
+    slideTo(currentIndex - 1);
+  };
+
+  const handleNext = () => {
+    if (currentIndex >= sliderImages.length - 1) return;
+    slideTo(currentIndex + 1);
+  };
 
   return (
     <div
@@ -75,7 +85,7 @@ const SliderSection = () => {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Slider Images */}
+      {/* Slider */}
       <div
         ref={sliderRef}
         className="flex h-full"
@@ -88,9 +98,9 @@ const SliderSection = () => {
       >
         {sliderImages.map((img, i) => (
           <img
-            key={`${img._id}-${i}`}
+            key={`${img._id || i}-${i}`}
             src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-            alt={img.title || `Slider ${i + 1}`}
+            alt={img.title || `Slide ${i + 1}`}
             loading="lazy"
             decoding="async"
             className="w-full h-full object-cover flex-shrink-0"
@@ -99,31 +109,37 @@ const SliderSection = () => {
         ))}
       </div>
 
-      {/* Navigation Arrows */}
-      <button
-        onClick={handlePrev}
-        className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-      >
-        <FiChevronLeft size={22} />
-      </button>
-      <button
-        onClick={handleNext}
-        className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-      >
-        <FiChevronRight size={22} />
-      </button>
+      {/* Arrows */}
+      {sliderImages.length > 1 && (
+        <>
+          <button
+            onClick={handlePrev}
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
+          >
+            <FiChevronLeft size={22} />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
+          >
+            <FiChevronRight size={22} />
+          </button>
+        </>
+      )}
 
       {/* Dot Indicators */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-        {originalImages.map((_, i) => (
-          <div
-            key={i}
-            className={`w-3 h-3 rounded-full ${
-              i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
-            }`}
-          ></div>
-        ))}
-      </div>
+      {originalImages.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+          {originalImages.map((_, i) => (
+            <div
+              key={i}
+              className={`w-3 h-3 rounded-full transition ${
+                i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

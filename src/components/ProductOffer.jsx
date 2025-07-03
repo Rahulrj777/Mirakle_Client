@@ -9,13 +9,15 @@ const ProductOffer = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`${API_BASE}/api/banners`).then((res) => {
-      const allBanners = res.data;
-      const side = allBanners.filter((img) => img.type === "side");
-      const offers = allBanners.filter((img) => img.type === "offer");
-      setSideImages(side);
-      setOfferImages(offers);
-    });
+    axios.get(`${API_BASE}/api/banners`)
+      .then((res) => {
+        const allBanners = res.data;
+        const side = allBanners.filter((img) => img.type === "side");
+        const offers = allBanners.filter((img) => img.type === "offer");
+        setSideImages(side);
+        setOfferImages(offers);
+      })
+      .catch((err) => console.error("Banner fetch failed:", err));
   }, []);
 
   return (
@@ -36,8 +38,9 @@ const ProductOffer = () => {
             >
               <img
                 src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                alt="Best Seller"
+                alt={img.title || `Best Seller ${i + 1}`}
                 className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
+                loading="lazy"
               />
             </div>
           ))}
@@ -60,8 +63,9 @@ const ProductOffer = () => {
             >
               <img
                 src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                alt="Offer"
+                alt={img.title || `Offer ${i + 1}`}
                 className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
+                loading="lazy"
               />
             </div>
           ))}

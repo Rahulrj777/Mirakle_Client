@@ -20,7 +20,7 @@ const ProductType = () => {
         const filtered = res.data.filter((b) => b.type === "product-type");
         setProductTypes(filtered);
       } catch (err) {
-        console.error("Failed to fetch banners:", err.message);
+        console.error("Failed to fetch product types:", err.message);
       }
     };
     fetchData();
@@ -36,6 +36,7 @@ const ProductType = () => {
 
     node.addEventListener("mouseenter", handleMouseEnter);
     node.addEventListener("mouseleave", handleMouseLeave);
+
     return () => {
       node.removeEventListener("mouseenter", handleMouseEnter);
       node.removeEventListener("mouseleave", handleMouseLeave);
@@ -58,7 +59,6 @@ const ProductType = () => {
               ref={swiperRef}
               modules={[Autoplay, Navigation]}
               loop={productTypes.length > 1}
-              slidesPerView={1}
               autoplay={{ delay: 4000, disableOnInteraction: false }}
               navigation={{
                 nextEl: ".custom-next",
@@ -77,9 +77,9 @@ const ProductType = () => {
                     className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer"
                     onClick={() => navigate("/shop/allproduct")}
                   >
+                    {/* Image Block */}
                     <div className="relative w-full h-[150px] mb-2">
                       <img
-                        key={`${item._id}-${i}`}
                         src={`${API_BASE}${item.imageUrl}?v=${item._id}`}
                         alt={item.title || "Product"}
                         loading="lazy"
@@ -93,39 +93,43 @@ const ProductType = () => {
                       )}
                     </div>
 
+                    {/* Price & Weight */}
                     <div className="text-sm font-medium mb-1">
-                        <div className="flex justify-between items-center">
-                          <div className="text-left">
+                      <div className="flex justify-between items-center">
+                        <div className="text-left">
+                          {item.price > 0 && (
                             <span className="text-green-600 mr-1">
                               ₹ {parseFloat(item.price).toFixed(0)}
                             </span>
-                            {item.oldPrice > 0 && (
-                              <span className="text-gray-400 line-through text-xs">
-                                ₹ {parseFloat(item.oldPrice).toFixed(0)}
-                              </span>
-                            )}
-                          </div>
-                          {item.weight?.value > 0 && item.weight?.unit && (
-                            <div className="text-gray-500 text-xs">
-                              {item.weight.value} {item.weight.unit}
-                            </div>
+                          )}
+                          {item.oldPrice > 0 && (
+                            <span className="text-gray-400 line-through text-xs">
+                              ₹ {parseFloat(item.oldPrice).toFixed(0)}
+                            </span>
                           )}
                         </div>
+                        {item.weight?.value > 0 && item.weight?.unit && (
+                          <div className="text-gray-500 text-xs">
+                            {item.weight.value} {item.weight.unit}
+                          </div>
+                        )}
                       </div>
+                    </div>
 
-                      {item.title && (
-                        <p
-                          className="text-gray-700 text-sm truncate w-full"
-                          title={item.title}
-                        >
-                          {item.title}
-                        </p>
-                      )}
+                    {/* Title */}
+                    {item.title && (
+                      <p
+                        className="text-gray-700 text-sm truncate w-full"
+                        title={item.title}
+                      >
+                        {item.title}
+                      </p>
+                    )}
                   </div>
                 </SwiperSlide>
               ))}
 
-              {/* Navigation Arrows */}
+              {/* Custom Navigation Arrows */}
               <div className="custom-prev absolute left-0 top-[40%] z-10 cursor-pointer bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-md">
                 &#10094;
               </div>
