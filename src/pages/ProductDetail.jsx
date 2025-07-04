@@ -82,16 +82,17 @@ useEffect(() => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
-  const handleAddToCart = () => {
-    const productToAdd = {
-      _id: product._id,
-      title: product.title,
-      images: product.images,
-      weight: selectedVariant.size || selectedVariant.weight, // use weight if size not available
-      currentPrice: finalPrice,
-    };
-    dispatch(addToCart(productToAdd));
+  const productToAdd = {
+    _id: product._id,
+    title: product.title,
+    images: product.images,
+    weight: {
+      value: selectedVariant?.weight?.value || selectedVariant?.size,
+      unit: selectedVariant?.weight?.unit || "unit",
+    },
+    currentPrice: parseFloat(finalPrice),
   };
+  dispatch(addToCart(productToAdd));
 
   const handleBuyNow = () => {
     handleAddToCart(); // First add to cart

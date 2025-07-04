@@ -1,9 +1,23 @@
-// src/redux/cartSlice.js
-import { createSlice } from '@reduxjs/toolkit';
+// cartSlice.js
+import { createSlice } from "@reduxjs/toolkit";
+
+const getInitialCart = () => {
+  const saved = localStorage.getItem("persist:cart");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      return JSON.parse(parsed.cart || "[]");
+    } catch (e) {
+      console.error("Failed to parse persisted cart", e);
+      return [];
+    }
+  }
+  return [];
+};
 
 const cartSlice = createSlice({
-  name: 'cart',
-  initialState: [],
+  name: "cart",
+  initialState: getInitialCart(),
   reducers: {
     addToCart: (state, action) => {
       const existing = state.find((item) => item._id === action.payload._id);
@@ -19,13 +33,10 @@ const cartSlice = createSlice({
     },
     decrementQuantity: (state, action) => {
       const item = state.find((item) => item._id === action.payload);
-      if (item.quantity > 1) {
-        item.quantity -= 1;
-      } else {
-        return state.filter((item) => item._id !== action.payload);
-      }
+      if (item.quantity > 1) item.quantity -= 1;
     },
-    removeFromCart: (state, action) => state.filter(item => item._id !== action.payload),
+    removeFromCart: (state, action) =>
+      state.filter((item) => item._id !== action.payload),
     clearCart: () => [],
   },
 });
