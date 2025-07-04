@@ -1,5 +1,3 @@
-"use client"
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { HiOutlineShoppingBag } from "react-icons/hi2"
 import { FaRegUser } from "react-icons/fa"
@@ -103,7 +101,7 @@ const Header = () => {
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
-            placeholder="Search for products, keywords..."
+            placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
           />
           {suggestions.length > 0 && (
