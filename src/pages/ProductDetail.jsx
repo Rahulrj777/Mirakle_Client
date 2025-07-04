@@ -230,7 +230,7 @@ const ProductDetail = () => {
                 <div
                   key={p._id}
                   onClick={() => navigate(`/product/${p._id}`)}
-                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
+                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md hover:scale-120 transition-transform duration-300"
                 >
                   <img
                     src={`${API_BASE}${mainImage}`}
