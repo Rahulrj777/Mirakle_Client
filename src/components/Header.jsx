@@ -105,7 +105,7 @@ const Header = () => {
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
             placeholder="Search the product..."
-            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 bg-[rgb(160,193,114)]"
+            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
           />
           {searchTerm.trim() !== "" && suggestions.length > 0 && (
             <ul className="absolute z-50 w-full bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto">
@@ -144,7 +144,7 @@ const Header = () => {
           {user ? (
             <div ref={dropdownRef} className="relative">
               <div
-                className="bg-green-600 text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold"
+                className="bg-[rgb(160,193,114)] text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
