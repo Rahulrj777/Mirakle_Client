@@ -74,20 +74,20 @@ const ProductType = () => {
               {productTypes.map((item, i) => (
                 <SwiperSlide key={item._id}>
                   <div
-                    className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lg transition relative"
-                    onClick={() => {
-                      const productId =
-                        typeof item.productId === "object"
-                          ? item.productId._id
-                          : item.productId;
+                  className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer transform transition-transform duration-300 hover:scale-105"
+                  onClick={() => {
+                    const productId =
+                      typeof item.productId === "object"
+                        ? item.productId._id
+                        : item.productId;
 
-                      if (productId) {
-                        navigate(`/product/${productId}`);
-                      } else {
-                        navigate("/shop/allproduct");
-                      }
-                    }}
-                  >
+                    if (productId) {
+                      navigate(`/product/${productId}`);
+                    } else {
+                      navigate("/shop/allproduct");
+                    }
+                  }}
+                >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
                         key={`${item._id}-${i}`}
