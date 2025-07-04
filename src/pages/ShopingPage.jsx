@@ -52,38 +52,36 @@ const ShopingPage = () => {
     }
   };
   
-  const applyFilters = () => {
-    let result = [...products];
+ const applyFilters = () => {
+  let result = [...products];
 
-    // Apply offer filter
-    if (filterType === 'offer') {
-      result = result.filter((p) =>
-        p.discountPercent > 0 || p.variants?.some(v => v.discountPercent > 0)
-      );
-    }
+  // Apply offer filter
+  if (filterType === 'offer') {
+    result = result.filter((p) =>
+      p.discountPercent > 0 || p.variants?.some((v) => v.discountPercent > 0)
+    );
+  }
 
-    // Apply search filter
-    if (searchTerm.trim()) {
-      const lower = searchTerm.toLowerCase();
+  // Apply search filter with keyword + description + title match
+  if (searchTerm.trim()) {
+    const lower = searchTerm.toLowerCase();
 
-      // Matching products first
-     const matched = result.filter((p) =>
+    const matched = result.filter((p) =>
       p.title.toLowerCase().includes(lower) ||
-      (p.keywords || []).some(k => k.toLowerCase().includes(lower)) ||
-      (p.description || '').toLowerCase().includes(lower)
+      (p.keywords || []).some((k) => k.toLowerCase().includes(lower)) ||
+      (p.description || "").toLowerCase().includes(lower)
     );
 
-      // Remaining products (excluding matches)
-      const remaining = result.filter((p) =>
-        !p.title.toLowerCase().includes(lower)
-      );
+    const matchedIds = new Set(matched.map((p) => p._id));
 
-      const merged = [...matched, ...remaining];
-      setFilteredProducts(merged);
-    } else {
-      setFilteredProducts(result); // no search, just filtered list
-    }
-  };
+    const remaining = result.filter((p) => !matchedIds.has(p._id));
+
+    const merged = [...matched, ...remaining];
+    setFilteredProducts(merged);
+  } else {
+    setFilteredProducts(result);
+  }
+};
 
   const handleSearchChange = async (e) => {
     const value = e.target.value;
