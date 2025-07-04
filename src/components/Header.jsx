@@ -181,7 +181,7 @@ const Header = () => {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="bg-[rgb(160,193,114)]">
+      <nav className="bg-[rgb(119,221,119)]">
         <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
           {[
             { path: "/", list: "Home" },
