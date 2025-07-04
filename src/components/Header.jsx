@@ -47,7 +47,7 @@ const Header = () => {
     }
 
     try {
-      const res = await axios.get(`${API_BASE}/api/products/search?q=${value}`)
+      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
       setSuggestions(res.data.slice(0, 6)) 
     } catch (error) {
       console.error("Error fetching suggestions:", error)
