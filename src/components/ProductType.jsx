@@ -90,7 +90,8 @@ const ProductType = () => {
                   >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
-                        src={`${API_BASE}${banner.imageUrl}?v=${banner.updatedAt}`}
+                        key={`${item._id}-${i}`}
+                        src={`${API_BASE}${item.imageUrl}?v=${item._id}`}
                         alt={item.title || "Product"}
                         loading="lazy"
                         decoding="async"

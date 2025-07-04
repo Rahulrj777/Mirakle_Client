@@ -116,7 +116,7 @@ const ProductOffer = () => {
               onClick={() => navigate("/shop/offerproduct")}
             >
               <img
-                src={`${API_BASE}${banner.imageUrl}?v=${banner.updatedAt}`}
+                src={`${API_BASE}${banner.imageUrl}?v=${banner._id}`}
                 alt={banner.title || `Offer ${i + 1}`}
                 className="w-full h-[280px] object-cover hover:scale-105 transition-transform duration-300"
                 loading="lazy"
