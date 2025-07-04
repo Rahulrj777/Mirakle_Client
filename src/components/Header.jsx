@@ -9,6 +9,8 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const cartItems = useSelector(state => state.cart);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const searchRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
 
@@ -19,7 +21,24 @@ const [user, setUser] = useState(() => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   
+  const handleSearchChange = async (e) => {
+    const value = e.target.value;
+    if (!value.trim()) {
+      setSearchSuggestions([]);
+      return;
+    }
+    try {
+      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
+      setSearchSuggestions(res.data);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    }
+  };
 
+  const handleSelectSuggestion = (title) => {
+    navigate(`/shop/allproduct?search=${encodeURIComponent(title)}`);
+    setSearchSuggestions([]);
+  };
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser");
     if (stored) {
@@ -56,12 +75,28 @@ const [user, setUser] = useState(() => {
         </Link>
 
         {/* Search bar */}
-        <div className="hidden md:flex flex-1 mx-6">
+        <div className="relative w-full">
           <input
+            ref={searchRef}
             type="text"
             placeholder="Search for products..."
+            onChange={handleSearchChange}
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
           />
+
+          {searchSuggestions.length > 0 && (
+            <ul className="absolute z-50 w-full bg-white shadow-md mt-1 rounded max-h-60 overflow-y-auto">
+              {searchSuggestions.map((product) => (
+                <li
+                  key={product._id}
+                  onClick={() => handleSelectSuggestion(product.title)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                >
+                  {product.title}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Icons */}

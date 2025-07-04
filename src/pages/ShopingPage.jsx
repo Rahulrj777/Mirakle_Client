@@ -23,6 +23,15 @@ const ShopingPage = () => {
     applyFilters();
   }, [products, filterType, searchTerm]);
 
+  useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const query = params.get("search");
+  if (query) {
+    setSearchTerm(query);
+  }
+}, [location.search]);
+
+
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/products/all-products`);
