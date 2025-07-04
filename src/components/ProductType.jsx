@@ -74,7 +74,7 @@ const ProductType = () => {
               {productTypes.map((item, i) => (
                 <SwiperSlide key={item._id}>
                   <div
-                    className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer"
+                    className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer overflow-hidden hover:shadow-lg transition relative"
                     onClick={() => {
                       const productId =
                         typeof item.productId === "object"
