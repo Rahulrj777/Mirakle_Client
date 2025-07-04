@@ -217,7 +217,7 @@ const ProductDetail = () => {
       </div>
       <div
         key={p._id}
-        onClick={() => navigate(`/product/${p._id}`)}
+        onClick={() => window.location.href = `/product/${p._id}`}
         className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
       >
         <img
