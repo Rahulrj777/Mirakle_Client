@@ -12,7 +12,11 @@ const Header = () => {
   const navigate = useNavigate();
   const cartItems = useSelector(state => state.cart);
   const [searchTerm, setSearchTerm] = useState('');
-const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [user, setUser] = useState(() => {
+  const stored = localStorage.getItem("mirakleUser");
+    return stored ? JSON.parse(stored) : null;
+  });
 
 const handleSearchChange = async (e) => {
   const value = e.target.value;
