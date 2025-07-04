@@ -2,51 +2,29 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { HiOutlineShoppingBag } from "react-icons/hi2";
 import { FaRegUser } from "react-icons/fa";
 import { useSelector } from 'react-redux';
-import logo from '../assets/logo.png';
-import axios from "axios";
-import { API_BASE } from "../utils/api";
 import { useState, useEffect, useRef } from 'react';
+import axios from "axios";
+import logo from '../assets/logo.png';
+import { API_BASE } from "../utils/api";
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const cartItems = useSelector(state => state.cart);
-  const isActive = (path) => location.pathname === path;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
-  const stored = localStorage.getItem("mirakleUser");
+    const stored = localStorage.getItem("mirakleUser");
     return stored ? JSON.parse(stored) : null;
   });
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
-const handleSearchChange = async (e) => {
-  const value = e.target.value;
-  setSearchTerm(value);
-  if (!value.trim()) {
-    setSuggestions([]);
-    return;
-  }
-  try {
-    const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
-    setSuggestions(res.data);
-  } catch (error) {
-    console.error("Error fetching suggestions:", error);
-  }
-};
+  // Determine active nav link
+  const isActive = (path) => location.pathname === path;
 
-const handleKeyDown = (e) => {
-  if (e.key === "Enter" && searchTerm.trim()) {
-    navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`);
-    setSuggestions([]);
-  }
-};
-
-const handleSelectSuggestion = (id) => {
-  navigate(`/product/${id}`);
-  setSearchTerm('');
-  setSuggestions([]);
-};
-
+  // Fetch user from localStorage on path change
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser");
     if (stored) {
@@ -54,8 +32,40 @@ const handleSelectSuggestion = (id) => {
     } else {
       setUser(null);
     }
-  }, [location.pathname]); 
+  }, [location.pathname]);
 
+  // Handle search input change
+  const handleSearchChange = async (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (!value.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
+      setSuggestions(res.data);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    }
+  };
+
+  // Navigate on Enter
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && searchTerm.trim()) {
+      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`);
+      setSuggestions([]);
+    }
+  };
+
+  // Navigate to product page if clicked
+  const handleSelectSuggestion = (id) => {
+    navigate(`/product/${id}`);
+    setSearchTerm('');
+    setSuggestions([]);
+  };
+
+  // Handle Logout
   const handleLogout = () => {
     localStorage.removeItem("mirakleUser");
     setUser(null);
@@ -63,7 +73,7 @@ const handleSelectSuggestion = (id) => {
     navigate("/");
   };
 
-  // Close dropdown on outside click
+  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -75,8 +85,8 @@ const handleSelectSuggestion = (id) => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-150 shadow-md">
-      <div className="bg-white px-4 py-3 max-w-7xl mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-[150] shadow-md bg-white">
+      <div className="px-4 py-3 max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/">
           <img src={logo} alt="logo" className="w-25 h-10 object-contain" />
@@ -148,7 +158,7 @@ const handleSelectSuggestion = (id) => {
         </div>
       </div>
 
-      {/* Nav Bar */}
+      {/* Navigation Bar */}
       <nav className="bg-green-600">
         <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
           {[
