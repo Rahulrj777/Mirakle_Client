@@ -11,6 +11,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const cartItems = useSelector(state => state.cart);
+  const isActive = (path) => location.pathname === path;
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
