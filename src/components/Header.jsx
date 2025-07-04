@@ -45,7 +45,7 @@ const Header = () => {
 
     try {
       const res = await axios.get(`${API_BASE}/api/products/search?q=${value}`)
-      setSuggestions(res.data.slice(0, 6)) // Limit to 6 suggestions
+      setSuggestions(res.data.slice(0, 6)) 
     } catch (error) {
       console.error("Error fetching suggestions:", error)
     }
@@ -104,7 +104,7 @@ const Header = () => {
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          {suggestions.length > 0 && (
+          {searchTerm.trim() && suggestions.length > 0 && (
             <ul className="absolute z-50 w-full bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto">
               {suggestions.map((item) => (
                 <li
