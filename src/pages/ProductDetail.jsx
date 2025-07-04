@@ -215,22 +215,39 @@ const ProductDetail = () => {
           </div>
         ))}
       </div>
-      <div
-        key={p._id}
-        onClick={() => window.location.href = `/product/${p._id}`}
-        className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
-      >
-        <img
-          src={`${API_BASE}${mainImage}`}
-          alt={p.title}
-          className="w-full h-40 object-cover rounded mb-2"
-        />
-        <h4 className="text-sm font-semibold">{p.title}</h4>
-        <p className="text-green-600 font-bold">₹{finalPrice}</p>
-        {discount > 0 && (
-          <p className="text-xs text-gray-400 line-through">₹{price}</p>
-        )}
-      </div>
+      {relatedProducts.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Related Products</h2>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+            {relatedProducts.map((p) => {
+              const mainImage = p.images?.others?.[0] || "/placeholder.jpg";
+              const firstVariant = p.variants?.[0];
+              const price = firstVariant?.price || 0;
+              const discount = firstVariant?.discountPercent || 0;
+              const finalPrice = (price - (price * discount / 100)).toFixed(2);
+
+              return (
+                <div
+                  key={p._id}
+                  onClick={() => navigate(`/product/${p._id}`)}
+                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
+                >
+                  <img
+                    src={`${API_BASE}${mainImage}`}
+                    alt={p.title}
+                    className="w-full h-40 object-cover rounded mb-2"
+                  />
+                  <h4 className="text-sm font-semibold">{p.title}</h4>
+                  <p className="text-green-600 font-bold">₹{finalPrice}</p>
+                  {discount > 0 && (
+                    <p className="text-xs text-gray-400 line-through">₹{price}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
