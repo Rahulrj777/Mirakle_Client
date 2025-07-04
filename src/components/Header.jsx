@@ -3,6 +3,8 @@ import { HiOutlineShoppingBag } from "react-icons/hi2";
 import { FaRegUser } from "react-icons/fa";
 import { useSelector } from 'react-redux';
 import logo from '../assets/logo.png';
+import axios from "axios";
+import { API_BASE } from "../utils/api";
 import { useState, useEffect, useRef } from 'react';
 
 const Header = () => {
@@ -75,29 +77,19 @@ const [user, setUser] = useState(() => {
         </Link>
 
         {/* Search bar */}
-        <div className="relative w-full">
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder="Search for products..."
-            onChange={handleSearchChange}
-            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-
-          {searchSuggestions.length > 0 && (
-            <ul className="absolute z-50 w-full bg-white shadow-md mt-1 rounded max-h-60 overflow-y-auto">
-              {searchSuggestions.map((product) => (
-                <li
-                  key={product._id}
-                  onClick={() => handleSelectSuggestion(product.title)}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                >
-                  {product.title}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <input
+          ref={searchRef}
+          type="text"
+          placeholder="Search for products..."
+          onChange={handleSearchChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && searchRef.current.value.trim()) {
+              navigate(`/shop/allproduct?search=${encodeURIComponent(searchRef.current.value.trim())}`);
+              setSearchSuggestions([]);
+            }
+          }}
+          className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
 
         {/* Icons */}
         <div className="flex items-center gap-5 text-[24px] relative">
