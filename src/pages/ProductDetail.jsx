@@ -82,14 +82,15 @@ useEffect(() => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
-  const handleAddToCart = () => {
-    dispatch(addToCart(productToAdd)); // Just add to cart
-  };
+const handleAddToCart = () => {
+  dispatch(addToCart(productToAdd));
+};
 
-  const handleBuyNow = () => {
-    dispatch(addToCart(productToAdd)); // Add to cart
-    navigate('/cart'); // Go to cart page
-  };
+const handleBuyNow = () => {
+  dispatch(addToCart(productToAdd));
+  navigate('/cart');
+};
+
 
   return (
     <div className="max-w-6xl mx-auto p-6">
