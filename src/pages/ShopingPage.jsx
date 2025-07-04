@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link,useNavigate } from 'react-router-dom';
 import { FiSearch } from 'react-icons/fi';
 import { API_BASE } from "../utils/api";
 
@@ -10,6 +10,22 @@ const ShopingPage = () => {
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get("search");
+
+    if (query) {
+      setSearchTerm(query);
+
+      // Remove search param from URL after 2 seconds
+      setTimeout(() => {
+        params.delete("search");
+        navigate(`${location.pathname}`, { replace: true }); // cleaner URL
+      }, 2000);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     setFilterType(location.pathname === '/shop/offerproduct' ? 'offer' : 'all');
