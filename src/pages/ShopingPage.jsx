@@ -55,27 +55,31 @@ const ShopingPage = () => {
   const applyFilters = () => {
     let result = [...products];
 
+    // Apply offer filter
     if (filterType === 'offer') {
       result = result.filter((p) =>
         p.discountPercent > 0 || p.variants?.some(v => v.discountPercent > 0)
       );
     }
 
+    // Apply search filter
     if (searchTerm.trim()) {
-      const filtered = result.filter((p) =>
-        p.title.toLowerCase().includes(searchTerm.toLowerCase())
+      const lower = searchTerm.toLowerCase();
+
+      // Matching products first
+      const matched = result.filter((p) =>
+        p.title.toLowerCase().includes(lower)
       );
 
-      if (filtered.length === 0) {
-        setNoMatch(true);
-        setFilteredProducts(result); // fallback to all or offer filtered
-      } else {
-        setNoMatch(false);
-        setFilteredProducts(filtered);
-      }
+      // Remaining products (excluding matches)
+      const remaining = result.filter((p) =>
+        !p.title.toLowerCase().includes(lower)
+      );
+
+      const merged = [...matched, ...remaining];
+      setFilteredProducts(merged);
     } else {
-      setNoMatch(false);
-      setFilteredProducts(result);
+      setFilteredProducts(result); // no search, just filtered list
     }
   };
 
@@ -150,9 +154,9 @@ const ShopingPage = () => {
         </div>
       </div>
 
-      {noMatch && (
-        <p className="text-sm text-gray-500 mb-4">
-          No matching products found for "<strong>{searchTerm}</strong>". Showing other products:
+      {searchTerm && (
+        <p className="text-sm text-gray-500 mb-2">
+          Showing results for "<strong>{searchTerm}</strong>" and other products.
         </p>
       )}
 
