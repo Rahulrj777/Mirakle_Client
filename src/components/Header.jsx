@@ -144,7 +144,7 @@ const Header = () => {
           {user ? (
             <div ref={dropdownRef} className="relative">
               <div
-                className="bg-[rgb(160,193,114)] text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold"
+                className="bg-green-600 text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
@@ -181,7 +181,7 @@ const Header = () => {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="bg-green-600">
+      <nav className="bg-[rgb(160,193,114)]">
         <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
           {[
             { path: "/", list: "Home" },
