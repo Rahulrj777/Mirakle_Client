@@ -12,10 +12,18 @@ const ProductDetail = () => {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
   const token = localStorage.getItem("token");
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   useEffect(() => {
     fetchProduct();
   }, [id]);
+
+  useEffect(() => {
+  if (id) {
+    fetchProduct();
+    fetchRelated();
+  }
+}, [id]);
 
   const fetchProduct = async () => {
     const res = await axios.get(`${API_BASE}/api/products/all-products`);
@@ -44,6 +52,15 @@ const ProductDetail = () => {
       setError(err.response?.data?.message || "Review failed");
     }
   };
+
+  const fetchRelated = async () => {
+  try {
+    const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
+    setRelatedProducts(res.data);
+  } catch (err) {
+    console.error("Failed to fetch related products", err);
+  }
+};
 
   const avgRating = product?.reviews?.length
     ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
@@ -173,6 +190,42 @@ const ProductDetail = () => {
           </div>
         ))}
       </div>
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Related Products</h2>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+            {relatedProducts.map((p) => {
+              const mainImage = p.images?.others?.[0] || "/placeholder.jpg";
+              const firstVariant = p.variants?.[0];
+              const price = firstVariant?.price || 0;
+              const discount = firstVariant?.discountPercent || 0;
+              const finalPrice = (price - (price * discount / 100)).toFixed(2);
+
+              return (
+                <div key={p._id} className="border rounded shadow-sm p-3">
+                  <img
+                    src={`${API_BASE}${mainImage}`}
+                    alt={p.title}
+                    className="w-full h-40 object-cover rounded mb-2"
+                  />
+                  <h4 className="text-sm font-semibold">{p.title}</h4>
+                  <p className="text-green-600 font-bold">₹{finalPrice}</p>
+                  {discount > 0 && (
+                    <p className="text-xs text-gray-400 line-through">₹{price}</p>
+                  )}
+                  <a
+                    href={`/product/${p._id}`}
+                    className="block mt-2 text-center bg-blue-600 text-white rounded px-3 py-1 text-sm"
+                  >
+                    View
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
