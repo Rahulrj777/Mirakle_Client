@@ -95,7 +95,7 @@ const ProductType = () => {
                         alt={item.title || "Product"}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-contain hover:scale-130 transition-transform duration-300"
+                        className="w-full h-full object-contain hover:scale-125 transition-transform duration-300"
                       />
                       {item.discountPercent > 0 && (
                         <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
