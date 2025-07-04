@@ -75,18 +75,22 @@ const ProductType = () => {
                 <SwiperSlide key={item._id}>
                   <div
                     className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer"
-                    onClick={() => {
-                      const productId =
-                        typeof item.productId === "object"
-                          ? item.productId._id
-                          : item.productId;
+onClick={() => {
+  console.log("item.productId:", item.productId);
 
-                      if (productId) {
-                        navigate(`/product/${productId}`);
-                      } else {
-                        navigate("/shop/allproduct");
-                      }
-                    }}
+  const productId =
+    typeof item.productId === "object"
+      ? item.productId._id
+      : item.productId;
+
+  console.log("Navigating to:", productId);
+
+  if (productId) {
+    navigate(`/product/${productId}`);
+  } else {
+    navigate("/shop/allproduct");
+  }
+}}
                   >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
