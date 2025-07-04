@@ -235,7 +235,7 @@ const ProductDetail = () => {
                   <img
                     src={`${API_BASE}${mainImage}`}
                     alt={p.title}
-                    className="w-full h-40 object-cover rounded mb-2 hover:scale-120 transition-transform"
+                    className="w-full md:w-[48%] lg:w-[30%] object-cover rounded mb-2 hover:scale-120 transition-transform"
                   />
                   <h4 className="text-sm font-semibold">{p.title}</h4>
                   <p className="text-green-600 font-bold">₹{finalPrice}</p>
