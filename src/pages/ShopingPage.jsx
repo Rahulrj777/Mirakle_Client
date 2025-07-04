@@ -67,9 +67,11 @@ const ShopingPage = () => {
       const lower = searchTerm.toLowerCase();
 
       // Matching products first
-      const matched = result.filter((p) =>
-        p.title.toLowerCase().includes(lower)
-      );
+     const matched = result.filter((p) =>
+      p.title.toLowerCase().includes(lower) ||
+      (p.keywords || []).some(k => k.toLowerCase().includes(lower)) ||
+      (p.description || '').toLowerCase().includes(lower)
+    );
 
       // Remaining products (excluding matches)
       const remaining = result.filter((p) =>
