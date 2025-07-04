@@ -1,7 +1,9 @@
-import { useParams } from 'react-router-dom';
+import { useParams,useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from "../utils/api"; 
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../Redux/cartSlice';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -13,6 +15,9 @@ const ProductDetail = () => {
   const [error, setError] = useState('');
   const token = localStorage.getItem("token");
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     fetchProduct();
@@ -72,6 +77,22 @@ const ProductDetail = () => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
+  const handleAddToCart = () => {
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      weight: selectedVariant.size || selectedVariant.weight, // use weight if size not available
+      currentPrice: finalPrice,
+    };
+    dispatch(addToCart(productToAdd));
+  };
+
+  const handleBuyNow = () => {
+    handleAddToCart(); // First add to cart
+    navigate('/cart'); // Then navigate to cart page
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="grid md:grid-cols-2 gap-8">
@@ -122,8 +143,12 @@ const ProductDetail = () => {
           </div>
 
           <div className="mt-6 flex gap-4">
-            <button className="bg-orange-500 text-white px-6 py-2 rounded">Add to Cart</button>
-            <button className="bg-green-600 text-white px-6 py-2 rounded">Buy Now</button>
+            <button onClick={handleAddToCart} className="bg-orange-500 text-white px-6 py-2 rounded">
+              Add to Cart
+            </button>
+            <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded">
+              Buy Now
+            </button>
           </div>
 
           <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
