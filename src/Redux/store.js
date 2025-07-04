@@ -25,4 +25,8 @@ export const store = configureStore({
     }).concat(thunk),
 });
 
+store.subscribe(() => {
+  console.log('Cart state:', store.getState().cart);
+});
+
 export const persistor = persistStore(store);
