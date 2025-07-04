@@ -51,7 +51,7 @@ const ShopingPage = () => {
       console.error("Failed to fetch products:", err);
     }
   };
-
+  
   const applyFilters = () => {
     let result = [...products];
 
