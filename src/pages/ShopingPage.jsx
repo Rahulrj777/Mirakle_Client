@@ -181,7 +181,7 @@ const ShopingPage = () => {
                   }`}
                 >
                   {discount > 0 && !isOut && (
-                    <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-20">
+                    <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-5">
                       {discount}% OFF
                     </div>
                   )}
