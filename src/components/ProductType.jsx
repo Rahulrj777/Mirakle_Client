@@ -74,20 +74,20 @@ const ProductType = () => {
               {productTypes.map((item, i) => (
                 <SwiperSlide key={item._id}>
                   <div
-                  className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer transform transition-transform duration-300 hover:scale-105"
-                  onClick={() => {
-                    const productId =
-                      typeof item.productId === "object"
-                        ? item.productId._id
-                        : item.productId;
+                    className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer "
+                    onClick={() => {
+                      const productId =
+                        typeof item.productId === "object"
+                          ? item.productId._id
+                          : item.productId;
 
-                    if (productId) {
-                      navigate(`/product/${productId}`);
-                    } else {
-                      navigate("/shop/allproduct");
-                    }
-                  }}
-                >
+                      if (productId) {
+                        navigate(`/product/${productId}`);
+                      } else {
+                        navigate("/shop/allproduct");
+                      }
+                    }}
+                  >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
                         key={`${item._id}-${i}`}
@@ -95,7 +95,7 @@ const ProductType = () => {
                         alt={item.title || "Product"}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
                       />
                       {item.discountPercent > 0 && (
                         <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
