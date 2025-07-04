@@ -230,12 +230,12 @@ const ProductDetail = () => {
                 <div
                   key={p._id}
                   onClick={() => navigate(`/product/${p._id}`)}
-                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md hover:scale-120 transition-transform duration-300"
+                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
                 >
                   <img
                     src={`${API_BASE}${mainImage}`}
                     alt={p.title}
-                    className="w-full h-40 object-cover rounded mb-2"
+                    className="w-full h-40 object-cover rounded mb-2 hover:scale-120 transition-transform"
                   />
                   <h4 className="text-sm font-semibold">{p.title}</h4>
                   <p className="text-green-600 font-bold">₹{finalPrice}</p>
