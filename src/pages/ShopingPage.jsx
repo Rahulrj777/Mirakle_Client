@@ -50,10 +50,10 @@ const ShopingPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center">Shop Products</h1>
+      <h1 className="text-3xl font-bold mb-3 text-center">Shop Products</h1>
 
       {/* Filters */}
-      <div className="flex justify-between items-center my-5 flex-wrap gap-4 w-full">
+      <div className="flex justify-between items-center my-10 flex-wrap gap-4 w-full">
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
