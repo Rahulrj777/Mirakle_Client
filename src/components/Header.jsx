@@ -93,7 +93,7 @@ const Header = () => {
         </Link>
 
         {/* Search bar */}
-        <div className="relative w-full max-w-md mx-4">
+        <div className="relative w-full max-w-full mx-4">
           <input
             type="text"
             value={searchTerm}
