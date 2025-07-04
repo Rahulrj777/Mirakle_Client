@@ -52,7 +52,7 @@ const [user, setUser] = useState(() => {
       <div className="bg-white px-4 py-3 max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/">
-          <img src={logo} alt="logo" className="w-25 h-15 object-contain" />
+          <img src={logo} alt="logo" className="w-25 h-10 object-contain" />
         </Link>
 
         {/* Search bar */}
