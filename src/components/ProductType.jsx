@@ -76,8 +76,13 @@ const ProductType = () => {
                   <div
                     className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer"
                     onClick={() => {
-                      if (item.productId && item.productId._id) {
-                        navigate(`/product/${item.productId._id}`);
+                      const productId =
+                        typeof item.productId === "object"
+                          ? item.productId._id
+                          : item.productId;
+
+                      if (productId) {
+                        navigate(`/product/${productId}`);
                       } else {
                         navigate("/shop/allproduct");
                       }
