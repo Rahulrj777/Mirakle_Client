@@ -11,36 +11,37 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const cartItems = useSelector(state => state.cart);
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const searchRef = useRef(null);
+  const [searchTerm, setSearchTerm] = useState('');
+const [suggestions, setSuggestions] = useState([]);
 
-  const isActive = (path) => location.pathname === path;
+const handleSearchChange = async (e) => {
+  const value = e.target.value;
+  setSearchTerm(value);
+  if (!value.trim()) {
+    setSuggestions([]);
+    return;
+  }
+  try {
+    const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
+    setSuggestions(res.data);
+  } catch (error) {
+    console.error("Error fetching suggestions:", error);
+  }
+};
 
-const [user, setUser] = useState(() => {
-  const stored = localStorage.getItem("mirakleUser");
-  return stored ? JSON.parse(stored) : null;
-});
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef(null);
-  
-  const handleSearchChange = async (e) => {
-    const value = e.target.value;
-    if (!value.trim()) {
-      setSearchSuggestions([]);
-      return;
-    }
-    try {
-      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
-      setSearchSuggestions(res.data);
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-    }
-  };
+const handleKeyDown = (e) => {
+  if (e.key === "Enter" && searchTerm.trim()) {
+    navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`);
+    setSuggestions([]);
+  }
+};
 
-  const handleSelectSuggestion = (title) => {
-    navigate(`/shop/allproduct?search=${encodeURIComponent(title)}`);
-    setSearchSuggestions([]);
-  };
+const handleSelectSuggestion = (id) => {
+  navigate(`/product/${id}`);
+  setSearchTerm('');
+  setSuggestions([]);
+};
+
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser");
     if (stored) {
@@ -77,19 +78,29 @@ const [user, setUser] = useState(() => {
         </Link>
 
         {/* Search bar */}
-        <input
-          ref={searchRef}
-          type="text"
-          placeholder="Search for products..."
-          onChange={handleSearchChange}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && searchRef.current.value.trim()) {
-              navigate(`/shop/allproduct?search=${encodeURIComponent(searchRef.current.value.trim())}`);
-              setSearchSuggestions([]);
-            }
-          }}
-          className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
-        />
+        <div className="relative w-full max-w-md mx-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Search for products..."
+            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          {suggestions.length > 0 && (
+            <ul className="absolute z-50 w-full bg-white border mt-1 rounded shadow max-h-60 overflow-y-auto">
+              {suggestions.map((item) => (
+                <li
+                  key={item._id}
+                  onClick={() => handleSelectSuggestion(item._id)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                >
+                  {item.title}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         {/* Icons */}
         <div className="flex items-center gap-5 text-[24px] relative">
