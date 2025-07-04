@@ -82,6 +82,7 @@ useEffect(() => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
+ const handleAddToCart = () => {
   const productToAdd = {
     _id: product._id,
     title: product.title,
@@ -93,6 +94,7 @@ useEffect(() => {
     currentPrice: parseFloat(finalPrice),
   };
   dispatch(addToCart(productToAdd));
+};
 
   const handleBuyNow = () => {
     handleAddToCart(); // First add to cart
@@ -149,9 +151,6 @@ useEffect(() => {
           </div>
 
           <div className="mt-6 flex gap-4">
-            <button onClick={handleAddToCart} className="bg-orange-500 text-white px-6 py-2 rounded">
-              Add to Cart
-            </button>
             <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded">
               Buy Now
             </button>
