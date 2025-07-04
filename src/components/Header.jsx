@@ -20,10 +20,8 @@ const Header = () => {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef(null)
 
-  // Determine active nav link
   const isActive = (path) => location.pathname === path
 
-  // Fetch user from localStorage on path change
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser")
     if (stored) {
@@ -33,7 +31,12 @@ const Header = () => {
     }
   }, [location.pathname])
 
-  // Enhanced search with debouncing
+ useEffect(() => {
+  if (!searchTerm.trim()) {
+    setSuggestions([]);
+  }
+}, [searchTerm]);
+
   const handleSearchChange = async (e) => {
     const value = e.target.value
     setSearchTerm(value)
@@ -104,7 +107,7 @@ const Header = () => {
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          {searchTerm.trim() && suggestions.length > 0 && (
+          {searchTerm.trim() !== "" && suggestions.length > 0 && (
             <ul className="absolute z-50 w-full bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto">
               {suggestions.map((item) => (
                 <li
