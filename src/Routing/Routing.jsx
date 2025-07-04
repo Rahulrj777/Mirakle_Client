@@ -9,7 +9,8 @@ import AddToCart from '../pages/AddToCart';
 import ProductDetail from '../pages/ProductDetail';
 import LoginSignUp from '../pages/LoginSignUp';
 import ResetPassword from '../pages/ResetPassword';
-import ScrollToTop from '../components/ScrollToTop';
+import ScrollToTop from '../pages/ScrollToTop';
+import CartPage from '../pages/CartPage';
 
 const Routing = () => {
   return (
@@ -30,6 +31,7 @@ const Routing = () => {
         <Route path="/AddToCart" element={<AddToCart/>} />
         <Route path="/product/:id" element={<ProductDetail/>} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/cart" element={<CartPage />} />
       </Routes>
       <Footer />
     </BrowserRouter>
