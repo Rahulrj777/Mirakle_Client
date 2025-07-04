@@ -30,6 +30,11 @@ const ProductDetail = () => {
   }
 }, [id]);
 
+useEffect(() => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}, [id]);
+
+
   const fetchProduct = async () => {
     const res = await axios.get(`${API_BASE}/api/products/all-products`);
     const found = res.data.find(p => p._id === id);
