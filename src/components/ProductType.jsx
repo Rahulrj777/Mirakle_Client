@@ -75,11 +75,13 @@ const ProductType = () => {
                 <SwiperSlide key={item._id}>
                   <div
                     className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer"
-                  onClick={() =>
-                    item.productId
-                      ? navigate(`/product/${item.productId}`)
-                      : navigate("/shop/allproduct")
-                  }
+                  onClick={() => {
+                    if (item.productId && item.productId._id) {
+                      navigate(`/product/${item.productId._id}`);
+                    } else {
+                      navigate("/shop/allproduct");
+                    }
+                  }}
                   >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
