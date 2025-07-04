@@ -9,10 +9,12 @@ import AddToCart from '../pages/AddToCart';
 import ProductDetail from '../pages/ProductDetail';
 import LoginSignUp from '../pages/LoginSignUp';
 import ResetPassword from '../pages/ResetPassword';
+import ScrollToTop from '../components/ScrollToTop';
 
 const Routing = () => {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Header />
       <Routes>
         <Route path="/" element={<Mirakle_Home_page />} />
