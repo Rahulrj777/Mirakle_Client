@@ -44,18 +44,32 @@ const ShopingPage = () => {
   const applyFilters = () => {
     let result = [...products];
 
+    // Apply offer filter
     if (filterType === 'offer') {
       result = result.filter((p) => p.discountPercent > 0 || p.variants?.some(v => v.discountPercent > 0));
     }
 
+    // Apply search filter
+    let filtered = result;
     if (searchTerm.trim()) {
-      result = result.filter((p) =>
+      filtered = result.filter((p) =>
         p.title.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    setFilteredProducts(result);
+    // If searchTerm is given but no product found, fallback to all products (or all offers)
+    if (searchTerm.trim() && filtered.length === 0) {
+      setFilteredProducts(result); // result has all or offer-filtered products
+    } else {
+      setFilteredProducts(filtered);
+    }
   };
+
+  {searchTerm && filteredProducts.length > 0 && (
+  <p className="text-sm text-gray-500 mb-4">
+    Showing other products since "{searchTerm}" was not found.
+  </p>
+)}
 
   return (
     <div className="max-w-6xl mx-auto p-4">
