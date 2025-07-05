@@ -17,9 +17,11 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const cartItems = useSelector((state) => state.cart);
-
-
+  const cart = useSelector((state) => state.cart);
+  useEffect(() => {
+    console.log("Cart Items:", cart);
+  }, [cart]);
+  
   useEffect(() => {
     fetchProduct();
   }, [id]);
@@ -83,31 +85,42 @@ const ProductDetail = () => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
-  const handleAddToCart = async (product) => {
-    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-    const token = userData?.token;
+ const handleAddToCart = async (product) => {
+  const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+  const token = userData?.token;
 
-    if (!token) {
-      alert("Please login to add items to cart");
-      navigate("/login_signup");
-      return;
-    }
-    try {
-      dispatch(addToCart(product)); 
-      await axios.post(`${API_BASE}/api/cart`, {
-        items: [product], 
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  if (!token) {
+    alert("Please login to add items to cart");
+    navigate("/login_signup");
+    return;
+  }
 
-      console.log("✅ Item added to cart successfully");
-    } catch (err) {
-      console.error("❌ Add to cart failed:", err);
-      alert("Something went wrong while adding to cart");
-    }
+  const productToAdd = {
+    _id: product._id,
+    title: product.title,
+    images: product.images,
+    weight: {
+      value: selectedVariant?.weight?.value || selectedVariant?.size,
+      unit: selectedVariant?.weight?.unit || "unit",
+    },
+    currentPrice: parseFloat(finalPrice),
+    quantity: 1, // Add quantity
   };
+
+  try {
+    dispatch(addToCart(productToAdd));
+    await axios.post(`${API_BASE}/api/cart`, {
+      items: [productToAdd],
+    }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    alert("Added to cart successfully");
+  } catch (err) {
+    console.error("❌ Add to cart failed:", err);
+    alert("Something went wrong while adding to cart");
+  }
+};
 
   const handleBuyNow = async () => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
@@ -199,7 +212,7 @@ const ProductDetail = () => {
           </div>
 
           <div className="mt-6 flex gap-4">
-            <button onClick={handleAddToCart} className="bg-orange-500 text-white px-6 py-2 rounded">
+            <button onClick={() => handleAddToCart(productToAdd)} className="bg-orange-500 text-white px-6 py-2 rounded">
               Add to Cart
             </button>
             <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded">
