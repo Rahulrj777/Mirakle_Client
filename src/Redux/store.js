@@ -4,6 +4,7 @@ import cartReducer from './cartSlice';
 import storage from 'redux-persist/lib/storage';
 import { persistReducer, persistStore } from 'redux-persist';
 import { thunk } from 'redux-thunk'; // ✅ Correct for ESM
+import { useEffect } from 'react';
 
 useEffect(() => {
   const token = localStorage.getItem("token");
