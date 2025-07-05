@@ -59,14 +59,6 @@ const Header = () => {
     setSuggestions([]);
   };
 
-  const handleLogin = async () => {
-  const res = await axios.post(`${API_BASE}/api/login`, { email, password });
-  localStorage.setItem('token', res.data.token);
-  localStorage.setItem('user', JSON.stringify(res.data.user));
-  navigate('/');
-};
-
-
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
