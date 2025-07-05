@@ -134,9 +134,8 @@ const ProductDetail = () => {
       dispatch(addToCart(productToAdd));
       console.log("💡Token:", token);
 
-      // Sync with backend
       await axios.post(`${API_BASE}/api/cart`, {
-        items: [productToAdd],
+        items: [{ ...productToAdd, quantity: 1 }],
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
