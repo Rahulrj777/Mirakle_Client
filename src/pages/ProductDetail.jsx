@@ -89,7 +89,7 @@ useEffect(() => {
 
     if (!token) {
       alert("Please login to add items to cart");
-      navigate("/login");
+      navigate("/login_signup");
       return;
     }
 
