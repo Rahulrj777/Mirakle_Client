@@ -53,16 +53,11 @@ const LoginSignUp = () => {
         password,
       });
 
-  localStorage.setItem("mirakleUser", JSON.stringify({ 
-    user: res.data.user, 
-    token: res.data.token 
-  }));
-
-      // Fetch cart on login
-      const cartRes = await axios.get(`${API_BASE}/api/cart`, {
-        headers: { Authorization: `Bearer ${res.data.token}` },
-      });
-      localStorage.setItem("mirakleCart", JSON.stringify(cartRes.data));
+      // Save both user and token together
+      localStorage.setItem("mirakleUser", JSON.stringify({
+        user: res.data.user,
+        token: res.data.token,
+      }));
 
       alert("✅ Logged in successfully!");
       navigate("/");
