@@ -83,57 +83,50 @@ useEffect(() => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
-const handleAddToCart = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    alert("Please login to add items to cart");
-    navigate("/login");
-    return;
-  }
+  const handleAddToCart = async (product) => {
+    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+    const token = userData?.token;
 
-  const productToAdd = {
-    _id: product._id,
-    title: product.title,
-    images: product.images,
-    weight: {
-      value: selectedVariant?.weight?.value || selectedVariant?.size,
-      unit: selectedVariant?.weight?.unit || "unit",
-    },
-    currentPrice: parseFloat(finalPrice),
-    quantity: 1,
+    if (!token) {
+      alert("Please login to add items to cart");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // Add to Redux cart (if you're using Redux)
+      dispatch(addToCart(product)); // optional line
+
+      // Sync with backend
+      await axios.post(`${API_BASE}/api/cart`, {
+        items: [product], // or your cart structure
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("✅ Item added to cart successfully");
+    } catch (err) {
+      console.error("❌ Add to cart failed:", err);
+      alert("Something went wrong while adding to cart");
+    }
   };
 
-  dispatch(addToCart(productToAdd));
-
-  try {
-    // ⛳ GET updated cart from Redux after adding product
-    const updatedCart = [...cartItems, productToAdd];
-
-    await axios.post(`${API_BASE}/api/cart`, { items: updatedCart }, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    localStorage.setItem("mirakleCart", JSON.stringify(updatedCart)); 
-  } catch (error) {
-    console.error("Failed to sync cart:", error);
-  }
-};
-
-
-const handleBuyNow = () => {
-  const productToAdd = {
-    _id: product._id,
-    title: product.title,
-    images: product.images,
-    weight: {
-      value: selectedVariant?.weight?.value || selectedVariant?.size,
-      unit: selectedVariant?.weight?.unit || "unit",
-    },
-    currentPrice: parseFloat(finalPrice),
+  const handleBuyNow = () => {
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || "unit",
+      },
+      currentPrice: parseFloat(finalPrice),
+    };
+    dispatch(addToCart(productToAdd));
+    navigate('/cart');
   };
-  dispatch(addToCart(productToAdd));
-  navigate('/cart');
-};
 
   return (
     <div className="max-w-6xl mx-auto p-6">
