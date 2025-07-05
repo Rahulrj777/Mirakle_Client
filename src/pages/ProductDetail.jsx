@@ -25,15 +25,15 @@ const ProductDetail = () => {
   }, [id]);
 
   useEffect(() => {
-  if (id) {
-    fetchProduct();
-    fetchRelated();
-  }
-}, [id]);
+    if (id) {
+      fetchProduct();
+      fetchRelated();
+    }
+  }, [id]);
 
-useEffect(() => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}, [id]);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [id]);
 
 
   const fetchProduct = async () => {
@@ -92,14 +92,10 @@ useEffect(() => {
       navigate("/login_signup");
       return;
     }
-
     try {
-      // Add to Redux cart (if you're using Redux)
-      dispatch(addToCart(product)); // optional line
-
-      // Sync with backend
+      dispatch(addToCart(product)); 
       await axios.post(`${API_BASE}/api/cart`, {
-        items: [product], // or your cart structure
+        items: [product], 
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -113,7 +109,16 @@ useEffect(() => {
     }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
+    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+    const token = userData?.token;
+
+    if (!token) {
+      alert("Please login to proceed with purchase");
+      navigate("/login_signup");
+      return;
+    }
+
     const productToAdd = {
       _id: product._id,
       title: product.title,
@@ -124,8 +129,24 @@ useEffect(() => {
       },
       currentPrice: parseFloat(finalPrice),
     };
-    dispatch(addToCart(productToAdd));
-    navigate('/cart');
+
+    try {
+      dispatch(addToCart(productToAdd));
+
+      // Sync with backend
+      await axios.post(`${API_BASE}/api/cart`, {
+        items: [productToAdd],
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      navigate("/cart");
+    } catch (err) {
+      console.error("❌ Buy Now cart sync failed:", err);
+      alert("Something went wrong while processing Buy Now");
+    }
   };
 
   return (
