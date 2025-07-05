@@ -14,8 +14,12 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
-    const stored = JSON.parse(localStorage.getItem("mirakleUser"));
-    return stored?.user || null;
+    const stored = localStorage.getItem("mirakleUser");
+    try {
+      return stored ? JSON.parse(stored)?.user || null : null;
+    } catch {
+      return null;
+    }
   });
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -24,7 +28,11 @@ const Header = () => {
 
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser");
-    setUser(stored ? JSON.parse(stored) : null);
+    try {
+      setUser(stored ? JSON.parse(stored)?.user || null : null);
+    } catch {
+      setUser(null);
+    }
   }, [location.pathname]);
 
   useEffect(() => {
