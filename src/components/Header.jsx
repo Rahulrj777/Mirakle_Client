@@ -14,7 +14,7 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("mirakleUser");
+  const stored = localStorage.getItem("mirakleUser");
     return stored ? JSON.parse(stored) : null;
   });
   const [showDropdown, setShowDropdown] = useState(false);

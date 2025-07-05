@@ -5,24 +5,25 @@ import Routing from '../src/Routing/Routing';
 import { API_BASE } from './utils/api';
 
 const App = () => {
-  const cart = useSelector((state) => state.cart); // Get cart state from Redux
+  const cart = useSelector((state) => state.cart); 
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+useEffect(() => {
+  const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+  const token = userData?.token;
+  if (!token) return;
 
-    const syncCart = async () => {
-      try {
-        await axios.post(`${API_BASE}/api/cart`, { items: cart }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } catch (err) {
-        console.error('Cart sync failed:', err);
-      }
-    };
+  const syncCart = async () => {
+    try {
+      await axios.post(`${API_BASE}/api/cart`, { items: cart }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.error("Cart sync failed:", err);
+    }
+  };
 
-    syncCart();
-  }, [cart]); // Sync whenever cart changes
+  syncCart();
+}, [cart]);
 
   return <Routing />;
 };

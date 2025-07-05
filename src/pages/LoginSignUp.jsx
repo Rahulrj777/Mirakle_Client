@@ -19,7 +19,8 @@ const LoginSignUp = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+  const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+  const token = userData?.token;
     if (token) navigate("/");
   }, [navigate]);
 
