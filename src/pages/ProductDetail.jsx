@@ -83,7 +83,7 @@ const ProductDetail = () => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
-  const handleAddToCart = async (product) => {
+  const handleAddToCart = async () => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
     const token = userData?.token;
 
@@ -92,10 +92,23 @@ const ProductDetail = () => {
       navigate("/login_signup");
       return;
     }
+
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || "unit",
+      },
+      currentPrice: parseFloat(finalPrice),
+    };
+
     try {
-      dispatch(addToCart(product)); 
+      dispatch(addToCart(productToAdd)); // ✅ Only pure data here
+
       await axios.post(`${API_BASE}/api/cart`, {
-        items: [product], 
+        items: [productToAdd],
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -200,8 +213,17 @@ const ProductDetail = () => {
           </div>
 
           <div className="mt-6 flex gap-4">
-            <button onClick={handleAddToCart} className="bg-orange-500 text-white px-6 py-2 rounded">
-              Add to Cart
+            <button onClick={() => handleAddToCart({
+                _id: product._id,
+                title: product.title,
+                images: product.images,
+                weight: {
+                  value: selectedVariant?.weight?.value || selectedVariant?.size,
+                  unit: selectedVariant?.weight?.unit || "unit",
+                },
+                currentPrice: parseFloat(finalPrice),
+              })} className="...">
+                Add to Cart
             </button>
             <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded">
               Buy Now
