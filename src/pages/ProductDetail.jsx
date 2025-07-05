@@ -2,7 +2,7 @@ import { useParams,useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from "../utils/api"; 
-import { useDispatch } from 'react-redux';
+import { useDispatch,useSelector } from 'react-redux';
 import { addToCart } from '../Redux/cartSlice';
 
 const ProductDetail = () => {
@@ -17,6 +17,7 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const cartItems = useSelector((state) => state.cart);
 
 
   useEffect(() => {
@@ -82,7 +83,14 @@ useEffect(() => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
-const handleAddToCart = () => {
+const handleAddToCart = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Please login to add items to cart");
+    navigate("/login");
+    return;
+  }
+
   const productToAdd = {
     _id: product._id,
     title: product.title,
@@ -92,9 +100,25 @@ const handleAddToCart = () => {
       unit: selectedVariant?.weight?.unit || "unit",
     },
     currentPrice: parseFloat(finalPrice),
+    quantity: 1,
   };
+
   dispatch(addToCart(productToAdd));
+
+  try {
+    // ⛳ GET updated cart from Redux after adding product
+    const updatedCart = [...cartItems, productToAdd];
+
+    await axios.post(`${API_BASE}/api/cart`, { items: updatedCart }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    localStorage.setItem("mirakleCart", JSON.stringify(updatedCart)); // Optional
+  } catch (error) {
+    console.error("Failed to sync cart:", error);
+  }
 };
+
 
 const handleBuyNow = () => {
   const productToAdd = {

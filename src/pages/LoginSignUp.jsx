@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../Style/login.css";
@@ -17,6 +17,11 @@ const LoginSignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) navigate("/");
+  }, [navigate]);
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
@@ -50,6 +55,12 @@ const LoginSignUp = () => {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("mirakleUser", JSON.stringify(res.data.user));
+
+      // Fetch cart on login
+      const cartRes = await axios.get(`${API_BASE}/api/cart`, {
+        headers: { Authorization: `Bearer ${res.data.token}` },
+      });
+      localStorage.setItem("mirakleCart", JSON.stringify(cartRes.data));
 
       alert("✅ Logged in successfully!");
       navigate("/");
@@ -128,7 +139,6 @@ const LoginSignUp = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            {/* Password */}
             <div className="relative">
               <input
                 type={showSignUpPassword ? "text" : "password"}
@@ -144,7 +154,6 @@ const LoginSignUp = () => {
                 {showSignUpPassword ? <IoIosEye /> : <IoIosEyeOff />}
               </span>
             </div>
-            {/* Confirm Password */}
             <div className="relative">
               <input
                 type={showConfirmPassword ? "text" : "password"}
