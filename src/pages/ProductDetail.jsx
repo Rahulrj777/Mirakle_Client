@@ -83,7 +83,7 @@ const ProductDetail = () => {
   const discount = selectedVariant.discountPercent || 0;
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
-  const handleAddToCart = async (product) => {
+  const handleAddToCart = async () => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
     const token = userData?.token;
 
@@ -92,10 +92,24 @@ const ProductDetail = () => {
       navigate("/login_signup");
       return;
     }
+
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || "unit",
+      },
+      currentPrice: parseFloat(finalPrice),
+      quantity: 1, // Add this line if needed by backend
+    };
+
     try {
-      dispatch(addToCart(product)); 
+      dispatch(addToCart(productToAdd));
+
       await axios.post(`${API_BASE}/api/cart`, {
-        items: [product], 
+        items: [productToAdd],
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
