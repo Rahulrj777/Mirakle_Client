@@ -21,7 +21,7 @@ const ProductDetail = () => {
   useEffect(() => {
     console.log("Cart Items:", cart);
   }, [cart]);
-  
+
   useEffect(() => {
     fetchProduct();
   }, [id]);
@@ -104,23 +104,23 @@ const ProductDetail = () => {
       unit: selectedVariant?.weight?.unit || "unit",
     },
     currentPrice: parseFloat(finalPrice),
-    quantity: 1, // Add quantity
+    quantity: 1,
   };
 
   try {
     dispatch(addToCart(productToAdd));
-    await axios.post(`${API_BASE}/api/cart`, {
-      items: [productToAdd],
-    }, {
+
+    await axios.post(`${API_BASE}/api/cart`, productToAdd, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
     alert("Added to cart successfully");
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
-    alert("Something went wrong while adding to cart");
+    alert("Something went wrong while syncing cart.");
   }
 };
+
 
   const handleBuyNow = async () => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
