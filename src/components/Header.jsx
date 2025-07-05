@@ -14,8 +14,8 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
-  const stored = localStorage.getItem("mirakleUser");
-    return stored ? JSON.parse(stored) : null;
+    const stored = JSON.parse(localStorage.getItem("mirakleUser"));
+    return stored?.user || null;
   });
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -52,6 +52,13 @@ const Header = () => {
       setSearchTerm("");
     }
   };
+
+ const handleLogout = () => {
+  localStorage.removeItem("mirakleUser");
+  localStorage.removeItem("mirakleCart"); // optional
+  navigate("/login_signup"); // or wherever your login route is
+};
+
 
   const handleSelectSuggestion = (id) => {
     navigate(`/product/${id}`);
@@ -131,7 +138,7 @@ const Header = () => {
                 className="bg-green-600 text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
-                {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
               </div>
               {showDropdown && (
                 <div className="absolute top-12 right-0 bg-white shadow-md rounded-md z-50 w-40 py-2">

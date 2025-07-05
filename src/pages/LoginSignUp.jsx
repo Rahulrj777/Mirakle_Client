@@ -11,7 +11,6 @@ const LoginSignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -54,8 +53,10 @@ const LoginSignUp = () => {
         password,
       });
 
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("mirakleUser", JSON.stringify(res.data.user));
+  localStorage.setItem("mirakleUser", JSON.stringify({ 
+    user: res.data.user, 
+    token: res.data.token 
+  }));
 
       // Fetch cart on login
       const cartRes = await axios.get(`${API_BASE}/api/cart`, {

@@ -13,7 +13,7 @@ const ProductDetail = () => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
-  const token = localStorage.getItem("token");
+  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -84,7 +84,7 @@ useEffect(() => {
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
 const handleAddToCart = async () => {
-  const token = localStorage.getItem("token");
+  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
   if (!token) {
     alert("Please login to add items to cart");
     navigate("/login");
@@ -113,7 +113,7 @@ const handleAddToCart = async () => {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    localStorage.setItem("mirakleCart", JSON.stringify(updatedCart)); // Optional
+    localStorage.setItem("mirakleCart", JSON.stringify(updatedCart)); 
   } catch (error) {
     console.error("Failed to sync cart:", error);
   }
