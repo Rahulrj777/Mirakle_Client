@@ -18,8 +18,8 @@ const LoginSignUp = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-  const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-  const token = userData?.token;
+    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+    const token = userData?.token;
     if (token) navigate("/");
   }, [navigate]);
 
@@ -35,6 +35,7 @@ const LoginSignUp = () => {
         email,
         password,
       });
+
       alert("✅ Account created successfully!");
       setIsSignUp(false);
       setName("");
