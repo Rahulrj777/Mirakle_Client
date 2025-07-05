@@ -14,9 +14,12 @@ useEffect(() => {
 
   const syncCart = async () => {
     try {
-      await axios.post(`${API_BASE}/api/cart`, { items: cart }, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await axios.post(`${API_BASE}/api/cart`, { items: cart }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      console.log("Cart sync success:", res.data);
     } catch (err) {
       console.error("Cart sync failed:", err);
     }
@@ -24,6 +27,7 @@ useEffect(() => {
 
   syncCart();
 }, [cart]);
+
 
   return <Routing />;
 };
