@@ -13,7 +13,7 @@ const ProductDetail = () => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
-  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+  const token = localStorage.getItem("token");
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -84,7 +84,7 @@ useEffect(() => {
   const finalPrice = (price - (price * discount / 100)).toFixed(2);
 
 const handleAddToCart = async () => {
-  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+  const token = localStorage.getItem("token");
   if (!token) {
     alert("Please login to add items to cart");
     navigate("/login");
