@@ -132,6 +132,7 @@ const ProductDetail = () => {
 
     try {
       dispatch(addToCart(productToAdd));
+      console.log("💡Token:", token);
 
       // Sync with backend
       await axios.post(`${API_BASE}/api/cart`, {
