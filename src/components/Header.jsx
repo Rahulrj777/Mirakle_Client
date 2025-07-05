@@ -1,93 +1,80 @@
-import { Link, useLocation, useNavigate } from "react-router-dom"
-import { HiOutlineShoppingBag } from "react-icons/hi2"
-import { FaRegUser } from "react-icons/fa"
-import { useSelector } from "react-redux"
-import { useState, useEffect, useRef } from "react"
-import axios from "axios"
-import logo from "../assets/logo.png"
-import { API_BASE } from "../utils/api"
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { HiOutlineShoppingBag } from "react-icons/hi2";
+import { FaRegUser } from "react-icons/fa";
+import { useSelector } from "react-redux";
+import { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import logo from "../assets/logo.png";
+import { API_BASE } from "../utils/api";
 
 const Header = () => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const cartItems = useSelector((state) => state.cart)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [suggestions, setSuggestions] = useState([])
+  const location = useLocation();
+  const navigate = useNavigate();
+  const cartItems = useSelector((state) => state.cart);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("mirakleUser")
-    return stored ? JSON.parse(stored) : null
-  })
-  const [showDropdown, setShowDropdown] = useState(false)
-  const dropdownRef = useRef(null)
+    const stored = localStorage.getItem("mirakleUser");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const isActive = (path) => location.pathname === path
+  const isActive = (path) => location.pathname === path;
 
   useEffect(() => {
-    const stored = localStorage.getItem("mirakleUser")
-    if (stored) {
-      setUser(JSON.parse(stored))
-    } else {
-      setUser(null)
-    }
-  }, [location.pathname])
+    const stored = localStorage.getItem("mirakleUser");
+    setUser(stored ? JSON.parse(stored) : null);
+  }, [location.pathname]);
 
- useEffect(() => {
-  if (!searchTerm.trim()) {
-    setSuggestions([]);
-  }
-}, [searchTerm]);
+  useEffect(() => {
+    if (!searchTerm.trim()) setSuggestions([]);
+  }, [searchTerm]);
 
   const handleSearchChange = async (e) => {
-    const value = e.target.value
-    setSearchTerm(value)
+    const value = e.target.value;
+    setSearchTerm(value);
 
-    if (!value.trim()) {
-      setSuggestions([])
-      return
-    }
+    if (!value.trim()) return setSuggestions([]);
 
     try {
-      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
-      setSuggestions(res.data.slice(0, 6)) 
+      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
+      setSuggestions(res.data.slice(0, 6));
     } catch (error) {
-      console.error("Error fetching suggestions:", error)
+      console.error("Error fetching suggestions:", error);
     }
-  }
+  };
 
-  // Navigate on Enter
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && searchTerm.trim()) {
-      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`)
-      setSuggestions([])
-      setSearchTerm("") // Clear search after navigation
+      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`);
+      setSuggestions([]);
+      setSearchTerm("");
     }
-  }
+  };
 
-  // Navigate to product page if clicked
   const handleSelectSuggestion = (id) => {
-    navigate(`/product/${id}`)
-    setSearchTerm("")
-    setSuggestions([])
-  }
+    navigate(`/product/${id}`);
+    setSearchTerm("");
+    setSuggestions([]);
+  };
 
-  // Handle Logout
   const handleLogout = () => {
-    localStorage.removeItem("mirakleUser")
-    setUser(null)
-    setShowDropdown(false)
-    navigate("/")
-  }
+    localStorage.removeItem("mirakleUser");
+    setUser(null);
+    setShowDropdown(false);
+    navigate("/");
+  };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false)
+        setShowDropdown(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-[150] shadow-md bg-white">
@@ -97,7 +84,7 @@ const Header = () => {
           <img src={logo || "/placeholder.svg"} alt="logo" className="w-25 h-10 object-contain" />
         </Link>
 
-        {/* Enhanced Search bar */}
+        {/* Search */}
         <div className="relative w-full max-w-full mx-4">
           <input
             type="text"
@@ -125,11 +112,15 @@ const Header = () => {
                     )}
                     <div className="flex-1">
                       <div className="font-medium text-sm">{item.title}</div>
-                      {item.keywords && item.keywords.length > 0 && (
-                        <div className="text-xs text-gray-500 mt-1">{item.keywords.slice(0, 3).join(", ")}</div>
+                      {item.keywords?.length > 0 && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {item.keywords.slice(0, 3).join(", ")}
+                        </div>
                       )}
                       {item.variants?.[0] && (
-                        <div className="text-xs text-green-600 font-semibold">₹{item.variants[0].price}</div>
+                        <div className="text-xs text-green-600 font-semibold">
+                          ₹{item.variants[0].price}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -163,9 +154,9 @@ const Header = () => {
               )}
             </div>
           ) : (
-            <Link to="/login_signup">
+            <span onClick={() => navigate("/login_signup")} className="cursor-pointer">
               <FaRegUser className="text-black" />
-            </Link>
+            </span>
           )}
 
           {/* Cart icon */}
@@ -180,7 +171,7 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Navigation Bar */}
+      {/* Nav Links */}
       <nav className="bg-[rgb(119,221,119)]">
         <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
           {[
@@ -199,7 +190,7 @@ const Header = () => {
         </ul>
       </nav>
     </header>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;
