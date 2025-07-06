@@ -11,6 +11,7 @@ import LoginSignUp from '../pages/LoginSignUp';
 import ResetPassword from '../pages/ResetPassword';
 import ScrollToTop from '../pages/ScrollToTop';
 import CartPage from '../pages/CartPage';
+import Checkout from '../pages/Checkout';
 
 const Routing = () => {
   return (
@@ -32,6 +33,7 @@ const Routing = () => {
         <Route path="/product/:id" element={<ProductDetail/>} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<Checkout />} />
       </Routes>
       <Footer />
     </BrowserRouter>

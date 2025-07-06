@@ -110,9 +110,11 @@ const ProductDetail = () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axios.post(`${API_BASE}/api/cart`, productToAdd, {
+    await axios.post(`${API_BASE}/api/cart`, {
+      items: [{ ...productToAdd }]
+    }, {
       headers: { Authorization: `Bearer ${token}` },
-    });
+    }); 
 
     alert("Added to cart successfully");
   } catch (err) {
@@ -120,7 +122,6 @@ const ProductDetail = () => {
     alert("Something went wrong while syncing cart.");
   }
 };
-
 
   const handleBuyNow = async () => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
@@ -144,7 +145,7 @@ const ProductDetail = () => {
     };
 
     try {
-      dispatch(addToCart(productToAdd));
+      navigate("/checkout", { state: { product: productToAdd } });
       console.log("💡Token:", token);
 
       await axios.post(`${API_BASE}/api/cart`, {
@@ -212,7 +213,7 @@ const ProductDetail = () => {
           </div>
 
           <div className="mt-6 flex gap-4">
-            <button onClick={() => handleAddToCart(productToAdd)} className="bg-orange-500 text-white px-6 py-2 rounded">
+            <button onClick={() => handleAddToCart(product)} className="bg-orange-500 text-white px-6 py-2 rounded">
               Add to Cart
             </button>
             <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded">
