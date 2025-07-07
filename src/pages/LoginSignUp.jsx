@@ -45,32 +45,17 @@ const LoginSignUp = () => {
 
 const dispatch = useDispatch();
 
-const handleLogout = () => {
-  const user = JSON.parse(localStorage.getItem("mirakleUser"));
-
-  if (user?.user?._id) {
-    localStorage.removeItem(`cart_${user.user._id}`);
-  }
-
-  localStorage.removeItem("mirakleUser");
-  setUser(null);
-  dispatch(clearCart()); // clears Redux cart
-  navigate("/login_signup");
-};
-
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
       alert("❌ Passwords do not match!");
       return;
     }
-
     try {
       const res = await axios.post(`${API_BASE}/api/signup`, {
         name,
         email,
         password,
       });
-
       alert("✅ Account created successfully!");
       setIsSignUp(false);
       setName("");
@@ -88,8 +73,6 @@ const handleLogout = () => {
         email,
         password,
       });
-
-      // Save both user and token together
       localStorage.setItem("mirakleUser", JSON.stringify({
         user: res.data.user,
         token: res.data.token,

@@ -18,6 +18,7 @@ const Header = () => {
   const cartItems = useSelector((state) => state.cart);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
+  const persistor = persistStore(store);
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem("mirakleUser");
     try {
