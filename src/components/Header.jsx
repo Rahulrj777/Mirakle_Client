@@ -98,7 +98,7 @@ const Header = () => {
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
-            onKeyDown={handleKeyDown}
+            // onKeyDown={handleKeyDown}
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
           />
