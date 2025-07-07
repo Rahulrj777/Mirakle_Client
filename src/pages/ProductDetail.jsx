@@ -145,8 +145,9 @@ const ProductDetail = () => {
     };
 
     try {
-      navigate("/checkout", { state: { product: productToAdd } });
-      console.log("💡Token:", token);
+      navigate("/checkout", {
+        state: { product: productToAdd, mode: "buy-now" },
+      });
 
       await axios.post(`${API_BASE}/api/cart`, {
         items: [{ ...productToAdd, quantity: 1 }],
