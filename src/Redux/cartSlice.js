@@ -24,9 +24,8 @@ const cartSlice = createSlice({
   },
 });
 
-
 export const {
-  setCart,           // ✅ NEW - used after login to sync from backend
+  setCart,          
   addToCart,
   incrementQuantity,
   decrementQuantity,

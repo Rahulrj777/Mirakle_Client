@@ -8,6 +8,8 @@ import logo from "../assets/logo.png";
 import { API_BASE } from "../utils/api";
 import { useDispatch } from "react-redux";
 import { clearCart } from "../Redux/cartSlice";
+import { persistStore } from 'redux-persist';
+import { store } from '../redux/store';
 
 const Header = () => {
   const location = useLocation();
@@ -70,10 +72,11 @@ const Header = () => {
     if (user?.user?._id) {
       localStorage.removeItem(`cart_${user.user._id}`);
     }
-      localStorage.removeItem("mirakleUser");
-    setUser(null); 
-    dispatch(clearCart());; 
-    navigate("/login_signup"); 
+    localStorage.removeItem("mirakleUser");
+    setUser(null);
+    dispatch(clearCart());
+    persistor.purge(); 
+    navigate("/login_signup");
   };
 
   const handleSelectSuggestion = (id) => {
