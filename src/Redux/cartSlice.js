@@ -1,74 +1,58 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = {
-  items: [],
-  userId: null
+const getInitialCart = () => {
+  const saved = localStorage.getItem("persist:cart");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      return JSON.parse(parsed.cart || "[]");
+    } catch (e) {
+      console.error("Failed to parse persisted cart", e);
+      return [];
+    }
+  }
+  return [];
 };
 
 const cartSlice = createSlice({
   name: "cart",
-  initialState,
+  initialState: getInitialCart(),
   reducers: {
-    setUserId: (state, action) => {
-      state.userId = action.payload;
+    setCart: (state, action) => {
+      // Replace cart completely
+      return action.payload;
     },
-
-    setCartItems: (state, action) => {
-      state.items = action.payload;
-    },
-
-    clearCart: (state) => {
-      state.items = [];
-      state.userId = null;
-    },
-
     addToCart: (state, action) => {
-      const existingItem = state.items.find(item => item._id === action.payload._id);
-      if (existingItem) {
-        existingItem.quantity += action.payload.quantity || 1;
+      const existing = state.find((item) => item._id === action.payload._id);
+      if (existing) {
+        existing.quantity += 1;
       } else {
-        state.items.push({ ...action.payload, quantity: action.payload.quantity || 1 });
-      }
-      if (state.userId) {
-        localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
+        state.push({ ...action.payload, quantity: 1 });
       }
     },
-
     incrementQuantity: (state, action) => {
-      const item = state.items.find(item => item._id === action.payload);
+      const item = state.find((item) => item._id === action.payload);
       if (item) item.quantity += 1;
-      if (state.userId) {
-        localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
-      }
     },
-
     decrementQuantity: (state, action) => {
-      const item = state.items.find(item => item._id === action.payload);
-      if (item && item.quantity > 1) {
-        item.quantity -= 1;
-        if (state.userId) {
-          localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
-        }
-      }
+      const item = state.find((item) => item._id === action.payload);
+      if (item && item.quantity > 1) item.quantity -= 1;
     },
-
-    removeFromCart: (state, action) => {
-      state.items = state.items.filter(item => item._id !== action.payload);
-      if (state.userId) {
-        localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
-      }
+    removeFromCart: (state, action) =>
+      state.filter((item) => item._id !== action.payload),
+    clearCart: (state) => {
+      state.length = 0;
     },
   },
 });
 
 export const {
-  setUserId,
-  setCartItems,
-  clearCart,
+  setCart,           // ✅ NEW - used after login to sync from backend
   addToCart,
   incrementQuantity,
   decrementQuantity,
   removeFromCart,
+  clearCart,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
