@@ -145,8 +145,9 @@ const ProductDetail = () => {
     };
 
     try {
+      localStorage.setItem("buyNowProduct", JSON.stringify(productToAdd));
       navigate("/checkout", {
-        state: { product: productToAdd, mode: "buy-now" },
+        state: { mode: "buy-now" },
       });
 
       await axios.post(`${API_BASE}/api/cart`, {
