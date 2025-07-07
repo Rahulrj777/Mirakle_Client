@@ -27,13 +27,31 @@ const Header = () => {
   const isActive = (path) => location.pathname === path;
 
   useEffect(() => {
-    const stored = localStorage.getItem("mirakleUser");
-    try {
-      setUser(stored ? JSON.parse(stored)?.user || null : null);
-    } catch {
-      setUser(null);
-    }
-  }, [location.pathname]);
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem("mirakleUser");
+      try {
+        setUser(stored ? JSON.parse(stored)?.user || null : null);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+      // 🛑 ALSO hide suggestions when clicking anywhere else
+      setSuggestions([]);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (!searchTerm.trim()) setSuggestions([]);
@@ -61,12 +79,13 @@ const Header = () => {
     }
   };
 
- const handleLogout = () => {
-  localStorage.removeItem("mirakleUser");
-  localStorage.removeItem("mirakleCart"); // optional
-  navigate("/login_signup"); // or wherever your login route is
-};
-
+  const handleLogout = () => {
+    localStorage.removeItem("mirakleUser");
+    localStorage.removeItem("mirakleCart");
+    setUser(null);
+    navigate("/login_signup");
+    window.location.reload(); // force header refresh
+  };
 
   const handleSelectSuggestion = (id) => {
     navigate(`/product/${id}`);
@@ -99,6 +118,7 @@ const Header = () => {
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
+            onBlur={() => setTimeout(() => setSuggestions([]), 150)}
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
           />
