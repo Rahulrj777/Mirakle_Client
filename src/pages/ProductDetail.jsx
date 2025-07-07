@@ -115,8 +115,6 @@ const ProductDetail = () => {
     }, {
       headers: { Authorization: `Bearer ${token}` },
     }); 
-
-    alert("Added to cart successfully");
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
     alert("Something went wrong while syncing cart.");
