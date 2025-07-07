@@ -16,7 +16,6 @@ const LoginSignUp = () => {
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,22 +25,38 @@ const LoginSignUp = () => {
   }, [navigate]);
 
   const handleLogin = async () => {
-  try {
-    const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password });
-    const userData = res.data.user;
-    
-    localStorage.setItem("mirakleUser", JSON.stringify({ user: userData }));
+    try {
+      const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password });
+      const userData = res.data.user;
+      
+      localStorage.setItem("mirakleUser", JSON.stringify({ user: userData }));
 
-    const savedCart = localStorage.getItem(`cart_${userData._id}`);
-    if (savedCart) {
-      dispatch(setCart(JSON.parse(savedCart))); 
+      const savedCart = localStorage.getItem(`cart_${userData._id}`);
+      if (savedCart) {
+        dispatch(setCart(JSON.parse(savedCart))); 
+      }
+      navigate("/");
+    } catch (err) {
+      alert("Login failed");
     }
+  };
 
-    navigate("/");
-  } catch (err) {
-    alert("Login failed");
+  
+const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+  if (token) {
+    axios
+      .get(`${API_BASE}/api/cart`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        dispatch(setCart(res.data)); // res.data is cart.items
+      })
+      .catch((err) => {
+        console.error("❌ Failed to fetch cart from backend", err);
+      });
   }
-};
 
 const dispatch = useDispatch();
 
