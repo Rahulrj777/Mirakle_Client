@@ -157,7 +157,6 @@ const ProductDetail = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      navigate("/checkout");
     } catch (err) {
       console.error("❌ Buy Now cart sync failed:", err);
       alert("Something went wrong while processing Buy Now");
