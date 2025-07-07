@@ -1,12 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { HiOutlineShoppingBag } from "react-icons/hi2";
 import { FaRegUser } from "react-icons/fa";
-import { useSelector } from "react-redux";
+import { useSelector,useDispatch  } from "react-redux";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import logo from "../assets/logo.png";
 import { API_BASE } from "../utils/api";
-import { useDispatch } from "react-redux";
 import { clearCart } from "../Redux/cartSlice";
 import { persistStore } from 'redux-persist';
 import { store } from '../redux/store';
@@ -67,12 +66,6 @@ const Header = () => {
       setSearchTerm("");
     }
   };
-
-  // logout logic
-localStorage.removeItem("mirakleUser");
-localStorage.removeItem(`cart_${userId}`);
-dispatch(setCart([])); // clear cart in redux
-navigate("/login");
 
   const handleLogout = () => {
     const user = JSON.parse(localStorage.getItem("mirakleUser"));
