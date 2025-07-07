@@ -26,6 +26,17 @@ const AddToCart = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+    if (token && cartItems.length > 0) {
+      axios.post(`${API_BASE}/api/cart/update`, {
+        items: cartItems
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(console.error);
+    }
+  }, [cartItems]);
+
   return (
     <div className="bg-gray-100 py-8 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
