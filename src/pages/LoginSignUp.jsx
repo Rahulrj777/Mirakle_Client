@@ -5,7 +5,7 @@ import "../Style/login.css";
 import { API_BASE } from '../utils/api';
 import { IoIosEye, IoIosEyeOff } from "react-icons/io";
 import { useDispatch } from "react-redux";
-import { setCart } from "../redux/slices/cartSlice";
+import { setCartItems, setUserId } from "../redux/slices/cartSlice";
 
 const LoginSignUp = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -17,30 +17,13 @@ const LoginSignUp = () => {
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
     const token = userData?.token;
     if (token) navigate("/");
   }, [navigate]);
-  
-const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
-  if (token) {
-    axios
-      .get(`${API_BASE}/api/cart`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => {
-        dispatch(setCart(res.data)); // res.data is cart.items
-      })
-      .catch((err) => {
-        console.error("❌ Failed to fetch cart from backend", err);
-      });
-  }
-
-const dispatch = useDispatch();
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
@@ -64,25 +47,25 @@ const dispatch = useDispatch();
     }
   };
 
-const handleSignIn = async () => {
-  try {
-    const res = await axios.post(`${API_BASE}/api/login`, {
-      email,
-      password,
-    });
+  const handleSignIn = async () => {
+    try {
+      const res = await axios.post(`${API_BASE}/api/login`, {
+        email,
+        password,
+      });
 
-    const user = res.data.user;
-    const token = res.data.token;
+      const user = res.data.user;
+      const token = res.data.token;
 
-    localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
+      localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
 
-    // 🔥 Restore cart for this specific user
-    const savedCart = localStorage.getItem(`cart_${user._id}`);
-      if (savedCart) {
-        dispatch(setCart(JSON.parse(savedCart)));
-      } else {
-        dispatch(setCart([]));
-      }
+      dispatch(setUserId(user._id));
+
+      const cartRes = await axios.get(`${API_BASE}/api/cart`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      dispatch(setCartItems(cartRes.data || []));
+
       navigate("/");
     } catch (error) {
       alert("Login failed");
@@ -103,7 +86,6 @@ const handleSignIn = async () => {
   return (
     <div className="login-container bg-green-100">
       <div className={`login-box min-h-[400px] ${isSignUp ? "signup-mode" : ""}`}>
-        {/* Sign In Form */}
         <div className="form-container sign-in-container">
           <div className="form-content">
             <h2 className="text-3xl font-bold mb-4 text-gray-800">Sign In</h2>
@@ -141,7 +123,6 @@ const handleSignIn = async () => {
           </div>
         </div>
 
-        {/* Sign Up Form */}
         <div className="form-container sign-up-container">
           <div className="form-content">
             <h2 className="text-3xl font-bold mb-4 text-gray-800">Create Account</h2>
@@ -195,7 +176,6 @@ const handleSignIn = async () => {
           </div>
         </div>
 
-        {/* Overlay */}
         <div className="overlay-container">
           <div className="overlay">
             <div className="overlay-panel overlay-left">
