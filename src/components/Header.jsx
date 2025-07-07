@@ -120,11 +120,6 @@ const Header = () => {
                     )}
                     <div className="flex-1">
                       <div className="font-medium text-sm">{item.title}</div>
-                      {item.variants?.[0] && (
-                        <div className="text-xs text-green-600 font-semibold">
-                          ₹{item.variants[0].price}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </li>
