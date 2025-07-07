@@ -27,31 +27,14 @@ const Header = () => {
   const isActive = (path) => location.pathname === path;
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      const stored = localStorage.getItem("mirakleUser");
-      try {
-        setUser(stored ? JSON.parse(stored)?.user || null : null);
-      } catch {
-        setUser(null);
-      }
-    };
+  const stored = localStorage.getItem("mirakleUser");
+  try {
+    setUser(stored ? JSON.parse(stored)?.user || null : null);
+  } catch {
+    setUser(null);
+  }
+}, [location.pathname]);
 
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-      // 🛑 ALSO hide suggestions when clicking anywhere else
-      setSuggestions([]);
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   useEffect(() => {
     if (!searchTerm.trim()) setSuggestions([]);
