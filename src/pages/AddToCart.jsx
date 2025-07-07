@@ -58,28 +58,21 @@ const AddToCart = () => {
                   <div className="flex items-center mt-3 gap-4">
                     <div className="flex items-center border rounded overflow-hidden">
                       <button
-                        className="px-3 py-1 text-lg"
+                        className="px-3 py-1 text-lg cursor-pointer"
                         onClick={() => dispatch(decrementQuantity(item._id))}
                       >
                         −
                       </button>
                       <span className="px-3 py-1">{item.quantity}</span>
                       <button
-                        className="px-3 py-1 text-lg"
+                        className="px-3 py-1 text-lg cursor-pointer"
                         onClick={() => dispatch(incrementQuantity(item._id))}
                       >
                         +
                       </button>
                     </div>
-
                     <button
-                      className="text-blue-600 text-sm hover:underline"
-                      // Save for later logic here
-                    >
-                      Save for Later
-                    </button>
-                    <button
-                      className="text-red-500 text-sm hover:underline"
+                      className="text-red-500 text-sm hover:underline cursor-pointer"
                       onClick={() => dispatch(removeFromCart(item._id))}
                     >
                       Remove
@@ -114,7 +107,7 @@ const AddToCart = () => {
 
           <button
             onClick={() => navigate("/checkout")}
-            className="mt-6 w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded font-semibold"
+            className="mt-6 w-full  cursor-pointer bg-orange-500 hover:bg-orange-600 text-white py-2 rounded font-semibold"
           >
             PLACE ORDER
           </button>

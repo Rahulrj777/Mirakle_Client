@@ -171,7 +171,7 @@ const ProductDetail = () => {
             {product.images?.others?.map((img, i) => (
               <img key={i} src={`${API_BASE}${img}`}
                 onClick={() => setSelectedImage(img)}
-                className={`w-20 h-20 object-cover border ${selectedImage === img ? 'border-blue-500' : ''}`} />
+                className={`w-20 h-20 object-cover border cursor-pointer ${selectedImage === img ? 'border-blue-500' : ''}`} />
             ))}
           </div>
         </div>
@@ -203,18 +203,18 @@ const ProductDetail = () => {
               {product.variants.map((v, i) => (
                 <button key={i}
                   onClick={() => handleSizeClick(v)}
-                  className={`px-4 py-1 border rounded-full ${v.size === selectedVariant.size ? 'bg-green-600 text-white' : 'hover:bg-gray-200'}`}>
+                  className={`px-4 py-1 border rounded-full cursor-pointer ${v.size === selectedVariant.size ? 'bg-green-600 text-white' : 'hover:bg-gray-200'}`}>
                   {v.size}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="mt-6 flex gap-4">
+          <div className="mt-6 flex gap-4 cursor-pointer">
             <button onClick={() => handleAddToCart(product)} className="bg-orange-500 text-white px-6 py-2 rounded">
               Add to Cart
             </button>
-            <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded">
+            <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer">
               Buy Now
             </button>
           </div>
@@ -268,7 +268,7 @@ const ProductDetail = () => {
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Submit Review</button>
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">Submit Review</button>
           </form>
         ) : (
           <p className="text-gray-500">Please login to rate & review.</p>
