@@ -76,20 +76,18 @@ const handleSignIn = async () => {
 
     localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
 
-    // 🔥 Load only their cart
+    // 🔥 Restore cart for this specific user
     const savedCart = localStorage.getItem(`cart_${user._id}`);
-    if (savedCart) {
-      dispatch(setCart(JSON.parse(savedCart)));
-    } else {
-      dispatch(setCart([])); // Clear Redux if no saved cart
+      if (savedCart) {
+        dispatch(setCart(JSON.parse(savedCart)));
+      } else {
+        dispatch(setCart([]));
+      }
+      navigate("/");
+    } catch (error) {
+      alert("Login failed");
     }
-
-    navigate("/");
-  } catch (error) {
-    alert("❌ " + (error.response?.data?.message || "Login failed"));
-  }
-};
-
+  };
 
   const handleForgotPassword = () => {
     const userEmail = prompt("Enter your registered email:");
