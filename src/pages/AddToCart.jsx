@@ -1,5 +1,4 @@
 import { useSelector, useDispatch } from "react-redux";
-import { useEffect } from "react";
 import {
   incrementQuantity,
   decrementQuantity,
@@ -17,25 +16,6 @@ const AddToCart = () => {
     (acc, item) => acc + item.currentPrice * item.quantity,
     0
   );
-
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("mirakleUser"));
-    if (!user) {
-      alert("Please login to view your cart");
-      navigate("/login_signup");
-    }
-  }, []);
-
-  useEffect(() => {
-    const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
-    if (token && cartItems.length > 0) {
-      axios.post(`${API_BASE}/api/cart/update`, {
-        items: cartItems
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).catch(console.error);
-    }
-  }, [cartItems]);
 
   return (
     <div className="bg-gray-100 py-8 min-h-screen">

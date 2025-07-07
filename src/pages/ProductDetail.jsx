@@ -110,7 +110,7 @@ const ProductDetail = () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axios.post(`${API_BASE}/api/cart/update`, {
+    await axios.post(`${API_BASE}/api/cart`, {
       items: [{ ...productToAdd }]
     }, {
       headers: { Authorization: `Bearer ${token}` },
@@ -148,7 +148,7 @@ const ProductDetail = () => {
         state: { mode: "buy-now" },
       });
 
-      await axios.post(`${API_BASE}/api/cart/update`, {
+      await axios.post(`${API_BASE}/api/cart`, {
         items: [{ ...productToAdd, quantity: 1 }],
       }, {
         headers: {

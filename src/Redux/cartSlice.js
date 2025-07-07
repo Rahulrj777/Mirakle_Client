@@ -60,13 +60,6 @@ const cartSlice = createSlice({
     },
   },
 });
-const syncCartToBackend = (items, token) => {
-  axios.post(`${API_BASE}/api/cart/update`, { items }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }).catch((err) => console.error("Cart sync failed", err));
-};
 
 export const {
   setUserId,
