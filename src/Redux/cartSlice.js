@@ -1,6 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// Try to load persisted cart
 const getInitialCart = () => {
   const saved = localStorage.getItem("persist:cart");
   if (saved) {
@@ -17,33 +16,14 @@ const getInitialCart = () => {
 
 const cartSlice = createSlice({
   name: "cart",
-  initialState: getInitialCart(),
+  initialState: [],
   reducers: {
-    setCart: (state, action) => {
-      // Replace cart completely
-      return action.payload;
-    },
-    addToCart: (state, action) => {
-      const existing = state.find((item) => item._id === action.payload._id);
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        state.push({ ...action.payload, quantity: 1 });
-      }
-    },
-    incrementQuantity: (state, action) => {
-      const item = state.find((item) => item._id === action.payload);
-      if (item) item.quantity += 1;
-    },
-    decrementQuantity: (state, action) => {
-      const item = state.find((item) => item._id === action.payload);
-      if (item && item.quantity > 1) item.quantity -= 1;
-    },
-    removeFromCart: (state, action) =>
-      state.filter((item) => item._id !== action.payload),
+    setCart: (state, action) => action.payload,
     clearCart: () => [],
+    addToCart: (state, action) => { /* your logic */ },
   },
 });
+
 
 export const {
   setCart,           // ✅ NEW - used after login to sync from backend

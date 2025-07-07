@@ -8,24 +8,10 @@ const App = () => {
   const cart = useSelector((state) => state.cart); 
 
 useEffect(() => {
-  const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-  const token = userData?.token;
-  if (!token) return;
-
-  const syncCart = async () => {
-    try {
-      const res = await axios.post(`${API_BASE}/api/cart`, { items: cart }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log("Cart sync success:", res.data);
-    } catch (err) {
-      console.error("Cart sync failed:", err);
-    }
-  };
-
-  syncCart();
+  const user = JSON.parse(localStorage.getItem("mirakleUser"));
+  if (user?.user?._id) {
+    localStorage.setItem(`cart_${user.user._id}`, JSON.stringify(cart));
+  }
 }, [cart]);
 
 

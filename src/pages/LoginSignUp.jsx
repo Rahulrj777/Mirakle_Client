@@ -4,6 +4,8 @@ import axios from "axios";
 import "../Style/login.css";
 import { API_BASE } from '../utils/api';
 import { IoIosEye, IoIosEyeOff } from "react-icons/io";
+import { useDispatch } from "react-redux";
+import { setCart } from "../redux/slices/cartSlice";
 
 const LoginSignUp = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -22,6 +24,39 @@ const LoginSignUp = () => {
     const token = userData?.token;
     if (token) navigate("/");
   }, [navigate]);
+
+  const handleLogin = async () => {
+  try {
+    const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password });
+    const userData = res.data.user;
+    
+    localStorage.setItem("mirakleUser", JSON.stringify({ user: userData }));
+
+    const savedCart = localStorage.getItem(`cart_${userData._id}`);
+    if (savedCart) {
+      dispatch(setCart(JSON.parse(savedCart))); 
+    }
+
+    navigate("/");
+  } catch (err) {
+    alert("Login failed");
+  }
+};
+
+const dispatch = useDispatch();
+
+const handleLogout = () => {
+  const user = JSON.parse(localStorage.getItem("mirakleUser"));
+
+  if (user?.user?._id) {
+    localStorage.removeItem(`cart_${user.user._id}`);
+  }
+
+  localStorage.removeItem("mirakleUser");
+  setUser(null);
+  dispatch(clearCart()); // clears Redux cart
+  navigate("/login_signup");
+};
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {

@@ -6,10 +6,13 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import logo from "../assets/logo.png";
 import { API_BASE } from "../utils/api";
+import { useDispatch } from "react-redux";
+import { clearCart } from "../Redux/cartSlice";
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -63,11 +66,14 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("mirakleUser");
-    localStorage.removeItem("mirakleCart");
-    setUser(null);
-    navigate("/login_signup");
-    window.location.reload(); // force header refresh
+    const user = JSON.parse(localStorage.getItem("mirakleUser"));
+    if (user?.user?._id) {
+      localStorage.removeItem(`cart_${user.user._id}`);
+    }
+      localStorage.removeItem("mirakleUser");
+    setUser(null); 
+    dispatch(clearCart());; 
+    navigate("/login_signup"); 
   };
 
   const handleSelectSuggestion = (id) => {
@@ -161,14 +167,24 @@ const Header = () => {
           )}
 
           {/* Cart icon */}
-          <Link to="/AddToCart" className="relative">
+            <span
+              className="relative cursor-pointer"
+              onClick={() => {
+                if (!user) {
+                  alert("Please login to view your cart");
+                  navigate("/login_signup");
+                } else {
+                  navigate("/AddToCart");
+                }
+              }}
+            >
             <HiOutlineShoppingBag className="text-black" />
             {cartItems.length > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                 {cartItems.length}
               </span>
             )}
-          </Link>
+          </span>
         </div>
       </div>
 
