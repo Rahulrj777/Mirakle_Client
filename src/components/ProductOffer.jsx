@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
@@ -23,16 +21,6 @@ const ProductOffer = () => {
       })
       .catch((err) => console.error("Banner fetch failed:", err))
   }, [])
-
-  const handleProductClick = (banner) => {
-    if (banner.productId) {
-      // Navigate to specific product page
-      navigate(`/product/${banner.productId}`)
-    } else {
-      // Navigate to general shop page
-      navigate("/shop/allproduct")
-    }
-  }
 
   return (
     <div className="w-[90%] mx-auto py-12 flex flex-col lg:flex-row gap-8">

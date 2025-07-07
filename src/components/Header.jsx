@@ -68,6 +68,12 @@ const Header = () => {
     }
   };
 
+  // logout logic
+localStorage.removeItem("mirakleUser");
+localStorage.removeItem(`cart_${userId}`);
+dispatch(setCart([])); // clear cart in redux
+navigate("/login");
+
   const handleLogout = () => {
     const user = JSON.parse(localStorage.getItem("mirakleUser"));
     if (user?.user?._id) {
