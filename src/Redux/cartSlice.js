@@ -1,44 +1,69 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const initialState = {
+  items: [],
+  userId: null
+};
+
 const cartSlice = createSlice({
   name: "cart",
-  initialState: {
-    items: [],
-    userId: null
-  },
+  initialState,
   reducers: {
-    setCart: (state, action) => {
-      return action.payload;
+    setUserId: (state, action) => {
+      state.userId = action.payload;
     },
-    clearCart: () => {
-      return []; 
+
+    setCartItems: (state, action) => {
+      state.items = action.payload;
     },
+
+    clearCart: (state) => {
+      state.items = [];
+      state.userId = null;
+    },
+
     addToCart: (state, action) => {
-      const existingItem = state.find(item => item._id === action.payload._id);
+      const existingItem = state.items.find(item => item._id === action.payload._id);
       if (existingItem) {
         existingItem.quantity += action.payload.quantity || 1;
       } else {
-        state.push({ ...action.payload, quantity: action.payload.quantity || 1 });
+        state.items.push({ ...action.payload, quantity: action.payload.quantity || 1 });
+      }
+      if (state.userId) {
+        localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
       }
     },
+
     incrementQuantity: (state, action) => {
-      const item = state.find(item => item._id === action.payload);
+      const item = state.items.find(item => item._id === action.payload);
       if (item) item.quantity += 1;
+      if (state.userId) {
+        localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
+      }
     },
+
     decrementQuantity: (state, action) => {
-      const item = state.find(item => item._id === action.payload);
+      const item = state.items.find(item => item._id === action.payload);
       if (item && item.quantity > 1) {
         item.quantity -= 1;
+        if (state.userId) {
+          localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
+        }
       }
     },
+
     removeFromCart: (state, action) => {
-      return state.filter(item => item._id !== action.payload);
-    }
+      state.items = state.items.filter(item => item._id !== action.payload);
+      if (state.userId) {
+        localStorage.setItem(`cart_${state.userId}`, JSON.stringify(state.items));
+      }
+    },
   },
 });
 
 export const {
-  setCart,
+  setUserId,
+  setCartItems,
   clearCart,
   addToCart,
   incrementQuantity,
