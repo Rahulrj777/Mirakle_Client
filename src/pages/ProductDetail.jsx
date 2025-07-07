@@ -210,8 +210,8 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-4 cursor-pointer">
-            <button onClick={() => handleAddToCart(product)} className="bg-orange-500 text-white px-6 py-2 rounded">
+          <div className="mt-6 flex gap-4">
+            <button onClick={() => handleAddToCart(product)} className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer">
               Add to Cart
             </button>
             <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer">
@@ -250,7 +250,7 @@ const ProductDetail = () => {
               <select
                 value={rating}
                 onChange={(e) => setRating(Number(e.target.value))}
-                className="border p-2 rounded"
+                className="border p-2 rounded cursor-pointer"
               >
                 <option value="">Select star</option>
                 {[1,2,3,4,5].map(star => (
