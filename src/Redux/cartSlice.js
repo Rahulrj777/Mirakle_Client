@@ -6,15 +6,13 @@ const initialState = {
 };
 const cartSlice = createSlice({
   name: "cart",
-  initialState: {
-    user: null,
-  },
+  initialState ,
   reducers: {
     setUserId: (state, action) => {
       state.userId = action.payload;
     },
     clearUser: (state) => {
-      state.user = null;
+      state.userId = null;
     },
     setCartItems: (state, action) => {
       state.items = Array.isArray(action.payload) ? action.payload : [];
