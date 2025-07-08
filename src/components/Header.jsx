@@ -13,7 +13,7 @@ const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items) || [];
-
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
@@ -101,6 +101,7 @@ const Header = () => {
     dispatch(clearCart());
     setUser(null);
     navigate("/login_signup");
+    dispatch(clearUser());
   };
 
   const handleSelectSuggestion = (id) => {

@@ -11,7 +11,7 @@ const cartSlice = createSlice({
   },
   reducers: {
     setUserId: (state, action) => {
-      state.user = action.payload;
+      state.userId = action.payload;
     },
     clearUser: (state) => {
       state.user = null;
