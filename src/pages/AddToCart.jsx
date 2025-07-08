@@ -102,7 +102,7 @@ const AddToCart = () => {
         </div>
 
         {/* Right: Order Summary */}
-        <div className="bg-white p-6 rounded shadow h-fit sticky top-20">
+        <div className="bg-white p-6 rounded shadow h-fit sticky top-30">
           <h3 className="text-xl font-semibold mb-4">Price Details</h3>
           <div className="flex justify-between mb-2">
             <span>Price ({cartItems.length} item{cartItems.length > 1 ? "s" : ""})</span>
