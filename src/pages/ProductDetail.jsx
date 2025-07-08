@@ -235,49 +235,94 @@ const ProductDetail = () => {
         )}
         </div>
 
-      {/* Review Section */}
+      {/* ⭐ Ratings & Reviews */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
 
+        {/* ✅ Review submission */}
         {token ? (
-          <form onSubmit={handleSubmitReview} className="space-y-3 mb-6">
+          <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <div>
-              <label className="block text-sm font-medium">Your Rating:</label>
-              <select
-                value={rating}
-                onChange={(e) => setRating(Number(e.target.value))}
-                className="border p-2 rounded cursor-pointer"
-              >
-                <option value="">Select star</option>
-                {[1,2,3,4,5].map(star => (
-                  <option key={star} value={star}>{star} Star</option>
+              <label className="block text-sm font-medium mb-1">Your Rating:</label>
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg
+                    key={star}
+                    onClick={() => setRating(star)}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill={rating >= star ? "#facc15" : "none"}
+                    viewBox="0 0 24 24"
+                    stroke="#facc15"
+                    className="w-6 h-6 cursor-pointer transition"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                    />
+                  </svg>
                 ))}
-              </select>
+              </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium">Your Review:</label>
+              <label className="block text-sm font-medium mb-1">Your Review:</label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={4}
-                className="w-full border p-2 rounded"
+                className="w-full border border-gray-300 p-2 rounded"
+                placeholder="Write your honest feedback..."
               />
             </div>
+
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">Submit Review</button>
+
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            >
+              Submit Review
+            </button>
           </form>
         ) : (
           <p className="text-gray-500">Please login to rate & review.</p>
         )}
 
-        {/* Existing reviews */}
-        {product.reviews?.map((r, i) => (
-          <div key={i} className="border p-4 rounded mb-3">
-            <div className="text-yellow-500">{'⭐'.repeat(r.rating)}</div>
-            <p className="text-gray-800">{r.comment}</p>
-            <p className="text-xs text-gray-500 mt-1">{new Date(r.createdAt).toLocaleString()}</p>
-          </div>
-        ))}
+        {/* ✅ Display reviews */}
+        <div className="space-y-4">
+          {product.reviews?.length === 0 && (
+            <p className="text-gray-400 italic">No reviews yet. Be the first to review this product.</p>
+          )}
+          {product.reviews?.map((r, i) => (
+            <div key={i} className="border p-4 rounded bg-white shadow-sm">
+              <div className="flex items-center mb-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg
+                    key={star}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill={r.rating >= star ? "#facc15" : "none"}
+                    viewBox="0 0 24 24"
+                    stroke="#facc15"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                    />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-sm text-gray-700">{r.comment}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {new Date(r.createdAt).toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
       {relatedProducts.length > 0 && (
         <div className="mt-10">
