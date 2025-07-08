@@ -69,7 +69,7 @@ const Header = () => {
 
 const handleLogout = () => {
   localStorage.removeItem("mirakleUser");
-  dispatch(clearCart()); // ✅ clear Redux + localStorage cart
+  dispatch(clearCart()); 
   navigate("/login_signup");
 }
 

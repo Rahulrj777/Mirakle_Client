@@ -19,6 +19,9 @@ const cartSlice = createSlice({
     },
 
     clearCart: (state) => {
+      if (state.userId) {
+        localStorage.removeItem(`cart_${state.userId}`);
+      }
       state.items = [];
       state.userId = null;
     },

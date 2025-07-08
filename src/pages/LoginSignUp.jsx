@@ -50,21 +50,19 @@ const LoginSignUp = () => {
 
   const handleSignIn = async () => {
     try {
-      const res = await axios.post(`${API_BASE}/api/login`, {
-        email,
-        password,
-      });
-
+      const res = await axios.post(`${API_BASE}/api/login`, { email, password });
       const user = res.data.user;
       const token = res.data.token;
-
       localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
-
       dispatch(setUserId(user._id));
 
-      const cartRes = await axiosWithToken().get('/cart');
-      dispatch(setCartItems(cartRes.data || []));
-
+      const savedCart = localStorage.getItem(`cart_${user._id}`);
+      if (savedCart) {
+        dispatch(setCartItems(JSON.parse(savedCart)));
+      } else {
+        const cartRes = await axiosWithToken().get('/cart');
+        dispatch(setCartItems(cartRes.data || []));
+      }
       navigate("/");
     } catch (error) {
       alert("Login failed");
