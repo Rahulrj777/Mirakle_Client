@@ -5,7 +5,7 @@ import "../Style/login.css";
 import { API_BASE } from '../utils/api';
 import { IoIosEye, IoIosEyeOff } from "react-icons/io";
 import { useDispatch } from "react-redux";
-import { setCartItems, setUserId } from "../redux/slices/cartSlice";
+import { setCartItems, setUserId } from "../Redux/cartSlice";
 import { axiosWithToken } from "../utils/axiosWithToken";
 
 const LoginSignUp = () => {
