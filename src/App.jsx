@@ -4,13 +4,13 @@ import Routing from './Routing/Routing';
 
 const App = () => {
   const cart = useSelector((state) => state.cart.items) || []
+  const userId = useSelector((state) => state.cart.userId);
 
   useEffect(() => {
-    const localUser = JSON.parse(localStorage.getItem("mirakleUser"));
-    if (localUser?.user?._id) {
-      localStorage.setItem(`cart_${localUser.user._id}`, JSON.stringify(cart));
+    if (userId) {
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(cart));
     }
-  }, [cart]);
+  }, [cart, userId]);
 
   return <Routing />;
 };

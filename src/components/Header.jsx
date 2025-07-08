@@ -32,13 +32,13 @@ const Header = () => {
   const isActive = (path) => location.pathname === path;
 
   useEffect(() => {
-  const stored = localStorage.getItem("mirakleUser");
-  try {
-    setUser(stored ? JSON.parse(stored)?.user || null : null);
-  } catch {
-    setUser(null);
-  }
-}, [location.pathname]);
+    const stored = localStorage.getItem("mirakleUser");
+    try {
+      setUser(stored ? JSON.parse(stored)?.user || null : null);
+    } catch {
+      setUser(null);
+    }
+  }, [location.pathname]);
 
 
   useEffect(() => {
@@ -75,9 +75,15 @@ const handleLogout = () => {
 }
 
   const handleSelectSuggestion = (id) => {
-    navigate(`/product/${id}`);
-    setSearchTerm("");
-    setSuggestions([]);
+    const user = JSON.parse(localStorage.getItem("mirakleUser"));
+      if (user?.user?._id) {
+        localStorage.removeItem(`cart_${user.user._id}`);
+      }
+      localStorage.removeItem("mirakleUser");
+      dispatch(clearCart());
+      navigate(`/product/${id}`);
+      setSearchTerm("");
+      setSuggestions([]);
   };
 
   useEffect(() => {
