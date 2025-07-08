@@ -112,7 +112,6 @@ const ProductDetail = () => {
       items: [{ ...productToAdd }]
     });
 
-    alert("Added to cart!");
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
     alert("Something went wrong while syncing cart.");

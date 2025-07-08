@@ -61,7 +61,8 @@ const LoginSignUp = () => {
         dispatch(setCartItems(JSON.parse(savedCart)));
       } else {
         const cartRes = await axiosWithToken().get('/cart');
-        dispatch(setCartItems(Array.isArray(data) ? data : []));
+        const serverCart = cartRes.data;
+        dispatch(setCartItems(Array.isArray(serverCart) ? serverCart : []));
       }
       navigate("/");
     } catch (error) {
