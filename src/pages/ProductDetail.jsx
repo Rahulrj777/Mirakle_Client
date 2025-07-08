@@ -1,319 +1,149 @@
-import { useParams,useNavigate } from 'react-router-dom';
+// ==== FRONTEND - ProductDetail.jsx (Improved Review Section) ====
+
+import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { API_BASE } from "../utils/api"; 
-import { useDispatch,useSelector } from 'react-redux';
+import { API_BASE } from "../utils/api";
+import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
 
-const ProductDetail = () => {
-  const { id } = useParams();
-  const [product, setProduct] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [selectedImage, setSelectedImage] = useState('');
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [error, setError] = useState('');
-  const token = localStorage.getItem("token");
-  const [relatedProducts, setRelatedProducts] = useState([]);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const cart = useSelector((state) => state.cart.items) || [];
-  useEffect(() => {
-    console.log("Cart Items:", cart);
-  }, [cart]);
+// Inside ProductDetail component...
 
-  useEffect(() => {
+const [rating, setRating] = useState(0);
+const [comment, setComment] = useState('');
+const [error, setError] = useState('');
+
+const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+const token = userData?.token;
+const user = userData?.user;
+
+const handleSubmitReview = async (e) => {
+  e.preventDefault();
+  if (!rating || !comment) return setError("Please provide both rating and comment.");
+  try {
+    await axiosWithToken().post(`/products/${id}/review`, { rating, comment });
+    setRating(0);
+    setComment('');
+    setError('');
     fetchProduct();
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      fetchProduct();
-      fetchRelated();
-    }
-  }, [id]);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [id]);
-
-
-  const fetchProduct = async () => {
-    const res = await axios.get(`${API_BASE}/api/products/all-products`);
-    const found = res.data.find(p => p._id === id);
-    if (found) {
-      setProduct(found);
-      setSelectedImage(found.images?.others?.[0]);
-      if (found.variants.length > 0) setSelectedVariant(found.variants[0]);
-    }
-  };
-
-  const handleSizeClick = (variant) => setSelectedVariant(variant);
-
-  const handleSubmitReview = async (e) => {
-    e.preventDefault();
-    if (!rating || !comment) return setError("Please provide both star and review.");
-
-    try {
-      await axiosWithToken().post(`/products/${id}/review`, { rating, comment });
-      setRating(0); setComment('');
-      fetchProduct();
-    } catch (err) {
-      setError(err.response?.data?.message || "Review failed");
-    }
-  };
-
-  const fetchRelated = async () => {
-  try {
-    const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
-    setRelatedProducts(res.data);
-  } catch (err) { 
-    console.error("Failed to fetch related products", err);
-  }
-};
-
-  const avgRating = product?.reviews?.length
-    ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
-    : 0;
-
-  if (!product || !selectedVariant) return <div className="text-center mt-20">Loading...</div>;
-
-  const price = selectedVariant.price;
-  const discount = selectedVariant.discountPercent || 0;
-  const finalPrice = (price - (price * discount / 100)).toFixed(2);
-
- const handleAddToCart = async (product) => {
-  const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-  const token = userData?.token;
-
-  if (!token) {
-    alert("Please login to add items to cart");
-    navigate("/login_signup");
-    return;
-  }
-
-  const productToAdd = {
-    _id: product._id,
-    title: product.title,
-    images: product.images,
-    weight: {
-      value: selectedVariant?.weight?.value || selectedVariant?.size,
-      unit: selectedVariant?.weight?.unit || "unit",
-    },
-    currentPrice: parseFloat(finalPrice),
-    quantity: 1,
-  };
-
-  try {
-    dispatch(addToCart(productToAdd));
-
-    await axiosWithToken().post('/cart', {
-      items: [{ ...productToAdd }]
-    });
-
   } catch (err) {
-    console.error("❌ Add to cart failed:", err);
-    alert("Something went wrong while syncing cart.");
+    setError(err?.response?.data?.message || "Review failed");
   }
 };
 
-  const handleBuyNow = async () => {
-    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-    const token = userData?.token;
-
-    if (!token) {
-      alert("Please login to proceed with purchase");
-      navigate("/login_signup");
-      return;
-    }
-
-    const productToAdd = {
-      _id: product._id,
-      title: product.title,
-      images: product.images,
-      weight: {
-        value: selectedVariant?.weight?.value || selectedVariant?.size,
-        unit: selectedVariant?.weight?.unit || "unit",
-      },
-      currentPrice: parseFloat(finalPrice),
-    };
-
-    try {
-      localStorage.setItem("buyNowProduct", JSON.stringify(productToAdd));
-      navigate("/checkout", {
-        state: { mode: "buy-now" },
-      });
-
-     await axiosWithToken().post('/cart', {
-      items: [{ ...productToAdd, quantity: 1 }],
-    });
-     {
-        headers: {Authorization: `Bearer ${token}`}
-      };
-    } catch (err) {
-      console.error("❌ Buy Now cart sync failed:", err);
-      alert("Something went wrong while processing Buy Now");
-    }
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Image Preview */}
-        <div>
-          <img src={`${API_BASE}${selectedImage}`} className="w-full h-[400px] object-contain rounded" />
-          <div className="flex gap-2 mt-2">
-            {product.images?.others?.map((img, i) => (
-              <img key={i} src={`${API_BASE}${img}`}
-                onClick={() => setSelectedImage(img)}
-                className={`w-20 h-20 object-cover border cursor-pointer ${selectedImage === img ? 'border-blue-500' : ''}`} />
-            ))}
-          </div>
-        </div>
-
-        {/* Product Info */}
-        <div>
-          <h1 className="text-2xl font-bold">{product.title}</h1>
-
-          <div className="text-yellow-500 my-2">
-            {'⭐'.repeat(Math.round(avgRating)) || 'No rating yet'} 
-            <span className="text-sm text-gray-600 ml-2">
-              ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? 's' : ''})
-            </span>
-          </div>
-
-          <div className="text-3xl font-bold text-green-600 mb-2">
-            ₹{finalPrice}
-            {discount > 0 && (
-              <>
-                <span className="text-gray-400 line-through text-sm ml-3">₹{price}</span>
-                <span className="text-sm text-red-500 ml-2">{discount}% OFF</span>
-              </>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <p className="font-medium mb-1">Select Size:</p>
-            <div className="flex gap-2 flex-wrap">
-              {product.variants.map((v, i) => (
-                <button key={i}
-                  onClick={() => handleSizeClick(v)}
-                  className={`px-4 py-1 border rounded-full cursor-pointer ${v.size === selectedVariant.size ? 'bg-green-600 text-white' : 'hover:bg-gray-200'}`}>
-                  {v.size}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 flex gap-4">
-            <button onClick={() => handleAddToCart(product)} className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer">
-              Add to Cart
-            </button>
-            <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer">
-              Buy Now
-            </button>
-          </div>
-
-          <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
-        </div>
-      </div>
-
-      {/* Product Details Section */}
-        <div className="mt-10">
-        <h2 className="text-xl font-bold mb-2">Product Details</h2>
-        {product.details && typeof product.details === 'object' ? (
-            <ul className="text-gray-700 text-sm list-disc pl-5">
-            {Object.entries(product.details).map(([key, value]) => (
-                <li key={key}>
-                <strong className="capitalize">{key}</strong>: {value}
-                </li>
-            ))}
-            </ul>
-        ) : (
-            <p className="text-gray-500 text-sm">No additional info</p>
-        )}
-        </div>
-
-      {/* Review Section */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
-
-        {token ? (
-          <form onSubmit={handleSubmitReview} className="space-y-3 mb-6">
-            <div>
-              <label className="block text-sm font-medium">Your Rating:</label>
-              <select
-                value={rating}
-                onChange={(e) => setRating(Number(e.target.value))}
-                className="border p-2 rounded cursor-pointer"
-              >
-                <option value="">Select star</option>
-                {[1,2,3,4,5].map(star => (
-                  <option key={star} value={star}>{star} Star</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Your Review:</label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={4}
-                className="w-full border p-2 rounded"
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">Submit Review</button>
-          </form>
-        ) : (
-          <p className="text-gray-500">Please login to rate & review.</p>
-        )}
-
-        {/* Existing reviews */}
-        {product.reviews?.map((r, i) => (
-          <div key={i} className="border p-4 rounded mb-3">
-            <div className="text-yellow-500">{'⭐'.repeat(r.rating)}</div>
-            <p className="text-gray-800">{r.comment}</p>
-            <p className="text-xs text-gray-500 mt-1">{new Date(r.createdAt).toLocaleString()}</p>
-          </div>
+{/* ===== Review UI ===== */}
+{token ? (
+  <form onSubmit={handleSubmitReview} className="space-y-3 mb-6">
+    <div>
+      <label className="block text-sm font-medium">Your Rating:</label>
+      <div className="flex gap-1 mt-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => setRating(star)}
+            className={`text-2xl ${star <= rating ? 'text-yellow-500' : 'text-gray-300'}`}
+          >
+            ★
+          </button>
         ))}
       </div>
-      {relatedProducts.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-xl font-bold mb-4">Related Products</h2>
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-            {relatedProducts.map((p) => {
-              const mainImage = p.images?.others?.[0] || "/placeholder.jpg";
-              const firstVariant = p.variants?.[0];
-              const price = firstVariant?.price || 0;
-              const discount = firstVariant?.discountPercent || 0;
-              const finalPrice = (price - (price * discount / 100)).toFixed(2);
-
-              return (
-                <div
-                  key={p._id}
-                  onClick={() => navigate(`/product/${p._id}`)}
-                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
-                >
-                  <img
-                    src={`${API_BASE}${mainImage}`}
-                    alt={p.title}
-                    className="w-full h-48 object-cover rounded mb-2 hover:scale-105 transition-transform duration-200"
-                  />
-                  <h4 className="text-sm font-semibold">{p.title}</h4>
-                  <p className="text-green-600 font-bold">₹{finalPrice}</p>
-                  {discount > 0 && (
-                    <p className="text-xs text-gray-400 line-through">₹{price}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
-  );
-};
+    <div>
+      <label className="block text-sm font-medium">Your Review:</label>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        rows={4}
+        className="w-full border p-2 rounded"
+      />
+    </div>
+    {error && <p className="text-red-500 text-sm">{error}</p>}
+    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">
+      Submit Review
+    </button>
+  </form>
+) : (
+  <p className="text-gray-500">Please login to rate & review.</p>
+)}
 
-export default ProductDetail;
+{/* ===== Existing Reviews ===== */}
+{product.reviews?.map((r, i) => (
+  <div key={i} className="border p-4 rounded mb-3">
+    <div className="flex items-center justify-between mb-1">
+      <div className="text-yellow-500 text-lg">{'\u2605'.repeat(r.rating)}</div>
+      <div className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</div>
+    </div>
+    <p className="text-gray-800">{r.comment}</p>
+    <p className="text-xs text-gray-500 italic mt-1">by {r?.user?.name || r?.user?.email || "Anonymous"}</p>
+  </div>
+))}
+
+// ==== BACKEND - Express Route for Reviews ====
+
+// routes/products.js
+import express from 'express';
+import Product from '../models/Product.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+
+const router = express.Router();
+
+// POST /products/:id/review
+router.post('/:id/review', authMiddleware, async (req, res) => {
+  const { rating, comment } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    const alreadyReviewed = product.reviews.find(
+      (r) => r.user.toString() === userId
+    );
+    if (alreadyReviewed) {
+      return res.status(400).json({ message: 'You already reviewed this product' });
+    }
+
+    const newReview = {
+      user: userId,
+      rating: Number(rating),
+      comment,
+      createdAt: new Date(),
+    };
+
+    product.reviews.push(newReview);
+    await product.save();
+    res.json({ message: 'Review added successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Review submission failed' });
+  }
+});
+
+// GET /products/all-products (updated to populate reviews)
+router.get('/all-products', async (req, res) => {
+  try {
+    const products = await Product.find().populate('reviews.user', 'name email');
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Fetching failed' });
+  }
+});
+
+export default router;
+
+// ==== Mongoose Product Model Update ====
+
+// models/Product.js
+const productSchema = new mongoose.Schema({
+  // other fields...
+  reviews: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      rating: { type: Number, required: true },
+      comment: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
+});
