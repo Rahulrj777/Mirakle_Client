@@ -38,7 +38,6 @@ const Header = () => {
     }
   }, [location.pathname]);
 
-  // ✅ Restore cart from localStorage for logged-in user
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser");
     if (stored) {
@@ -58,6 +57,20 @@ const Header = () => {
       }
     }
   }, [dispatch]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
+        setUser(storedUser);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const handleSearchChange = async (e) => {
     const value = e.target.value;
