@@ -19,10 +19,6 @@ const ProductDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const cart = useSelector((state) => state.cart.items) || [];
-  const [reviews, setReviews] = useState([]);
-  const [refresh, setRefresh] = useState(false);
-  const user = useSelector((state) => state.auth.user);
-
   useEffect(() => {
     console.log("Cart Items:", cart);
   }, [cart]);
@@ -55,37 +51,19 @@ const ProductDetail = () => {
 
   const handleSizeClick = (variant) => setSelectedVariant(variant);
 
-    useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/products/${productId}`);
-        setReviews(res.data.reviews || []);
-      } catch (err) {
-        console.error('Failed to fetch product reviews:', err);
-      }
-    };
-    fetchReviews();
-  }, [productId, refresh]);
-
-  const handleSubmit = async (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
+    if (!rating || !comment) return setError("Please provide both star and review.");
+
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API_BASE}/products/${productId}/review`,
-        { rating, comment },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setComment('');
-      setRating(0);
-      setRefresh((prev) => !prev);
+      await axiosWithToken().post(`/products/${id}/review`, { rating, comment });
+      setRating(0); setComment('');
+      fetchProduct();
     } catch (err) {
-      console.error('Error submitting review:', err);
+      setError(err.response?.data?.message || "Review failed");
     }
   };
-  
+
   const fetchRelated = async () => {
   try {
     const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
