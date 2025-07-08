@@ -15,7 +15,7 @@ const cartSlice = createSlice({
     },
 
     setCartItems: (state, action) => {
-      state.items = action.payload;
+      state.items = Array.isArray(action.payload) ? action.payload : [];
     },
 
     clearCart: (state) => {
