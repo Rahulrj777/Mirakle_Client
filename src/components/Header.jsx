@@ -8,7 +8,7 @@ import logo from "../assets/logo.png";
 import { API_BASE } from "../utils/api";
 import { clearCart } from "../Redux/cartSlice";
 import { persistStore } from 'redux-persist';
-import { store } from '../redux/store';
+import { store } from '../Redux/store';
 
 const Header = () => {
   const location = useLocation();
