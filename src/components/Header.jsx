@@ -1,27 +1,24 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { HiOutlineShoppingBag } from "react-icons/hi2";
 import { FaRegUser } from "react-icons/fa";
-import { useSelector,useDispatch  } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import logo from "../assets/logo.png";
 import { API_BASE } from "../utils/api";
-import { clearCart } from "../Redux/cartSlice";
-import { persistStore } from 'redux-persist';
-import { store } from '../Redux/store';
+import { clearCart, setCartItems, setUserId } from "../Redux/cartSlice";
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items) || [];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const persistor = persistStore(store);
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("mirakleUser");
     try {
-      return stored ? JSON.parse(stored)?.user || null : null;
+      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
     } catch {
       return null;
     }
@@ -31,24 +28,40 @@ const Header = () => {
 
   const isActive = (path) => location.pathname === path;
 
+  // 🔁 Refresh user on route change
   useEffect(() => {
-    const stored = localStorage.getItem("mirakleUser");
     try {
-      setUser(stored ? JSON.parse(stored)?.user || null : null);
+      const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
+      setUser(storedUser);
     } catch {
       setUser(null);
     }
   }, [location.pathname]);
 
-
+  // ✅ Restore cart from localStorage for logged-in user
   useEffect(() => {
-    if (!searchTerm.trim()) setSuggestions([]);
-  }, [searchTerm]);
+    const stored = localStorage.getItem("mirakleUser");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const uid = parsed?.user?._id;
+        if (uid) {
+          dispatch(setUserId(uid));
+          const userCart = localStorage.getItem(`cart_${uid}`);
+          if (userCart) {
+            const parsedCart = JSON.parse(userCart);
+            if (Array.isArray(parsedCart)) dispatch(setCartItems(parsedCart));
+          }
+        }
+      } catch {
+        console.warn("Error restoring cart from localStorage");
+      }
+    }
+  }, [dispatch]);
 
   const handleSearchChange = async (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-
     if (!value.trim()) return setSuggestions([]);
 
     try {
@@ -67,23 +80,20 @@ const Header = () => {
     }
   };
 
-const handleLogout = () => {
-  localStorage.removeItem("mirakleUser");
-  dispatch(clearCart()); 
-  persistor.purge();
-  navigate("/login_signup");
-}
+  const handleLogout = () => {
+    if (user?._id) {
+      localStorage.removeItem(`cart_${user._id}`);
+    }
+    localStorage.removeItem("mirakleUser");
+    dispatch(clearCart());
+    setUser(null);
+    navigate("/login_signup");
+  };
 
   const handleSelectSuggestion = (id) => {
-    const user = JSON.parse(localStorage.getItem("mirakleUser"));
-      if (user?.user?._id) {
-        localStorage.removeItem(`cart_${user.user._id}`);
-      }
-      localStorage.removeItem("mirakleUser");
-      dispatch(clearCart());
-      navigate(`/product/${id}`);
-      setSearchTerm("");
-      setSuggestions([]);
+    navigate(`/product/${id}`);
+    setSearchTerm("");
+    setSuggestions([]);
   };
 
   useEffect(() => {
@@ -115,7 +125,7 @@ const handleLogout = () => {
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
           />
-          {searchTerm.trim() !== "" && suggestions.length > 0 && (
+          {searchTerm.trim() && suggestions.length > 0 && (
             <ul className="absolute z-50 w-full bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto">
               {suggestions.map((item) => (
                 <li
@@ -149,7 +159,7 @@ const handleLogout = () => {
                 className="bg-green-600 text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
-              {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
               </div>
               {showDropdown && (
                 <div className="absolute top-12 right-0 bg-white shadow-md rounded-md z-50 w-40 py-2">
@@ -171,17 +181,17 @@ const handleLogout = () => {
           )}
 
           {/* Cart icon */}
-            <span
-              className="relative cursor-pointer"
-              onClick={() => {
-                if (!user) {
-                  alert("Please login to view your cart");
-                  navigate("/login_signup");
-                } else {
-                  navigate("/AddToCart");
-                }
-              }}
-            >
+          <span
+            className="relative cursor-pointer"
+            onClick={() => {
+              if (!user) {
+                alert("Please login to view your cart");
+                navigate("/login_signup");
+              } else {
+                navigate("/AddToCart");
+              }
+            }}
+          >
             <HiOutlineShoppingBag className="text-black" />
             {cartItems.length > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
@@ -205,7 +215,9 @@ const handleLogout = () => {
               <Link to={item.path} className={isActive(item.path) ? "text-white font-bold" : "text-white"}>
                 {item.list}
               </Link>
-              {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
+              {isActive(item.path) && (
+                <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />
+              )}
             </li>
           ))}
         </ul>

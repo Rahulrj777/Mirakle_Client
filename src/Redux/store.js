@@ -1,30 +1,31 @@
-// Redux/store.js
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
+// store.js
+import { configureStore } from '@reduxjs/toolkit';
 import cartReducer from './cartSlice';
 import storage from 'redux-persist/lib/storage';
 import { persistReducer, persistStore } from 'redux-persist';
 import { thunk } from 'redux-thunk';
 
-const persistConfig = {
-  key: 'root',
+const cartPersistConfig = {
+  key: 'cart',
   storage,
-  whitelist: ['cart'],
+  whitelist: ['items', 'userId'],
 };
 
-const rootReducer = combineReducers({
-  cart: cartReducer,
-});
-
-const persistedReducer = persistReducer(persistConfig, rootReducer);
+const persistedCartReducer = persistReducer(cartPersistConfig, cartReducer);
 
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: {
+    cart: persistedCartReducer,
+  },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({ serializableCheck: false }).concat(thunk),
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }).concat(thunk),
 });
 
 store.subscribe(() => {
-  console.log('Cart state:', store.getState().cart);
+  const state = store.getState();
+  console.log("Cart Items:", state.cart.items);
 });
 
 export const persistor = persistStore(store);
