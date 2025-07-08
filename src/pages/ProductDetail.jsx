@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_BASE } from "../utils/api"; 
 import { useDispatch,useSelector } from 'react-redux';
 import { addToCart } from '../Redux/cartSlice';
+import { axiosWithToken } from '../utils/axiosWithToken';
 
 const ProductDetail = () => {
   const { id } = useParams();
