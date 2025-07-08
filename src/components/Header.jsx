@@ -68,16 +68,10 @@ const Header = () => {
   };
 
 const handleLogout = () => {
-  const user = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
-  if (user?.user?._id) {
-    localStorage.removeItem(`cart_${user.user._id}`);
-  }
   localStorage.removeItem("mirakleUser");
-  dispatch(clearCart());
-  persistor.purge();
-  setUser(null);
+  dispatch(clearCart()); // ✅ clear Redux + localStorage cart
   navigate("/login_signup");
-};
+}
 
   const handleSelectSuggestion = (id) => {
     navigate(`/product/${id}`);
