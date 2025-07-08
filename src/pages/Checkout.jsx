@@ -9,15 +9,12 @@ const Checkout = () => {
   const mode = location.state?.mode;
 
   useEffect(() => {
-    // Try getting product from location state
     const prodFromState = location.state?.product;
-
     if (mode === "buy-now") {
       if (prodFromState) {
         setProduct(prodFromState);
         localStorage.setItem("buyNowProduct", JSON.stringify(prodFromState));
       } else {
-        // Try getting product from localStorage if user reloaded or navigated back
         const saved = localStorage.getItem("buyNowProduct");
         if (saved) {
           setProduct(JSON.parse(saved));
