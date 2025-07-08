@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import Routing from './Routing/Routing';
 
 const App = () => {
-  const cart = useSelector((state) => state.cart.items);
+  const cart = useSelector((state) => state.cart.items) || []
 
   useEffect(() => {
     const localUser = JSON.parse(localStorage.getItem("mirakleUser"));

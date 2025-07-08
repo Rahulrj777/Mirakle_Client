@@ -1,11 +1,10 @@
-// src/pages/CartPage.jsx
 import { useSelector, useDispatch } from 'react-redux';
 import { incrementQuantity, decrementQuantity, removeFromCart } from '../Redux/cartSlice';
 import { API_BASE } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const CartPage = () => {
-  const cartItems = useSelector((state) => state.cart.items);
+  const cartItems = useSelector((state) => state.cart.items) || [];
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
