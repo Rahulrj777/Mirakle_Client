@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { axiosWithToken } from "../utils/axiosWithToken";
 
 const initialState = {
   items: [],
@@ -60,12 +61,10 @@ const cartSlice = createSlice({
     },
   },
 });
-const syncCartToBackend = (items, token) => {
-  axios.post(`${API_BASE}/api/cart/update`, { items }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }).catch((err) => console.error("Cart sync failed", err));
+const syncCartToBackend = (items) => {
+  axiosWithToken()
+    .post('/cart/update', { items })
+    .catch((err) => console.error("❌ Cart sync failed:", err));
 };
 
 export const {

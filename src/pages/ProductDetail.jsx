@@ -55,10 +55,7 @@ const ProductDetail = () => {
     if (!rating || !comment) return setError("Please provide both star and review.");
 
     try {
-      await axios.post(`${API_BASE}/api/products/${id}/review`, 
-        { rating, comment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axiosWithToken().post(`/products/${id}/review`, { rating, comment });
       setRating(0); setComment('');
       fetchProduct();
     } catch (err) {
@@ -110,11 +107,12 @@ const ProductDetail = () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axios.post(`${API_BASE}/api/cart/update`, {
+    await axiosWithToken().post('/cart/update', {
       items: [{ ...productToAdd }]
-    }, {
-      headers: { Authorization: `Bearer ${token}` },
-    }); 
+    });
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }; 
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
     alert("Something went wrong while syncing cart.");
@@ -148,13 +146,12 @@ const ProductDetail = () => {
         state: { mode: "buy-now" },
       });
 
-      await axios.post(`${API_BASE}/api/cart/update`, {
-        items: [{ ...productToAdd, quantity: 1 }],
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+     await axiosWithToken().post('/cart/update', {
+      items: [{ ...productToAdd, quantity: 1 }],
+    });
+     {
+        headers: {Authorization: `Bearer ${token}`}
+      };
     } catch (err) {
       console.error("❌ Buy Now cart sync failed:", err);
       alert("Something went wrong while processing Buy Now");

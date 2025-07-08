@@ -6,6 +6,7 @@ import { API_BASE } from '../utils/api';
 import { IoIosEye, IoIosEyeOff } from "react-icons/io";
 import { useDispatch } from "react-redux";
 import { setCartItems, setUserId } from "../redux/slices/cartSlice";
+import { axiosWithToken } from "../utils/axiosWithToken";
 
 const LoginSignUp = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -34,7 +35,7 @@ const LoginSignUp = () => {
       const res = await axios.post(`${API_BASE}/api/signup`, {
         name,
         email,
-        password,
+        password, 
       });
       alert("✅ Account created successfully!");
       setIsSignUp(false);
@@ -61,9 +62,7 @@ const LoginSignUp = () => {
 
       dispatch(setUserId(user._id));
 
-      const cartRes = await axios.get(`${API_BASE}/api/cart`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const cartRes = await axiosWithToken().get('/cart');
       dispatch(setCartItems(cartRes.data || []));
 
       navigate("/");

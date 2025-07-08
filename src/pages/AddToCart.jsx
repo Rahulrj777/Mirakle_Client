@@ -7,6 +7,7 @@ import {
 } from "../Redux/cartSlice";
 import { API_BASE } from "../utils/api";
 import { useNavigate } from "react-router-dom";
+import { axiosWithToken } from '../utils/axiosWithToken';
 
 const AddToCart = () => {
   const cartItems = useSelector((state) => state.cart);
@@ -29,11 +30,7 @@ const AddToCart = () => {
   useEffect(() => {
     const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
     if (token && cartItems.length > 0) {
-      axios.post(`${API_BASE}/api/cart/update`, {
-        items: cartItems
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).catch(console.error);
+      axiosWithToken().post('/cart/update', { items: cartItems }).catch(console.error);
     }
   }, [cartItems]);
 
