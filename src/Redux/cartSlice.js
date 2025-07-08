@@ -63,7 +63,7 @@ const cartSlice = createSlice({
 });
 const syncCartToBackend = (items) => {
   axiosWithToken()
-    .post('/cart/update', { items })
+    .post('/cart', { items })
     .catch((err) => console.error("❌ Cart sync failed:", err));
 };
 

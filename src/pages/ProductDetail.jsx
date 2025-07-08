@@ -68,7 +68,7 @@ const ProductDetail = () => {
   try {
     const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
     setRelatedProducts(res.data);
-  } catch (err) {
+  } catch (err) { 
     console.error("Failed to fetch related products", err);
   }
 };
@@ -108,7 +108,7 @@ const ProductDetail = () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axiosWithToken().post('/cart/update', {
+    await axiosWithToken().post('/cart', {
       items: [{ ...productToAdd }]
     });
   } catch (err) {
@@ -144,7 +144,7 @@ const ProductDetail = () => {
         state: { mode: "buy-now" },
       });
 
-     await axiosWithToken().post('/cart/update', {
+     await axiosWithToken().post('/cart', {
       items: [{ ...productToAdd, quantity: 1 }],
     });
      {

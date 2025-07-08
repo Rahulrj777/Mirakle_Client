@@ -30,7 +30,7 @@ const AddToCart = () => {
   useEffect(() => {
     const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
     if (token && cartItems.length > 0) {
-      axiosWithToken().post('/cart/update', { items: cartItems }).catch(console.error);
+      axiosWithToken().post('/cart', { items: cartItems }).catch(console.error);
     }
   }, [cartItems]);
 
