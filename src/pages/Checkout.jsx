@@ -39,6 +39,11 @@ const Checkout = () => {
       </div>
     );
   }
+  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+    if (!token) {
+      navigate("/login");
+      return null;
+    }
 
   return (
     <div className="max-w-3xl mx-auto mt-10 p-6 border rounded shadow">
