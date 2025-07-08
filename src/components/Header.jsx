@@ -13,7 +13,6 @@ const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items) || [];
-  
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [user, setUser] = useState(() => {
@@ -57,20 +56,6 @@ const Header = () => {
       }
     }
   }, [dispatch]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      try {
-        const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
-        setUser(storedUser);
-      } catch {
-        setUser(null);
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
 
   const handleSearchChange = async (e) => {
     const value = e.target.value;
