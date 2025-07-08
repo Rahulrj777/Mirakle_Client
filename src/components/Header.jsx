@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import logo from "../assets/logo.png";
 import { API_BASE } from "../utils/api";
-import { clearCart, setCartItems, setUserId } from "../Redux/cartSlice";
+import { clearCart, setCartItems, setUserId, clearUser } from "../Redux/cartSlice";
 
 const Header = () => {
   const location = useLocation();
