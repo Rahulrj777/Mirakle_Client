@@ -20,12 +20,15 @@ const App = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (userId) {
+    if (userId && Array.isArray(cart)) {
       localStorage.setItem(`cart_${userId}`, JSON.stringify(cart));
     }
   }, [cart, userId]);
 
-  return <Routing />;
+  return (
+      <Routing />
+
+  );
 };
 
 export default App;
