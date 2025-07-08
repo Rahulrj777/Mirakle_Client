@@ -1,276 +1,341 @@
-import express from 'express';
-import multer from 'multer';
-import fs from 'fs';
-import path from 'path';
-import Product from '../models/Product.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
+import { useParams,useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { API_BASE } from "../utils/api"; 
+import { useDispatch,useSelector } from 'react-redux';
+import { addToCart } from '../Redux/cartSlice';
+import { axiosWithToken } from '../utils/axiosWithToken';
 
-const router = express.Router();
+const ProductDetail = () => {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedImage, setSelectedImage] = useState('');
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
+  const token = localStorage.getItem("token");
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const cart = useSelector((state) => state.cart.items) || [];
+  const [reviews, setReviews] = useState([]);
+  const [refresh, setRefresh] = useState(false);
+  const user = useSelector((state) => state.auth.user);
 
-const uploadDir = 'uploads/products';
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  useEffect(() => {
+    console.log("Cart Items:", cart);
+  }, [cart]);
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
-});
-const upload = multer({ storage });
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
 
-router.get('/all-products', async (req, res) => {
-  try {
-    const products = await Product.find();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
-
-router.get("/related/:id", async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
-
-    const keywords = product.keywords || [];
-
-    let related = await Product.find({
-      _id: { $ne: product._id },
-      keywords: { $in: keywords },
-    }).limit(10);
-
-    if (related.length < 4) {
-      const additional = await Product.find({
-        _id: { $ne: product._id },
-      }).limit(10);
-
-      const existingIds = new Set(related.map(p => p._id.toString()));
-      additional.forEach(p => {
-        if (!existingIds.has(p._id.toString())) {
-          related.push(p);
-        }
-      });
+  useEffect(() => {
+    if (id) {
+      fetchProduct();
+      fetchRelated();
     }
+  }, [id]);
 
-    res.json(related.slice(0, 10));
-  } catch (error) {
-    console.error("Failed to fetch related products:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [id]);
 
-router.post('/upload-product', upload.array('images', 10), async (req, res) => {
-  try {
-    const { name, variants, description, details, keywords } = req.body;
 
-    if (!name || !variants) {
-      return res.status(400).json({ message: 'Product name and variants are required' });
+  const fetchProduct = async () => {
+    const res = await axios.get(`${API_BASE}/api/products/all-products`);
+    const found = res.data.find(p => p._id === id);
+    if (found) {
+      setProduct(found);
+      setSelectedImage(found.images?.others?.[0]);
+      if (found.variants.length > 0) setSelectedVariant(found.variants[0]);
     }
+  };
 
-    let parsedVariants, parsedDetails, parsedKeywords;
+  const handleSizeClick = (variant) => setSelectedVariant(variant);
 
+    useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/products/${productId}`);
+        setReviews(res.data.reviews || []);
+      } catch (err) {
+        console.error('Failed to fetch product reviews:', err);
+      }
+    };
+    fetchReviews();
+  }, [productId, refresh]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      parsedVariants = JSON.parse(variants);
-      parsedDetails = details ? JSON.parse(details) : {};
-      parsedKeywords = keywords ? JSON.parse(keywords) : [];
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_BASE}/products/${productId}/review`,
+        { rating, comment },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setComment('');
+      setRating(0);
+      setRefresh((prev) => !prev);
     } catch (err) {
-      return res.status(400).json({ message: 'Invalid JSON in variants, details, or keywords' });
+      console.error('Error submitting review:', err);
     }
+  };
+  
+  const fetchRelated = async () => {
+  try {
+    const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
+    setRelatedProducts(res.data);
+  } catch (err) { 
+    console.error("Failed to fetch related products", err);
+  }
+};
 
-    const images = req.files.map(file => `/${uploadDir}/${file.filename}`);
+  const avgRating = product?.reviews?.length
+    ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
+    : 0;
 
-    const newProduct = new Product({
-      title: name,
-      variants: parsedVariants,
-      description: description || '',
-      details: parsedDetails,
-      keywords: parsedKeywords,
-      images: {
-        others: images,
-      },
+  if (!product || !selectedVariant) return <div className="text-center mt-20">Loading...</div>;
+
+  const price = selectedVariant.price;
+  const discount = selectedVariant.discountPercent || 0;
+  const finalPrice = (price - (price * discount / 100)).toFixed(2);
+
+ const handleAddToCart = async (product) => {
+  const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+  const token = userData?.token;
+
+  if (!token) {
+    alert("Please login to add items to cart");
+    navigate("/login_signup");
+    return;
+  }
+
+  const productToAdd = {
+    _id: product._id,
+    title: product.title,
+    images: product.images,
+    weight: {
+      value: selectedVariant?.weight?.value || selectedVariant?.size,
+      unit: selectedVariant?.weight?.unit || "unit",
+    },
+    currentPrice: parseFloat(finalPrice),
+    quantity: 1,
+  };
+
+  try {
+    dispatch(addToCart(productToAdd));
+
+    await axiosWithToken().post('/cart', {
+      items: [{ ...productToAdd }]
     });
 
-    await newProduct.save();
-    res.status(201).json(newProduct);
   } catch (err) {
-    console.error('Upload error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("❌ Add to cart failed:", err);
+    alert("Something went wrong while syncing cart.");
   }
-});
+};
 
-router.get("/search", async (req, res) => {
-  const query = req.query.query || "";
+  const handleBuyNow = async () => {
+    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
+    const token = userData?.token;
 
-  try {
-    const results = await Product.aggregate([
-      {
-        $match: {
-          $or: [
-            { title: { $regex: query, $options: "i" } },
-            { keywords: { $regex: query, $options: "i" } },
-            { description: { $regex: query, $options: "i" } }
-          ],
-        },
+    if (!token) {
+      alert("Please login to proceed with purchase");
+      navigate("/login_signup");
+      return;
+    }
+
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || "unit",
       },
-      {
-        $addFields: {
-          matchStrength: {
-            $cond: [
-              { $regexMatch: { input: "$title", regex: query, options: "i" } }, 3,
-              {
-                $cond: [
-                  {
-                    $regexMatch: {
-                      input: {
-                        $reduce: {
-                          input: "$keywords",
-                          initialValue: "",
-                          in: { $concat: ["$$value", " ", "$$this"] }
-                        }
-                      },
-                      regex: query,
-                      options: "i"
-                    }
-                  }, 2,
-                  {
-                    $cond: [
-                      { $regexMatch: { input: "$description", regex: query, options: "i" } }, 1, 0
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      },
-      { $sort: { matchStrength: -1, createdAt: -1 } },
-      { $limit: 10 }
-    ]);
-
-    res.json(results);
-  } catch (error) {
-    console.error("Search failed:", error);
-    res.status(500).json({ error: "Search failed" });
-  }
-});
-
-router.post('/:id/review', verifyToken, async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-
-    const alreadyReviewed = product.reviews?.find(r => r.user.toString() === req.user.id);
-    if (alreadyReviewed) return res.status(400).json({ message: 'You already reviewed this product' });
-
-    const newReview = {
-      user: req.user.id,
-      rating: Number(req.body.rating),
-      comment: req.body.comment,
-      createdAt: new Date(),
+      currentPrice: parseFloat(finalPrice),
     };
 
-    product.reviews = product.reviews || [];
-    product.reviews.push(newReview);
-    await product.save();
+    try {
+      localStorage.setItem("buyNowProduct", JSON.stringify(productToAdd));
+      navigate("/checkout", {
+        state: { mode: "buy-now" },
+      });
 
-    res.status(201).json({ message: 'Review added' });
-  } catch (err) {
-    console.error('Review error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
-
-router.put('/:id', upload.array('images', 10), async (req, res) => {
-  try {
-    const { name, variants, description, details, removedImages, keywords } = req.body;
-
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-
-    product.title = name || product.title;
-    product.description = description || '';
-
-    if (details) {
-      try {
-        product.details = JSON.parse(details);
-      } catch {
-        product.details = {};
-      }
+     await axiosWithToken().post('/cart', {
+      items: [{ ...productToAdd, quantity: 1 }],
+    });
+     {
+        headers: {Authorization: `Bearer ${token}`}
+      };
+    } catch (err) {
+      console.error("❌ Buy Now cart sync failed:", err);
+      alert("Something went wrong while processing Buy Now");
     }
+  };
 
-    if (keywords) {
-      try {
-        product.keywords = JSON.parse(keywords);
-      } catch (err) {
-        return res.status(400).json({ message: 'Invalid keywords JSON' });
-      }
-    }
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Image Preview */}
+        <div>
+          <img src={`${API_BASE}${selectedImage}`} className="w-full h-[400px] object-contain rounded" />
+          <div className="flex gap-2 mt-2">
+            {product.images?.others?.map((img, i) => (
+              <img key={i} src={`${API_BASE}${img}`}
+                onClick={() => setSelectedImage(img)}
+                className={`w-20 h-20 object-cover border cursor-pointer ${selectedImage === img ? 'border-blue-500' : ''}`} />
+            ))}
+          </div>
+        </div>
 
-    if (variants) {
-      try {
-        const parsedVariants = JSON.parse(variants);
-        product.variants = parsedVariants;
-      } catch (err) {
-        return res.status(400).json({ message: 'Invalid variants JSON' });
-      }
-    }
+        {/* Product Info */}
+        <div>
+          <h1 className="text-2xl font-bold">{product.title}</h1>
 
-    const newImages = req.files.map(file => `/${uploadDir}/${file.filename}`);
+          <div className="text-yellow-500 my-2">
+            {'⭐'.repeat(Math.round(avgRating)) || 'No rating yet'} 
+            <span className="text-sm text-gray-600 ml-2">
+              ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? 's' : ''})
+            </span>
+          </div>
 
-    if (removedImages) {
-      try {
-        const removed = JSON.parse(removedImages);
-        product.images.others = product.images.others.filter(img => {
-          if (removed.includes(img)) {
-            const fullPath = path.join(uploadDir, path.basename(img));
-            if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-            return false;
-          }
-          return true;
-        });
-      } catch (err) {
-        return res.status(400).json({ message: 'Invalid removedImages JSON' });
-      }
-    }
+          <div className="text-3xl font-bold text-green-600 mb-2">
+            ₹{finalPrice}
+            {discount > 0 && (
+              <>
+                <span className="text-gray-400 line-through text-sm ml-3">₹{price}</span>
+                <span className="text-sm text-red-500 ml-2">{discount}% OFF</span>
+              </>
+            )}
+          </div>
 
-    product.images.others = [...product.images.others, ...newImages];
+          <div className="mt-4">
+            <p className="font-medium mb-1">Select Size:</p>
+            <div className="flex gap-2 flex-wrap">
+              {product.variants.map((v, i) => (
+                <button key={i}
+                  onClick={() => handleSizeClick(v)}
+                  className={`px-4 py-1 border rounded-full cursor-pointer ${v.size === selectedVariant.size ? 'bg-green-600 text-white' : 'hover:bg-gray-200'}`}>
+                  {v.size}
+                </button>
+              ))}
+            </div>
+          </div>
 
-    await product.save();
-    res.json({ message: 'Product updated successfully', product });
-  } catch (err) {
-    console.error('Update error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
+          <div className="mt-6 flex gap-4">
+            <button onClick={() => handleAddToCart(product)} className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer">
+              Add to Cart
+            </button>
+            <button onClick={handleBuyNow} className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer">
+              Buy Now
+            </button>
+          </div>
 
-router.put('/:id/toggle-stock', async (req, res) => {
-  try {
-    const { isOutOfStock } = req.body;
-    const updated = await Product.findByIdAndUpdate(
-      req.params.id,
-      { isOutOfStock },
-      { new: true }
-    );
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+          <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
+        </div>
+      </div>
 
-router.delete('/:id', async (req, res) => {
-  try {
-    const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+      {/* Product Details Section */}
+        <div className="mt-10">
+        <h2 className="text-xl font-bold mb-2">Product Details</h2>
+        {product.details && typeof product.details === 'object' ? (
+            <ul className="text-gray-700 text-sm list-disc pl-5">
+            {Object.entries(product.details).map(([key, value]) => (
+                <li key={key}>
+                <strong className="capitalize">{key}</strong>: {value}
+                </li>
+            ))}
+            </ul>
+        ) : (
+            <p className="text-gray-500 text-sm">No additional info</p>
+        )}
+        </div>
 
-    if (product.images && product.images.others) {
-      for (const imgPath of product.images.others) {
-        const fullPath = path.join(uploadDir, path.basename(imgPath));
-        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-      }
-    }
+      {/* Review Section */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
 
-    res.json({ message: 'Product deleted' });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
+        {token ? (
+          <form onSubmit={handleSubmitReview} className="space-y-3 mb-6">
+            <div>
+              <label className="block text-sm font-medium">Your Rating:</label>
+              <select
+                value={rating}
+                onChange={(e) => setRating(Number(e.target.value))}
+                className="border p-2 rounded cursor-pointer"
+              >
+                <option value="">Select star</option>
+                {[1,2,3,4,5].map(star => (
+                  <option key={star} value={star}>{star} Star</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Your Review:</label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={4}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">Submit Review</button>
+          </form>
+        ) : (
+          <p className="text-gray-500">Please login to rate & review.</p>
+        )}
 
-export default router;
+        {/* Existing reviews */}
+        {product.reviews?.map((r, i) => (
+          <div key={i} className="border p-4 rounded mb-3">
+            <div className="text-yellow-500">{'⭐'.repeat(r.rating)}</div>
+            <p className="text-gray-800">{r.comment}</p>
+            <p className="text-xs text-gray-500 mt-1">{new Date(r.createdAt).toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
+      {relatedProducts.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Related Products</h2>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+            {relatedProducts.map((p) => {
+              const mainImage = p.images?.others?.[0] || "/placeholder.jpg";
+              const firstVariant = p.variants?.[0];
+              const price = firstVariant?.price || 0;
+              const discount = firstVariant?.discountPercent || 0;
+              const finalPrice = (price - (price * discount / 100)).toFixed(2);
+
+              return (
+                <div
+                  key={p._id}
+                  onClick={() => navigate(`/product/${p._id}`)}
+                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
+                >
+                  <img
+                    src={`${API_BASE}${mainImage}`}
+                    alt={p.title}
+                    className="w-full h-48 object-cover rounded mb-2 hover:scale-105 transition-transform duration-200"
+                  />
+                  <h4 className="text-sm font-semibold">{p.title}</h4>
+                  <p className="text-green-600 font-bold">₹{finalPrice}</p>
+                  {discount > 0 && (
+                    <p className="text-xs text-gray-400 line-through">₹{price}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProductDetail;
