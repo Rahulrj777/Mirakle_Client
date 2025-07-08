@@ -12,16 +12,13 @@ const cartSlice = createSlice({
     setUserId: (state, action) => {
       state.userId = action.payload;
     },
-
     setCartItems: (state, action) => {
       state.items = Array.isArray(action.payload) ? action.payload : [];
     },
-
     clearCart: (state) => {
       state.items = [];
       state.userId = null;
     },
-
     addToCart: (state, action) => {
       if (!Array.isArray(state.items)) {
         state.items = [];
@@ -33,19 +30,16 @@ const cartSlice = createSlice({
         state.items.push({ ...action.payload, quantity: action.payload.quantity || 1 });
       }
     },
-
     incrementQuantity: (state, action) => {
       const item = state.items.find(item => item._id === action.payload);
       if (item) item.quantity += 1;
     },
-
     decrementQuantity: (state, action) => {
       const item = state.items.find(item => item._id === action.payload);
       if (item && item.quantity > 1) {
         item.quantity -= 1;
       }
     },
-
     removeFromCart: (state, action) => {
       state.items = state.items.filter(item => item._id !== action.payload);
     },
