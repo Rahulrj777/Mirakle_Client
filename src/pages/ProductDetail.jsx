@@ -111,9 +111,6 @@ const ProductDetail = () => {
     await axiosWithToken().post('/cart/update', {
       items: [{ ...productToAdd }]
     });
-    {
-      headers: { Authorization: `Bearer ${token}` }
-    }; 
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
     alert("Something went wrong while syncing cart.");
