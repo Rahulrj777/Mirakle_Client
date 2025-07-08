@@ -241,7 +241,7 @@ const ProductDetail = () => {
 
         {/* ✅ Review submission */}
         {token ? (
-          <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
+          <form onSubmit={handleSubmitReview} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
               <div className="flex items-center space-x-1">
