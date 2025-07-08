@@ -4,13 +4,17 @@ const initialState = {
   items: [],
   userId: null
 };
-
 const cartSlice = createSlice({
   name: "cart",
-  initialState,
+  initialState: {
+    user: null,
+  },
   reducers: {
     setUserId: (state, action) => {
-      state.userId = action.payload;
+      state.user = action.payload;
+    },
+    clearUser: (state) => {
+      state.user = null;
     },
     setCartItems: (state, action) => {
       state.items = Array.isArray(action.payload) ? action.payload : [];
@@ -48,6 +52,7 @@ const cartSlice = createSlice({
 
 export const {
   setUserId,
+  clearUser,
   setCartItems,
   clearCart,
   addToCart,
