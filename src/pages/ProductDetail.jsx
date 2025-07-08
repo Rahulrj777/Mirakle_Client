@@ -18,7 +18,7 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const cart = useSelector((state) => state.cart);
+  const cart = useSelector((state) => state.cart.items);
   useEffect(() => {
     console.log("Cart Items:", cart);
   }, [cart]);

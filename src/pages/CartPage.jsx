@@ -5,7 +5,7 @@ import { API_BASE } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const CartPage = () => {
-  const cartItems = useSelector((state) => state.cart);
+  const cartItems = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
