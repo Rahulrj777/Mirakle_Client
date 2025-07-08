@@ -70,6 +70,7 @@ const Header = () => {
 const handleLogout = () => {
   localStorage.removeItem("mirakleUser");
   dispatch(clearCart()); 
+  persistor.purge();
   navigate("/login_signup");
 }
 
