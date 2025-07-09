@@ -5,6 +5,7 @@ import { API_BASE } from "../utils/api";
 import { useDispatch,useSelector } from 'react-redux';
 import { addToCart } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
+import { addToCart, setCartItems } from '../Redux/cartSlice';
 
 const ProductDetail = () => {
   const user = JSON.parse(localStorage.getItem("mirakleUser"));
@@ -43,7 +44,7 @@ const ProductDetail = () => {
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setCart(res.data.items));
+          dispatch(setCartItems(res.data.items)); 
         })
         .catch((err) => {
           console.error("❌ Fetch cart error", err);
