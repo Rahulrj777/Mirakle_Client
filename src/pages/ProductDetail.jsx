@@ -132,8 +132,8 @@ const fetchProduct = async () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axiosWithToken().post('/cart/add', {
-      item: productToAdd
+    await axiosWithToken().post('/cart', {
+      items: [{ ...productToAdd, quantity: 1 }]
     });
 
   } catch (err) {
@@ -358,7 +358,7 @@ const handleDislike = async (reviewId) => {
         ) : (
           <p>Please login...</p>
         )}
-        
+
         {/* ✅ Display reviews */}
         <div className="space-y-4">
           {currentUserReview && (
