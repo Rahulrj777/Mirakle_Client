@@ -18,17 +18,17 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [refresh, setRefresh] = useState(false);
-  const [reviews, setReviews] = useState([]);
   const cart = useSelector((state) => state.cart.items) || [];
   const [hover, setHover] = useState(null);
-  const userData = JSON.parse(localStorage.getItem("mirakleUser") || '{}');
-  const user = userData?.user;
 
 
   useEffect(() => {
     console.log("Cart Items:", cart);
   }, [cart]);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
 
   useEffect(() => {
     if (id) {
@@ -40,6 +40,7 @@ const ProductDetail = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
+
 
   const fetchProduct = async () => {
     const res = await axios.get(`${API_BASE}/api/products/all-products`);
@@ -55,45 +56,25 @@ const ProductDetail = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!token) {
-      alert("Please login to submit a review.");
-      navigate("/login_signup");
-      return;
-    }
-
-    const alreadyReviewed = product.reviews?.some(
-      (r) => r.user === user?._id || r.user === user?.id
-    );
-
-    if (alreadyReviewed) {
-      setError("You've already submitted a review for this product.");
-      return;
-    }
+    if (!rating || !comment) return setError("Please provide both star and review.");
 
     try {
-      await axios.post(
-        `${API_BASE}/api/products/${product._id}/review`,
-        { rating, comment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setComment("");
-      setRating(0);
-      setRefresh((prev) => !prev);
+      await axiosWithToken().post(`/products/${id}/review`, { rating, comment });
+      setRating(0); setComment('');
+      fetchProduct();
     } catch (err) {
-      console.error("Error submitting review:", err);
-      setError("Something went wrong while submitting your review.");
+      setError(err.response?.data?.message || "Review failed");
     }
   };
 
   const fetchRelated = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
-      setRelatedProducts(res.data);
-    } catch (err) { 
-      console.error("Failed to fetch related products", err);
-    }
-  };
+  try {
+    const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
+    setRelatedProducts(res.data);
+  } catch (err) { 
+    console.error("Failed to fetch related products", err);
+  }
+};
 
   const avgRating = product?.reviews?.length
     ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
@@ -170,6 +151,9 @@ const ProductDetail = () => {
      await axiosWithToken().post('/cart', {
       items: [{ ...productToAdd, quantity: 1 }],
     });
+     {
+        headers: {Authorization: `Bearer ${token}`}
+      };
     } catch (err) {
       console.error("❌ Buy Now cart sync failed:", err);
       alert("Something went wrong while processing Buy Now");
