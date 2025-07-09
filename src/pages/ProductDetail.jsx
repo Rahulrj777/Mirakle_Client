@@ -133,8 +133,8 @@ const fetchProduct = async () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axiosWithToken().post('/cart', {
-      items: [...cart, productToAdd]
+    await axiosWithToken().post('/cart/add', {
+      item: productToAdd
     });
 
   } catch (err) {
@@ -239,7 +239,7 @@ const otherReviews = product?.reviews?.filter(
           <div className="mt-4">
             <p className="font-medium mb-1">Select Size:</p>
             <div className="flex gap-2 flex-wrap">
-              {Array.isArray(product.variants) && product.variants.map((v, i) => (
+              {product.variants.map((v, i) => (
                 <button key={i}
                   onClick={() => handleSizeClick(v)}
                   className={`px-4 py-1 border rounded-full cursor-pointer ${v.size === selectedVariant.size ? 'bg-green-600 text-white' : 'hover:bg-gray-200'}`}>
@@ -440,4 +440,4 @@ const otherReviews = product?.reviews?.filter(
   );
 };
 
-export default ProductDetail;
+export default ProductDetail; 
