@@ -7,6 +7,7 @@ import { addToCart } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
 
 const ProductDetail = () => {
+  const user = JSON.parse(localStorage.getItem("mirakleUser"));
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -19,7 +20,7 @@ const ProductDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const cart = useSelector((state) => state.cart.items) || [];
-  const user = JSON.parse(localStorage.getItem("mirakleUser"));
+  const token = user?.token;
 
   useEffect(() => {
     console.log("Cart Items:", cart);
