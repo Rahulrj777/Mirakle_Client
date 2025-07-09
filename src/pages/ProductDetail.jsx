@@ -19,7 +19,9 @@ const ProductDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [refresh, setRefresh] = useState(false);
+  const [reviews, setReviews] = useState([]);
   const cart = useSelector((state) => state.cart.items) || [];
+  const [hover, setHover] = useState(null);
   const userData = JSON.parse(localStorage.getItem("mirakleUser") || '{}');
   const user = userData?.user;
 
