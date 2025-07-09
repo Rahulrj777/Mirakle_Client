@@ -73,7 +73,7 @@ const ProductDetail = () => {
 
     try {
       await axios.post(
-        `${API_BASE}/products/${product._id}/review`,
+        `${API_BASE}/api/products/${product._id}/review`,
         { rating, comment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
