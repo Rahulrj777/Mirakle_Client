@@ -45,7 +45,6 @@ const fetchProduct = async () => {
   try {
     const res = await axios.get(`${API_BASE}/api/products/all-products`);
     const found = res.data.find(p => p._id === id);
-    const user = JSON.parse(localStorage.getItem("mirakleUser"));
 
     const currentUserReview = product.reviews?.find(
       (r) => r.user === user?.userId || r.user === user?._id
