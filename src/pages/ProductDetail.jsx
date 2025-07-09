@@ -182,9 +182,9 @@ const fetchProduct = async () => {
     (r) => r.user === user?.userId || r.user === user?._id
   );
 
-const otherReviews = product?.reviews?.filter(
-  (r) => r.user !== (user?.userId || user?._id)
-);
+  const otherReviews = product?.reviews?.filter(
+    (r) => r.user !== (user?.userId || user?._id)
+  );
 
 const handleDeleteReview = async (reviewId) => {
   try {
@@ -193,6 +193,24 @@ const handleDeleteReview = async (reviewId) => {
   } catch (err) {
     console.error("Delete review error:", err);
     alert("Failed to delete review");
+  }
+};
+
+const handleLike = async (reviewId) => {
+  try {
+    await axiosWithToken().post(`/products/${id}/review/${reviewId}/like`);
+    fetchProduct();
+  } catch (err) {
+    console.error("Like failed", err);
+  }
+};
+
+const handleDislike = async (reviewId) => {
+  try {
+    await axiosWithToken().post(`/products/${id}/review/${reviewId}/dislike`);
+    fetchProduct();
+  } catch (err) {
+    console.error("Dislike failed", err);
   }
 };
 
@@ -290,7 +308,7 @@ const handleDeleteReview = async (reviewId) => {
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
 
         {/* ✅ Review submission */}
-        {token ? (
+        {token && !currentUserReview ?(
           <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
@@ -335,10 +353,12 @@ const handleDeleteReview = async (reviewId) => {
               Submit Review
             </button>
           </form>
+        ) : token && currentUserReview ? (
+          <p className="text-gray-500 mb-4">You have already reviewed this product.</p>
         ) : (
-          <p className="text-gray-500">Please login to rate & review.</p>
+          <p>Please login...</p>
         )}
-
+        
         {/* ✅ Display reviews */}
         <div className="space-y-4">
           {currentUserReview && (
@@ -398,6 +418,20 @@ const handleDeleteReview = async (reviewId) => {
                 </p>
               </div>
               <p className="text-sm text-gray-700 mt-1">{r.comment}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={() => handleLike(r._id)}
+                  className="text-xs text-green-600 hover:underline"
+                >
+                  👍 {r.likes?.length || 0}
+                </button>
+                <button
+                  onClick={() => handleDislike(r._id)}
+                  className="text-xs text-red-600 hover:underline"
+                >
+                  👎 {r.dislikes?.length || 0}
+                </button>
+              </div>
             </div>
           ))}
           {otherReviews.length > 3 && (
