@@ -239,7 +239,7 @@ const otherReviews = product?.reviews?.filter(
           <div className="mt-4">
             <p className="font-medium mb-1">Select Size:</p>
             <div className="flex gap-2 flex-wrap">
-              {product.variants.map((v, i) => (
+              {Array.isArray(product.variants) && product.variants.map((v, i) => (
                 <button key={i}
                   onClick={() => handleSizeClick(v)}
                   className={`px-4 py-1 border rounded-full cursor-pointer ${v.size === selectedVariant.size ? 'bg-green-600 text-white' : 'hover:bg-gray-200'}`}>
