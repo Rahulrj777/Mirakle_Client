@@ -5,10 +5,10 @@ import storage from 'redux-persist/lib/storage';
 import { persistReducer, persistStore } from 'redux-persist';
 import { thunk } from 'redux-thunk';
 
-const cartPersistConfig = {
-  key: 'cart',
+const persistConfig = {
+  key: `cart_${user?.userId || "guest"}`,
   storage,
-  whitelist: ['items', 'userId'],
+  whitelist: ["items"],
 };
 
 const persistedCartReducer = persistReducer(cartPersistConfig, cartReducer);

@@ -14,7 +14,6 @@ const ProductDetail = () => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
-  const token = localStorage.getItem("token");
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
@@ -37,6 +36,19 @@ const ProductDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      axiosWithToken()
+        .get("/cart")
+        .then((res) => {
+          dispatch(setCart(res.data.items));
+        })
+        .catch((err) => {
+          console.error("❌ Fetch cart error", err);
+        });
+    }
+  }, []);
 
 const fetchProduct = async () => {
   try {
@@ -123,18 +135,29 @@ const fetchProduct = async () => {
     weight: {
       value: selectedVariant?.weight?.value || selectedVariant?.size,
       unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit")
-
     },
     currentPrice: parseFloat(finalPrice),
     quantity: 1,
   };
 
   try {
+    // 1. Update Redux store
     dispatch(addToCart(productToAdd));
 
-    await axiosWithToken().post('/cart', {
-      items: [{ ...productToAdd, quantity: 1 }]
-    });
+    // 2. Get current cart from backend
+    const existingRes = await axiosWithToken().get("/cart");
+    const existingItems = existingRes.data || [];
+
+    // 3. Check if already exists
+    const existingIndex = existingItems.findIndex(item => item._id === productToAdd._id);
+    if (existingIndex > -1) {
+      existingItems[existingIndex].quantity += 1;
+    } else {
+      existingItems.push(productToAdd);
+    }
+
+    // 4. Save updated cart to backend
+    await axiosWithToken().post('/cart', { items: existingItems });
 
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
