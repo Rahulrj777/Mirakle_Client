@@ -157,8 +157,11 @@ const fetchProduct = async () => {
       existingItems.push(productToAdd);
     }
 
-    // 4. Save updated cart to backend
-    await axiosWithToken().post('/cart', { items: existingItems });
+    await axiosWithToken().post('/cart', {
+      productId: productToAdd._id,
+      quantity: 1,
+      variant: productToAdd.weight,
+    });
 
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
