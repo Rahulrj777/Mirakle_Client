@@ -5,7 +5,7 @@ import { API_BASE } from "../utils/api";
 import { useDispatch,useSelector } from 'react-redux';
 import { addToCart } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
-import { addToCart, setCartItems } from '../Redux/cartSlice';
+import { addToCart } from '../Redux/cartSlice';
 
 const ProductDetail = () => {
   const user = JSON.parse(localStorage.getItem("mirakleUser"));

@@ -5,19 +5,13 @@ import storage from 'redux-persist/lib/storage';
 import { persistReducer, persistStore } from 'redux-persist';
 import { thunk } from 'redux-thunk';
 
-let userId = "guest";
-if (typeof window !== "undefined") {
-  const localUser = JSON.parse(localStorage.getItem("mirakleUser"));
-  userId = localUser?.userId || "guest";
-}
-
-const persistConfig = {
-  key: `cart_${userId}`,
+const cartPersistConfig = {
+  key: 'cart',
   storage,
-  whitelist: ["items"],
+  whitelist: ['items', 'userId'],
 };
 
-const persistedCartReducer = persistReducer(persistConfig, cartReducer);
+const persistedCartReducer = persistReducer(cartPersistConfig, cartReducer);
 
 export const store = configureStore({
   reducer: {
