@@ -15,7 +15,7 @@ const ProductDetail = () => {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
   const token = localStorage.getItem("token");
-  const [loading, setLoading] = useState(true);
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -179,12 +179,22 @@ const fetchProduct = async () => {
   };
 
   const currentUserReview = product?.reviews?.find(
-  (r) => r.user === user?.userId || r.user === user?._id
-);
+    (r) => r.user === user?.userId || r.user === user?._id
+  );
 
 const otherReviews = product?.reviews?.filter(
   (r) => r.user !== (user?.userId || user?._id)
 );
+
+const handleDeleteReview = async (reviewId) => {
+  try {
+    await axiosWithToken().delete(`/products/${id}/review/${reviewId}`);
+    fetchProduct(); // re-fetch to update UI
+  } catch (err) {
+    console.error("Delete review error:", err);
+    alert("Failed to delete review");
+  }
+};
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -336,29 +346,19 @@ const otherReviews = product?.reviews?.filter(
               <div className="flex justify-between items-center mb-1">
                 <div className="flex gap-2 items-center">
                   <p className="text-sm font-semibold text-blue-800">Your Review</p>
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <svg
-                        key={star}
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill={currentUserReview.rating >= star ? "#facc15" : "none"}
-                        viewBox="0 0 24 24"
-                        stroke="#facc15"
-                        className="w-4 h-4"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="1.5"
-                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
-                        />
-                      </svg>
-                    ))}
-                  </div>
+                  <StarRating value={currentUserReview.rating} />
                 </div>
-                <p className="text-xs text-gray-400">
-                  {new Date(currentUserReview.createdAt).toLocaleString()}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gray-400">
+                    {new Date(currentUserReview.createdAt).toLocaleString()}
+                  </p>
+                  <button
+                    onClick={() => handleDeleteReview(currentUserReview._id)}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-700 mt-1">{currentUserReview.comment}</p>
             </div>
@@ -368,7 +368,7 @@ const otherReviews = product?.reviews?.filter(
             <p className="text-gray-400 italic">No reviews yet. Be the first to review this product.</p>
           )}
 
-          {otherReviews.map((r, i) => (
+          {(showAllReviews ? otherReviews : otherReviews.slice(0, 3)).map((r, i) => (
             <div key={i} className="border p-4 rounded bg-white shadow-sm">
               <div className="flex justify-between items-center mb-1">
                 <div className="flex gap-2 items-center">
@@ -400,6 +400,14 @@ const otherReviews = product?.reviews?.filter(
               <p className="text-sm text-gray-700 mt-1">{r.comment}</p>
             </div>
           ))}
+          {otherReviews.length > 3 && (
+            <button
+              onClick={() => setShowAllReviews(!showAllReviews)}
+              className="text-blue-600 text-sm mt-2 hover:underline"
+            >
+              {showAllReviews ? "Show less" : "See more reviews"}
+            </button>
+          )}
         </div>
       </div>
       {relatedProducts.length > 0 && (
