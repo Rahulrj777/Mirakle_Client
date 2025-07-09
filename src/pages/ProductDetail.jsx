@@ -41,18 +41,6 @@ const ProductDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
-  useEffect(() => {
-  const fetchReviews = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/products/${id}`);
-      setReviews(res.data.reviews || []);
-    } catch (err) {
-      console.error('Failed to fetch product reviews:', err);
-    }
-  };
-  fetchReviews();
-}, [id, refresh]);
-
   const fetchProduct = async () => {
     const res = await axios.get(`${API_BASE}/api/products/all-products`);
     const found = res.data.find(p => p._id === id);
