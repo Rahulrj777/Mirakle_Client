@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from "../utils/api"; 
 import { useDispatch,useSelector } from 'react-redux';
-import { addToCart, setCart } from '../Redux/cartSlice';
+import { addToCart, setCartItems } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
 
 const ProductDetail = () => {
@@ -43,7 +43,7 @@ const ProductDetail = () => {
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setCart(res.data.items));
+          dispatch(setCartItems(res.data.items));
         })
         .catch((err) => {
           console.error("❌ Fetch cart error", err);
