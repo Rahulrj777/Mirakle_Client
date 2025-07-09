@@ -47,6 +47,13 @@ const fetchProduct = async () => {
     const found = res.data.find(p => p._id === id);
     const user = JSON.parse(localStorage.getItem("mirakleUser"));
 
+    const currentUserReview = product.reviews?.find(
+      (r) => r.user === user?.userId || r.user === user?._id
+    );
+    const otherReviews = product.reviews?.filter(
+      (r) => r.user !== (user?.userId || user?._id)
+    );
+
     if (found) {
       setProduct(found);
       setSelectedImage(found.images?.others?.[0]);
