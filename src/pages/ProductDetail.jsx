@@ -5,10 +5,8 @@ import { API_BASE } from "../utils/api";
 import { useDispatch,useSelector } from 'react-redux';
 import { addToCart } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
-import { addToCart } from '../Redux/cartSlice';
 
 const ProductDetail = () => {
-  const user = JSON.parse(localStorage.getItem("mirakleUser"));
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -16,12 +14,13 @@ const ProductDetail = () => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
-  const [showAllReviews, setShowAllReviews] = useState(false);
+  const token = localStorage.getItem("token");
+  const [loading, setLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const cart = useSelector((state) => state.cart.items) || [];
-  const token = user?.token;
+  const user = JSON.parse(localStorage.getItem("mirakleUser"));
 
   useEffect(() => {
     console.log("Cart Items:", cart);
@@ -38,19 +37,6 @@ const ProductDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      axiosWithToken()
-        .get("/cart")
-        .then((res) => {
-          dispatch(setCartItems(res.data.items)); 
-        })
-        .catch((err) => {
-          console.error("❌ Fetch cart error", err);
-        });
-    }
-  }, []);
 
 const fetchProduct = async () => {
   try {
@@ -137,29 +123,18 @@ const fetchProduct = async () => {
     weight: {
       value: selectedVariant?.weight?.value || selectedVariant?.size,
       unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit")
+
     },
     currentPrice: parseFloat(finalPrice),
     quantity: 1,
   };
 
   try {
-    // 1. Update Redux store
     dispatch(addToCart(productToAdd));
 
-    // 2. Get current cart from backend
-    const existingRes = await axiosWithToken().get("/cart");
-    const existingItems = existingRes.data || [];
-
-    // 3. Check if already exists
-    const existingIndex = existingItems.findIndex(item => item._id === productToAdd._id);
-    if (existingIndex > -1) {
-      existingItems[existingIndex].quantity += 1;
-    } else {
-      existingItems.push(productToAdd);
-    }
-
-    // 4. Save updated cart to backend
-    await axiosWithToken().post('/cart', { items: existingItems });
+    await axiosWithToken().post('/cart/add', {
+      item: productToAdd
+    });
 
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
@@ -204,40 +179,12 @@ const fetchProduct = async () => {
   };
 
   const currentUserReview = product?.reviews?.find(
-    (r) => r.user === user?.userId || r.user === user?._id
-  );
+  (r) => r.user === user?.userId || r.user === user?._id
+);
 
-  const otherReviews = product?.reviews?.filter(
-    (r) => r.user !== (user?.userId || user?._id)
-  );
-
-const handleDeleteReview = async (reviewId) => {
-  try {
-    await axiosWithToken().delete(`/products/${id}/review/${reviewId}`);
-    fetchProduct(); // re-fetch to update UI
-  } catch (err) {
-    console.error("Delete review error:", err);
-    alert("Failed to delete review");
-  }
-};
-
-const handleLike = async (reviewId) => {
-  try {
-    await axiosWithToken().post(`/products/${id}/review/${reviewId}/like`);
-    fetchProduct();
-  } catch (err) {
-    console.error("Like failed", err);
-  }
-};
-
-const handleDislike = async (reviewId) => {
-  try {
-    await axiosWithToken().post(`/products/${id}/review/${reviewId}/dislike`);
-    fetchProduct();
-  } catch (err) {
-    console.error("Dislike failed", err);
-  }
-};
+const otherReviews = product?.reviews?.filter(
+  (r) => r.user !== (user?.userId || user?._id)
+);
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -333,7 +280,7 @@ const handleDislike = async (reviewId) => {
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
 
         {/* ✅ Review submission */}
-        {token && !currentUserReview ?(
+        {token ? (
           <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
@@ -378,10 +325,8 @@ const handleDislike = async (reviewId) => {
               Submit Review
             </button>
           </form>
-        ) : token && currentUserReview ? (
-          <p className="text-gray-500 mb-4">You have already reviewed this product.</p>
         ) : (
-          <p>Please login...</p>
+          <p className="text-gray-500">Please login to rate & review.</p>
         )}
 
         {/* ✅ Display reviews */}
@@ -391,19 +336,29 @@ const handleDislike = async (reviewId) => {
               <div className="flex justify-between items-center mb-1">
                 <div className="flex gap-2 items-center">
                   <p className="text-sm font-semibold text-blue-800">Your Review</p>
-                  <StarRating value={currentUserReview.rating} />
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill={currentUserReview.rating >= star ? "#facc15" : "none"}
+                        viewBox="0 0 24 24"
+                        stroke="#facc15"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                        />
+                      </svg>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-gray-400">
-                    {new Date(currentUserReview.createdAt).toLocaleString()}
-                  </p>
-                  <button
-                    onClick={() => handleDeleteReview(currentUserReview._id)}
-                    className="text-xs text-red-500 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </div>
+                <p className="text-xs text-gray-400">
+                  {new Date(currentUserReview.createdAt).toLocaleString()}
+                </p>
               </div>
               <p className="text-sm text-gray-700 mt-1">{currentUserReview.comment}</p>
             </div>
@@ -413,7 +368,7 @@ const handleDislike = async (reviewId) => {
             <p className="text-gray-400 italic">No reviews yet. Be the first to review this product.</p>
           )}
 
-          {(showAllReviews ? otherReviews : otherReviews.slice(0, 3)).map((r, i) => (
+          {otherReviews.map((r, i) => (
             <div key={i} className="border p-4 rounded bg-white shadow-sm">
               <div className="flex justify-between items-center mb-1">
                 <div className="flex gap-2 items-center">
@@ -443,30 +398,8 @@ const handleDislike = async (reviewId) => {
                 </p>
               </div>
               <p className="text-sm text-gray-700 mt-1">{r.comment}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <button
-                  onClick={() => handleLike(r._id)}
-                  className="text-xs text-green-600 hover:underline"
-                >
-                  👍 {r.likes?.length || 0}
-                </button>
-                <button
-                  onClick={() => handleDislike(r._id)}
-                  className="text-xs text-red-600 hover:underline"
-                >
-                  👎 {r.dislikes?.length || 0}
-                </button>
-              </div>
             </div>
           ))}
-          {otherReviews.length > 3 && (
-            <button
-              onClick={() => setShowAllReviews(!showAllReviews)}
-              className="text-blue-600 text-sm mt-2 hover:underline"
-            >
-              {showAllReviews ? "Show less" : "See more reviews"}
-            </button>
-          )}
         </div>
       </div>
       {relatedProducts.length > 0 && (
