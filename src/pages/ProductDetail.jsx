@@ -46,13 +46,6 @@ const fetchProduct = async () => {
     const res = await axios.get(`${API_BASE}/api/products/all-products`);
     const found = res.data.find(p => p._id === id);
 
-    const currentUserReview = product.reviews?.find(
-      (r) => r.user === user?.userId || r.user === user?._id
-    );
-    const otherReviews = product.reviews?.filter(
-      (r) => r.user !== (user?.userId || user?._id)
-    );
-
     if (found) {
       setProduct(found);
       setSelectedImage(found.images?.others?.[0]);
@@ -181,14 +174,19 @@ const fetchProduct = async () => {
      await axiosWithToken().post('/cart', {
       items: [{ ...productToAdd, quantity: 1 }],
     });
-     {
-        headers: {Authorization: `Bearer ${token}`}
-      };
     } catch (err) {
       console.error("❌ Buy Now cart sync failed:", err);
       alert("Something went wrong while processing Buy Now");
     }
   };
+
+  const currentUserReview = product?.reviews?.find(
+  (r) => r.user === user?.userId || r.user === user?._id
+);
+
+const otherReviews = product?.reviews?.filter(
+  (r) => r.user !== (user?.userId || user?._id)
+);
 
   return (
     <div className="max-w-6xl mx-auto p-6">
