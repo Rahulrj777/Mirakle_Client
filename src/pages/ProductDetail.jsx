@@ -133,8 +133,8 @@ const fetchProduct = async () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axiosWithToken().post('/cart/add', {
-      item: productToAdd
+    await axiosWithToken().post('/cart', {
+      items: [...cart, productToAdd]
     });
 
   } catch (err) {
