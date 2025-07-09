@@ -15,6 +15,7 @@ const ProductDetail = () => {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
   const token = localStorage.getItem("token");
+  const [loading, setLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -24,10 +25,6 @@ const ProductDetail = () => {
   useEffect(() => {
     console.log("Cart Items:", cart);
   }, [cart]);
-
-  useEffect(() => {
-    fetchProduct();
-  }, [id]);
 
   useEffect(() => {
     if (id) {
@@ -125,7 +122,8 @@ const fetchProduct = async () => {
     images: product.images,
     weight: {
       value: selectedVariant?.weight?.value || selectedVariant?.size,
-      unit: selectedVariant?.weight?.unit || "unit",
+      unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit")
+
     },
     currentPrice: parseFloat(finalPrice),
     quantity: 1,
@@ -134,8 +132,8 @@ const fetchProduct = async () => {
   try {
     dispatch(addToCart(productToAdd));
 
-    await axiosWithToken().post('/cart', {
-      items: [{ ...productToAdd }]
+    await axiosWithToken().post('/cart/add', {
+      item: productToAdd
     });
 
   } catch (err) {
