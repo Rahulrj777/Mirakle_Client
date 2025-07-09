@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from "../utils/api"; 
 import { useDispatch,useSelector } from 'react-redux';
-import { addToCart } from '../Redux/cartSlice';
+import { addToCart, setCart } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
 
 const ProductDetail = () => {
