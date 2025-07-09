@@ -19,8 +19,7 @@ const ProductDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const cart = useSelector((state) => state.cart.items) || [];
-  const [hover, setHover] = useState(null);
-
+  const user = JSON.parse(localStorage.getItem("mirakleUser"));
 
   useEffect(() => {
     console.log("Cart Items:", cart);
@@ -42,15 +41,40 @@ const ProductDetail = () => {
   }, [id]);
 
 
-  const fetchProduct = async () => {
+const fetchProduct = async () => {
+  try {
     const res = await axios.get(`${API_BASE}/api/products/all-products`);
     const found = res.data.find(p => p._id === id);
+    const user = JSON.parse(localStorage.getItem("mirakleUser"));
+
     if (found) {
       setProduct(found);
       setSelectedImage(found.images?.others?.[0]);
-      if (found.variants.length > 0) setSelectedVariant(found.variants[0]);
+      if (found.variants.length > 0) {
+        setSelectedVariant(found.variants[0]);
+      }
+
+      // ✅ Pre-fill rating/comment if already submitted
+      if (found.reviews?.length > 0 && user) {
+        const existing = found.reviews.find(
+          (r) => r.user === user.userId || r.user === user._id
+        );
+        if (existing) {
+          setRating(existing.rating);
+          setComment(existing.comment);
+        } else {
+          setRating(0);
+          setComment('');
+        }
+      } else {
+        setRating(0);
+        setComment('');
+      }
     }
-  };
+  } catch (err) {
+    console.error("Error fetching product:", err);
+  }
+};
 
   const handleSizeClick = (variant) => setSelectedVariant(variant);
 
@@ -305,34 +329,73 @@ const ProductDetail = () => {
 
         {/* ✅ Display reviews */}
         <div className="space-y-4">
-          {product.reviews?.length === 0 && (
+          {currentUserReview && (
+            <div className="border p-4 rounded bg-blue-50 shadow-sm">
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex gap-2 items-center">
+                  <p className="text-sm font-semibold text-blue-800">Your Review</p>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill={currentUserReview.rating >= star ? "#facc15" : "none"}
+                        viewBox="0 0 24 24"
+                        stroke="#facc15"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                        />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">
+                  {new Date(currentUserReview.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <p className="text-sm text-gray-700 mt-1">{currentUserReview.comment}</p>
+            </div>
+          )}
+
+          {otherReviews.length === 0 && !currentUserReview && (
             <p className="text-gray-400 italic">No reviews yet. Be the first to review this product.</p>
           )}
-          {product.reviews?.map((r, i) => (
+
+          {otherReviews.map((r, i) => (
             <div key={i} className="border p-4 rounded bg-white shadow-sm">
-              <div className="flex items-center mb-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill={r.rating >= star ? "#facc15" : "none"}
-                    viewBox="0 0 24 24"
-                    stroke="#facc15"
-                    className="w-4 h-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1.5"
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
-                    />
-                  </svg>
-                ))}
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex gap-2 items-center">
+                  <p className="text-sm font-semibold text-gray-800">{r.name || 'User'}</p>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill={r.rating >= star ? "#facc15" : "none"}
+                        viewBox="0 0 24 24"
+                        stroke="#facc15"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                        />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">
+                  {new Date(r.createdAt).toLocaleString()}
+                </p>
               </div>
-              <p className="text-sm text-gray-700">{r.comment}</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {new Date(r.createdAt).toLocaleString()}
-              </p>
+              <p className="text-sm text-gray-700 mt-1">{r.comment}</p>
             </div>
           ))}
         </div>
