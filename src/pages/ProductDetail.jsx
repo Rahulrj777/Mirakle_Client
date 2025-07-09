@@ -96,9 +96,10 @@ const fetchProduct = async () => {
   }
 };
 
-  const avgRating = product?.reviews?.length
+  const avgRating = product?.reviews?.length > 0
     ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
     : 0;
+
 
   if (!product || !selectedVariant) return <div className="text-center mt-20">Loading...</div>;
 
