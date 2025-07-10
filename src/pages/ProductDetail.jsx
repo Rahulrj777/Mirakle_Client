@@ -184,7 +184,6 @@ const ProductDetail = () => {
       // ✅ Then sync to backend
       await axiosWithToken().post("/cart/add", { item: productToAdd })
 
-      alert("Product added to cart successfully!")
     } catch (err) {
       console.error("❌ Add to cart failed:", err)
       alert("Something went wrong while adding to cart: " + (err.message || "Unknown error"))
