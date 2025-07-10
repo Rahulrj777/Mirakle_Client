@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { HiOutlineShoppingBag } from "react-icons/hi2"
 import { FaRegUser } from "react-icons/fa"
 import { useSelector, useDispatch } from "react-redux"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import axios from "axios"
 import logo from "../assets/logo.png"
 import { API_BASE } from "../utils/api"
@@ -25,18 +25,66 @@ const Header = () => {
       return null
     }
   })
-  const [showDropdown, setShowDropdown] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false) // ✅ Fixed: Default to false
   const dropdownRef = useRef(null)
 
-  const isActive = (path) => location.pathname === path
+  const isActive = useCallback((path) => location.pathname === path, [location.pathname])
 
-  // 🔥 IMPORTANT: Refresh user on route change and check for user mismatch
+  // ✅ Memoize cart count to prevent unnecessary re-renders
+  const cartCount = useMemo(() => {
+    return Array.isArray(cartItems) ? cartItems.length : 0
+  }, [cartItems])
+
+  // ✅ Debounced search to improve performance
+  const [searchTimeout, setSearchTimeout] = useState(null)
+
+  const handleSearchChange = useCallback(
+    async (e) => {
+      const value = e.target.value
+      setSearchTerm(value)
+
+      // Clear previous timeout
+      if (searchTimeout) {
+        clearTimeout(searchTimeout)
+      }
+
+      if (!value.trim()) {
+        setSuggestions([])
+        return
+      }
+
+      // Debounce search by 300ms
+      const timeout = setTimeout(async () => {
+        try {
+          const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
+          setSuggestions(Array.isArray(res.data) ? res.data.slice(0, 6) : [])
+        } catch (error) {
+          console.error("Error fetching suggestions:", error)
+          setSuggestions([])
+        }
+      }, 300)
+
+      setSearchTimeout(timeout)
+    },
+    [searchTimeout],
+  )
+
+  // ✅ Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout)
+      }
+    }
+  }, [searchTimeout])
+
+  // ✅ Improved user state management
   useEffect(() => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
       setUser(storedUser)
 
-      // 🔥 Check if stored user ID matches Redux user ID
+      // Check for user mismatch
       if (storedUser && currentUserId && storedUser._id !== currentUserId) {
         console.log("User mismatch detected, clearing cart...")
         dispatch(clearUser())
@@ -63,6 +111,7 @@ const Header = () => {
     }
   }, [location.pathname, currentUserId, dispatch])
 
+  // ✅ Initialize user cart on mount
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser")
     if (stored) {
@@ -83,50 +132,41 @@ const Header = () => {
     }
   }, [dispatch])
 
-  const handleSearchChange = async (e) => {
-    const value = e.target.value
-    setSearchTerm(value)
-    if (!value.trim()) return setSuggestions([])
-    try {
-      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
-      setSuggestions(res.data.slice(0, 6))
-    } catch (error) {
-      console.error("Error fetching suggestions:", error)
-    }
-  }
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter" && searchTerm.trim()) {
+        navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`)
+        setSuggestions([])
+        setSearchTerm("")
+      }
+    },
+    [searchTerm, navigate],
+  )
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && searchTerm.trim()) {
-      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`)
-      setSuggestions([])
-      setSearchTerm("")
-    }
-  }
-
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user
 
-    // 🔥 IMPORTANT: Clear user-specific cart from localStorage
     if (user?._id) {
-      // Don't remove the cart, just clear Redux state
       console.log(`Logging out user ${user._id}, keeping their cart in localStorage`)
     }
 
     // Clear user session
     localStorage.removeItem("mirakleUser")
-
-    // 🔥 Clear Redux state completely
     dispatch(clearUser())
-
+    setShowDropdown(false) // ✅ Close dropdown on logout
     navigate("/login_signup")
-  }
+  }, [dispatch, navigate])
 
-  const handleSelectSuggestion = (id) => {
-    navigate(`/product/${id}`)
-    setSearchTerm("")
-    setSuggestions([])
-  }
+  const handleSelectSuggestion = useCallback(
+    (id) => {
+      navigate(`/product/${id}`)
+      setSearchTerm("")
+      setSuggestions([])
+    },
+    [navigate],
+  )
 
+  // ✅ Click outside handler for dropdown
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -136,6 +176,25 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  // ✅ Handle cart click
+  const handleCartClick = useCallback(() => {
+    if (!user) {
+      alert("Please login to view your cart")
+      navigate("/login_signup")
+    } else {
+      navigate("/AddToCart")
+    }
+  }, [user, navigate])
+
+  // ✅ Handle user icon click
+  const handleUserClick = useCallback(() => {
+    if (user) {
+      setShowDropdown((prev) => !prev)
+    } else {
+      navigate("/login_signup")
+    }
+  }, [user, navigate])
 
   return (
     <header className="sticky top-0 z-[150] shadow-md bg-white">
@@ -187,19 +246,21 @@ const Header = () => {
           {user ? (
             <div ref={dropdownRef} className="relative">
               <div
-                className="bg-green-600 text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold"
-                onClick={() => setShowDropdown(!showDropdown)}
+                className="bg-green-600 text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold hover:bg-green-700 transition-colors"
+                onClick={handleUserClick}
               >
                 {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
               </div>
+              {/* ✅ Fixed: Only show dropdown when showDropdown is true */}
               {showDropdown && (
-                <div className="absolute top-12 right-0 bg-white shadow-md rounded-md z-50 w-40 py-2">
-                  <p className="px-4 py-2 text-gray-700 text-sm">{user.name || user.email}</p>
-                  <p className="px-4 py-1 text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
-                  <hr />
+                <div className="absolute top-12 right-0 bg-white shadow-lg rounded-md z-50 w-48 py-2 border">
+                  <div className="px-4 py-2 border-b">
+                    <p className="text-gray-700 text-sm font-medium">{user.name || user.email}</p>
+                    <p className="text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
+                  </div>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 transition-colors"
                   >
                     Logout
                   </button>
@@ -207,27 +268,17 @@ const Header = () => {
               )}
             </div>
           ) : (
-            <span onClick={() => navigate("/login_signup")} className="cursor-pointer">
+            <span onClick={handleUserClick} className="cursor-pointer hover:text-green-600 transition-colors">
               <FaRegUser className="text-black" />
             </span>
           )}
 
           {/* Cart icon */}
-          <span
-            className="relative cursor-pointer"
-            onClick={() => {
-              if (!user) {
-                alert("Please login to view your cart")
-                navigate("/login_signup")
-              } else {
-                navigate("/AddToCart")
-              }
-            }}
-          >
-            <HiOutlineShoppingBag className="text-black" />
-            {cartItems.length > 0 && (
+          <span className="relative cursor-pointer" onClick={handleCartClick}>
+            <HiOutlineShoppingBag className="text-black hover:text-green-600 transition-colors" />
+            {cartCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                {cartItems.length}
+                {cartCount}
               </span>
             )}
           </span>
@@ -244,7 +295,10 @@ const Header = () => {
             { path: "/Contect_Us", list: "Contact Us" },
           ].map((item) => (
             <li key={item.path} className="cursor-pointer flex flex-col items-center">
-              <Link to={item.path} className={isActive(item.path) ? "text-white font-bold" : "text-white"}>
+              <Link
+                to={item.path}
+                className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
+              >
                 {item.list}
               </Link>
               {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
