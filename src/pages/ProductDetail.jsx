@@ -13,13 +13,23 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
   const [selectedImage, setSelectedImage] = useState("")
-  const [rating, setRating] = useState(0)
-  const [comment, setComment] = useState("")
   const [error, setError] = useState("")
-  const [showAllReviews, setShowAllReviews] = useState(false)
   const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [addingToCart, setAddingToCart] = useState(false)
+
+  // Review form states
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState("")
+  const [reviewImages, setReviewImages] = useState([])
+  const [reviewImagePreviews, setReviewImagePreviews] = useState([])
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewError, setReviewError] = useState("")
+
+  // Review list states
+  const [showAllReviews, setShowAllReviews] = useState(false)
+  const [actionLoading, setActionLoading] = useState({})
+
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
@@ -56,15 +66,6 @@ const ProductDetail = () => {
         if (found.variants && found.variants.length > 0) {
           setSelectedVariant(found.variants[0])
         }
-
-        // Handle existing review
-        if (found.reviews?.length > 0 && user?.user) {
-          const existing = found.reviews.find((r) => r.user === user.user.userId || r.user === user.user._id)
-          if (existing) {
-            setRating(existing.rating)
-            setComment(existing.comment)
-          }
-        }
       } else {
         setError("Product not found")
       }
@@ -74,7 +75,7 @@ const ProductDetail = () => {
     } finally {
       setLoading(false)
     }
-  }, [id, user])
+  }, [id])
 
   const fetchRelated = useCallback(async () => {
     try {
@@ -121,34 +122,6 @@ const ProductDetail = () => {
   const handleSizeClick = useCallback((variant) => {
     setSelectedVariant(variant)
   }, [])
-
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault()
-      if (!rating || !comment.trim()) {
-        setError("Please provide both rating and review.")
-        return
-      }
-
-      const result = await safeApiCall(
-        async (api) =>
-          await api.post(`/products/${id}/review`, {
-            rating,
-            comment: comment.trim(),
-          }),
-      )
-
-      if (result) {
-        setRating(0)
-        setComment("")
-        setError("")
-        fetchProduct()
-      } else {
-        setError("Review submission failed")
-      }
-    },
-    [rating, comment, id, fetchProduct],
-  )
 
   const handleAddToCart = useCallback(
     async (product) => {
@@ -203,6 +176,179 @@ const ProductDetail = () => {
       }
     },
     [addingToCart, user, selectedVariant, navigate, dispatch],
+  )
+
+  // ✅ Review Form Handlers
+  const handleReviewImageChange = useCallback((e) => {
+    const files = Array.from(e.target.files)
+
+    if (files.length > 5) {
+      setReviewError("You can upload maximum 5 images")
+      return
+    }
+
+    // Validate file sizes (5MB each)
+    const oversizedFiles = files.filter((file) => file.size > 5 * 1024 * 1024)
+    if (oversizedFiles.length > 0) {
+      setReviewError("Each image must be less than 5MB")
+      return
+    }
+
+    setReviewImages(files)
+    setReviewError("")
+
+    // Create previews
+    const previews = files.map((file) => URL.createObjectURL(file))
+    setReviewImagePreviews(previews)
+  }, [])
+
+  const removeReviewImage = useCallback(
+    (index) => {
+      const newImages = reviewImages.filter((_, i) => i !== index)
+      const newPreviews = reviewImagePreviews.filter((_, i) => i !== index)
+
+      // Revoke the URL to prevent memory leaks
+      URL.revokeObjectURL(reviewImagePreviews[index])
+
+      setReviewImages(newImages)
+      setReviewImagePreviews(newPreviews)
+    },
+    [reviewImages, reviewImagePreviews],
+  )
+
+  const handleReviewSubmit = useCallback(
+    async (e) => {
+      e.preventDefault()
+
+      if (!reviewRating || !reviewComment.trim()) {
+        setReviewError("Please provide both rating and review.")
+        return
+      }
+
+      if (reviewComment.trim().length < 10) {
+        setReviewError("Review must be at least 10 characters long.")
+        return
+      }
+
+      setSubmittingReview(true)
+      setReviewError("")
+
+      try {
+        const formData = new FormData()
+        formData.append("rating", reviewRating)
+        formData.append("comment", reviewComment.trim())
+
+        // Add images to form data
+        reviewImages.forEach((image, index) => {
+          formData.append("images", image)
+        })
+
+        const result = await safeApiCall(async (api) => {
+          return await api.post(`/products/${id}/review`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+        })
+
+        if (result) {
+          // Reset form
+          setReviewRating(0)
+          setReviewComment("")
+          setReviewImages([])
+          setReviewImagePreviews([])
+          setReviewError("")
+
+          // Refresh product data
+          fetchProduct()
+
+          alert("Review submitted successfully!")
+        } else {
+          setReviewError("Failed to submit review. Please try again.")
+        }
+      } catch (err) {
+        console.error("Review submission error:", err)
+        setReviewError(err.message || "Failed to submit review")
+      } finally {
+        setSubmittingReview(false)
+      }
+    },
+    [reviewRating, reviewComment, reviewImages, id, fetchProduct],
+  )
+
+  // ✅ Review List Handlers
+  const handleDeleteReview = useCallback(
+    async (reviewId) => {
+      if (!confirm("Are you sure you want to delete your review?")) return
+
+      setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: true }))
+
+      const result = await safeApiCall(async (api) => {
+        return await api.delete(`/products/${id}/review/${reviewId}`)
+      })
+
+      if (result) {
+        fetchProduct() // Refresh product data
+        alert("Review deleted successfully!")
+      } else {
+        alert("Failed to delete review. Please try again.")
+      }
+
+      setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: false }))
+    },
+    [id, fetchProduct],
+  )
+
+  const handleLikeReview = useCallback(
+    async (reviewId) => {
+      if (!user?.token) {
+        alert("Please login to like reviews")
+        return
+      }
+
+      setActionLoading((prev) => ({ ...prev, [`like-${reviewId}`]: true }))
+
+      const result = await safeApiCall(async (api) => {
+        return await api.post(`/products/${id}/review/${reviewId}/like`)
+      })
+
+      if (result) {
+        // Update the specific review in the product state
+        setProduct((prev) => ({
+          ...prev,
+          reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
+        }))
+      }
+
+      setActionLoading((prev) => ({ ...prev, [`like-${reviewId}`]: false }))
+    },
+    [user, id],
+  )
+
+  const handleDislikeReview = useCallback(
+    async (reviewId) => {
+      if (!user?.token) {
+        alert("Please login to dislike reviews")
+        return
+      }
+
+      setActionLoading((prev) => ({ ...prev, [`dislike-${reviewId}`]: true }))
+
+      const result = await safeApiCall(async (api) => {
+        return await api.post(`/products/${id}/review/${reviewId}/dislike`)
+      })
+
+      if (result) {
+        // Update the specific review in the product state
+        setProduct((prev) => ({
+          ...prev,
+          reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
+        }))
+      }
+
+      setActionLoading((prev) => ({ ...prev, [`dislike-${reviewId}`]: false }))
+    },
+    [user, id],
   )
 
   // ✅ Memoized calculations
@@ -280,9 +426,11 @@ const ProductDetail = () => {
 
   const price = selectedVariant.price
   const discount = selectedVariant.discountPercent || 0
+  const reviewsToShow = showAllReviews ? otherReviews : otherReviews.slice(0, 3)
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {/* Product Images and Info */}
       <div className="grid md:grid-cols-2 gap-8">
         {/* Image Preview */}
         <div>
@@ -380,25 +528,58 @@ const ProductDetail = () => {
         )}
       </div>
 
-      {/* Reviews Section */}
+      {/* Ratings & Reviews Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
 
-        {/* Review submission form */}
+        {/* Review Statistics */}
+        {product.reviews && product.reviews.length > 0 && (
+          <div className="mb-6 p-4 bg-gray-50 rounded">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-yellow-600">{avgRating}</div>
+                <div className="flex justify-center mb-1">{renderStars(Number.parseFloat(avgRating))}</div>
+                <div className="text-sm text-gray-600">
+                  {product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+              <div className="flex-1">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = product.reviews.filter((r) => r.rating === star).length
+                  const percentage = product.reviews.length > 0 ? (count / product.reviews.length) * 100 : 0
+                  return (
+                    <div key={star} className="flex items-center gap-2 mb-1">
+                      <span className="text-sm w-8">{star}★</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div className="bg-yellow-400 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                      </div>
+                      <span className="text-sm text-gray-600 w-8">{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Review Form - Only show if user hasn't reviewed yet */}
         {token && !currentUserReview ? (
-          <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
+          <form onSubmit={handleReviewSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
+            <h3 className="text-lg font-semibold">Write a Review</h3>
+
+            {/* Rating */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
               <div className="flex items-center space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <svg
                     key={star}
-                    onClick={() => setRating(star)}
+                    onClick={() => setReviewRating(star)}
                     xmlns="http://www.w3.org/2000/svg"
-                    fill={rating >= star ? "#facc15" : "none"}
+                    fill={reviewRating >= star ? "#facc15" : "none"}
                     viewBox="0 0 24 24"
                     stroke="#facc15"
-                    className="w-6 h-6 cursor-pointer transition hover:scale-110"
+                    className="w-8 h-8 cursor-pointer transition hover:scale-110"
                   >
                     <path
                       strokeLinecap="round"
@@ -408,75 +589,212 @@ const ProductDetail = () => {
                     />
                   </svg>
                 ))}
+                <span className="ml-2 text-sm text-gray-600">
+                  {reviewRating > 0 ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}` : "Click to rate"}
+                </span>
               </div>
             </div>
 
+            {/* Comment */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Review:</label>
               <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
                 rows={4}
-                className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Write your honest feedback..."
+                className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Share your experience with this product... (minimum 10 characters)"
+                maxLength={1000}
               />
+              <div className="text-xs text-gray-500 mt-1">
+                {reviewComment.length}/1000 characters{" "}
+                {reviewComment.length < 10 && reviewComment.length > 0 && "(minimum 10 required)"}
+              </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Add Photos (Optional):</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleReviewImageChange}
+                className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="text-xs text-gray-500 mt-1">You can upload up to 5 images (max 5MB each)</div>
+            </div>
 
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-              Submit Review
+            {/* Image Previews */}
+            {reviewImagePreviews.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Photo Previews:</label>
+                <div className="flex flex-wrap gap-2">
+                  {reviewImagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview || "/placeholder.svg"}
+                        alt={`Preview ${index + 1}`}
+                        className="w-20 h-20 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeReviewImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
+
+            <button
+              type="submit"
+              disabled={submittingReview || !reviewRating || !reviewComment.trim() || reviewComment.trim().length < 10}
+              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submittingReview ? "Submitting..." : "Submit Review"}
             </button>
           </form>
         ) : token && currentUserReview ? (
-          <p className="text-gray-500 mb-4">You have already reviewed this product.</p>
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded">
+            <p className="text-green-700 font-medium">✅ You have already reviewed this product.</p>
+            <p className="text-sm text-green-600">You can delete your review and write a new one if needed.</p>
+          </div>
         ) : (
-          <p className="text-gray-500 mb-4">Please login to write a review.</p>
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded">
+            <p className="text-gray-600">Please login to write a review.</p>
+          </div>
         )}
 
-        {/* Display reviews */}
+        {/* Reviews List */}
         <div className="space-y-4">
+          {/* Current User's Review */}
           {currentUserReview && (
-            <div className="border p-4 rounded bg-blue-50 shadow-sm">
-              <div className="flex justify-between items-center mb-1">
+            <div className="border p-4 rounded shadow-sm bg-blue-50 border-blue-200">
+              <div className="flex justify-between items-start mb-2">
                 <div className="flex gap-2 items-center">
                   <p className="text-sm font-semibold text-blue-800">Your Review</p>
                   {renderStars(currentUserReview.rating)}
                 </div>
-                <p className="text-xs text-gray-400">{new Date(currentUserReview.createdAt).toLocaleString()}</p>
-              </div>
-              <p className="text-sm text-gray-700 mt-1">{currentUserReview.comment}</p>
-            </div>
-          )}
-
-          {otherReviews.length === 0 && !currentUserReview && (
-            <p className="text-gray-400 italic">No reviews yet. Be the first to review this product.</p>
-          )}
-
-          {(showAllReviews ? otherReviews : otherReviews.slice(0, 3)).map((r, i) => (
-            <div key={i} className="border p-4 rounded bg-white shadow-sm">
-              <div className="flex justify-between items-center mb-1">
-                <div className="flex gap-2 items-center">
-                  <p className="text-sm font-semibold text-gray-800">{r.name || "User"}</p>
-                  {renderStars(r.rating)}
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gray-400">{new Date(currentUserReview.createdAt).toLocaleDateString()}</p>
+                  <button
+                    onClick={() => handleDeleteReview(currentUserReview._id)}
+                    disabled={actionLoading[`delete-${currentUserReview._id}`]}
+                    className="text-xs text-red-500 hover:underline disabled:opacity-50"
+                  >
+                    {actionLoading[`delete-${currentUserReview._id}`] ? "Deleting..." : "Delete"}
+                  </button>
                 </div>
-                <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleString()}</p>
               </div>
-              <p className="text-sm text-gray-700 mt-1">{r.comment}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <button className="text-xs text-green-600 hover:underline">👍 {r.likes?.length || 0}</button>
-                <button className="text-xs text-red-600 hover:underline">👎 {r.dislikes?.length || 0}</button>
-              </div>
-            </div>
-          ))}
 
+              <p className="text-sm text-gray-700 mb-3">{currentUserReview.comment}</p>
+
+              {/* Review Images */}
+              {currentUserReview.images && currentUserReview.images.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {currentUserReview.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={`${API_BASE}${image}`}
+                        alt={`Review image ${index + 1}`}
+                        className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => {
+                          window.open(`${API_BASE}${image}`, "_blank")
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Other Reviews */}
+          {reviewsToShow.length === 0 && !currentUserReview && (
+            <div className="text-center py-8">
+              <p className="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
+            </div>
+          )}
+
+          {reviewsToShow.map((review) => {
+            const isLikeLoading = actionLoading[`like-${review._id}`]
+            const isDislikeLoading = actionLoading[`dislike-${review._id}`]
+
+            return (
+              <div key={review._id} className="border p-4 rounded shadow-sm bg-white">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex gap-2 items-center">
+                    <p className="text-sm font-semibold text-gray-800">{review.name || "User"}</p>
+                    {renderStars(review.rating)}
+                  </div>
+                  <p className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>
+                </div>
+
+                <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
+
+                {/* Review Images */}
+                {review.images && review.images.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {review.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={`${API_BASE}${image}`}
+                          alt={`Review image ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() => {
+                            window.open(`${API_BASE}${image}`, "_blank")
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Like/Dislike buttons */}
+                <div className="flex items-center gap-4 mt-2">
+                  <button
+                    onClick={() => handleLikeReview(review._id)}
+                    disabled={isLikeLoading}
+                    className={`text-xs flex items-center gap-1 hover:underline transition-colors ${
+                      review.userLiked ? "text-blue-600 font-semibold" : "text-green-600"
+                    } disabled:opacity-50`}
+                  >
+                    <span>👍</span>
+                    <span>{isLikeLoading ? "..." : review.likes?.length || 0}</span>
+                  </button>
+                  <button
+                    onClick={() => handleDislikeReview(review._id)}
+                    disabled={isDislikeLoading}
+                    className={`text-xs flex items-center gap-1 hover:underline transition-colors ${
+                      review.userDisliked ? "text-red-600 font-semibold" : "text-red-500"
+                    } disabled:opacity-50`}
+                  >
+                    <span>👎</span>
+                    <span>{isDislikeLoading ? "..." : review.dislikes?.length || 0}</span>
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Show More/Less Button */}
           {otherReviews.length > 3 && (
-            <button
-              onClick={() => setShowAllReviews(!showAllReviews)}
-              className="text-blue-600 text-sm mt-2 hover:underline"
-            >
-              {showAllReviews ? "Show less" : "See more reviews"}
-            </button>
+            <div className="text-center">
+              <button
+                onClick={() => setShowAllReviews(!showAllReviews)}
+                className="text-blue-600 text-sm hover:underline"
+              >
+                {showAllReviews ? `Show Less` : `Show ${otherReviews.length - 3} More Reviews`}
+              </button>
+            </div>
           )}
         </div>
       </div>
