@@ -3,11 +3,12 @@ import { configureStore } from '@reduxjs/toolkit';
 import cartReducer from '../Redux/cartSlice';
 import storage from 'redux-persist/lib/storage';
 import { persistReducer, persistStore } from 'redux-persist';
+import { thunk } from 'redux-thunk';
 
-const cartPersistConfig = {
-  key: 'cart',
+const persistConfig = {
+  key: `cart_${user?.userId || "guest"}`,
   storage,
-  whitelist: ['items', 'userId'],
+  whitelist: ["items"],
 };
 
 const persistedCartReducer = persistReducer(cartPersistConfig, cartReducer);
@@ -18,11 +19,10 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // needed for redux-persist
-    }),
+      serializableCheck: false,
+    }).concat(thunk),
 });
 
-// Optional: log state changes
 store.subscribe(() => {
   const state = store.getState();
   console.log("Cart Items:", state.cart.items);

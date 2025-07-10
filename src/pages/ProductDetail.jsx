@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from "../utils/api"; 
 import { useDispatch,useSelector } from 'react-redux';
-import { addToCart, setCartItems } from '../Redux/cartSlice';
+import { addToCart } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
 
 const ProductDetail = () => {
@@ -43,7 +43,7 @@ const ProductDetail = () => {
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setCartItems(res.data.items));
+          dispatch(setCart(res.data.items));
         })
         .catch((err) => {
           console.error("❌ Fetch cart error", err);
@@ -92,7 +92,7 @@ const fetchProduct = async () => {
     if (!rating || !comment) return setError("Please provide both star and review.");
 
     try {
-      await axiosWithToken().post(`/products/${id}/review`, { rating, comment });
+      await axiosWithToken().post(`products/${id}/review, { rating, comment }`);
       setRating(0); setComment('');
       fetchProduct();
     } catch (err) {
@@ -157,11 +157,8 @@ const fetchProduct = async () => {
       existingItems.push(productToAdd);
     }
 
-    await axiosWithToken().post('/cart', {
-      productId: productToAdd._id,
-      quantity: 1,
-      variant: productToAdd.weight,
-    });
+    // 4. Save updated cart to backend
+    await axiosWithToken().post('/cart', { items: existingItems });
 
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
@@ -485,7 +482,7 @@ const handleDislike = async (reviewId) => {
               return (
                 <div
                   key={p._id}
-                  onClick={() => navigate(`/product/${p._id}`)}
+                  onClick={() => navigate(`product/${p._id}`)}
                   className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
                 >
                   <img
@@ -508,4 +505,4 @@ const handleDislike = async (reviewId) => {
   );
 };
 
-export default ProductDetail;  
+export default ProductDetail;

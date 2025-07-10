@@ -59,4 +59,4 @@ export const {
   removeFromCart,
 } = cartSlice.actions;
 
-export default cartSlice.reducer;
+export default cartSlice.reducer
