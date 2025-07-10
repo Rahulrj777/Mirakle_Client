@@ -12,9 +12,9 @@ if (typeof window !== "undefined") {
 }
 
 const persistConfig = {
-  key: `cart_${userId}`,
+  key: 'cart',
   storage,
-  whitelist: ['items', 'userId'],
+  whitelist: ['items', 'userId', 'cartReady'],
 };
 
 const persistedCartReducer = persistReducer(persistConfig, cartReducer);

@@ -135,6 +135,8 @@ const fetchProduct = async () => {
     _id: product._id,
     title: product.title,
     images: product.images,
+    variantId: selectedVariant._id, 
+    size: selectedVariant.size || selectedVariant.weight?.value + ' ' + selectedVariant.weight?.unit, 
     weight: {
       value: selectedVariant?.weight?.value || selectedVariant?.size,
       unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit")
@@ -145,13 +147,12 @@ const fetchProduct = async () => {
 
   try {
     dispatch(addToCart(productToAdd));
-    await axiosWithToken().post('/cart/add', { item: productToAdd });
+    await axiosWithToken().post('/cart/add', { item: productToAdd }); // sync backend
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
     alert("Something went wrong while syncing cart.");
   }
 };
-
 
   const handleBuyNow = async () => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));

@@ -1,34 +1,35 @@
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { setUserId, setcartItem } from './Redux/cartSlice';
-import { axiosWithToken } from './utils/axiosWithToken';     
+import { useSelector, useDispatch } from 'react-redux';
+import { setCartItems, setUserId } from './Redux/cartSlice';
 import Routing from './Routing/Routing';
 
 const App = () => {
+  const cart = useSelector((state) => state.cart.items) || [];
+  const userId = useSelector((state) => state.cart.userId);
   const dispatch = useDispatch();
-  const [isCartLoaded, setIsCartLoaded] = useState(false);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-    if (userData?.token) {
+    if (userData?.user?._id) {
       dispatch(setUserId(userData.user._id));
-      axiosWithToken()
-        .get("/cart")
-        .then((res) => {
-          dispatch(setCartItem(res.data));
-          dispatch(setCartReady(true));
-          localStorage.setItem(`cart_${userData.user._id}`, JSON.stringify(res.data));
-        })
-        .catch((err) => {
-          console.error("❌ Failed to load backend cart:", err);
-          dispatch(setCartReady(true));
-        });
-    } else {
-      dispatch(setCartReady(true));
+      const savedCart = localStorage.getItem(`cart_${userData.user._id}`);
+      if (savedCart) {
+        dispatch(setCartItem(JSON.parse(savedCart)));
+      }
     }
-  }, []);
+    dispatch(setCartReady(true)); // ✅ ADD THIS
+  }, [dispatch]);
 
-  return <Routing />;
+  useEffect(() => {
+    if (userId && Array.isArray(cart)) {
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(cart));
+    }
+  }, [cart, userId]);
+
+  return (
+      <Routing />
+
+  );
 };
 
 export default App;
