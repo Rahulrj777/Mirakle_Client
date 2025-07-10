@@ -60,7 +60,7 @@ const ProductDetail = () => {
       const found = res.data.find((p) => p._id === id)
 
       if (found) {
-        setProduct(found)
+        setProduct(found) // Use actual product data without mock reviews
         setSelectedImage(found.images?.others?.[0] || "")
 
         if (found.variants && found.variants.length > 0) {
@@ -216,6 +216,7 @@ const ProductDetail = () => {
     [reviewImages, reviewImagePreviews],
   )
 
+  // ✅ Real Review Form Handler (with API calls)
   const handleReviewSubmit = useCallback(
     async (e) => {
       e.preventDefault()
@@ -276,7 +277,7 @@ const ProductDetail = () => {
     [reviewRating, reviewComment, reviewImages, id, fetchProduct],
   )
 
-  // ✅ Review List Handlers
+  // ✅ Real Delete Review Handler (with API calls)
   const handleDeleteReview = useCallback(
     async (reviewId) => {
       if (!confirm("Are you sure you want to delete your review?")) return
@@ -299,6 +300,7 @@ const ProductDetail = () => {
     [id, fetchProduct],
   )
 
+  // ✅ Real Like Review Handler (with API calls)
   const handleLikeReview = useCallback(
     async (reviewId) => {
       if (!user?.token) {
@@ -325,6 +327,7 @@ const ProductDetail = () => {
     [user, id],
   )
 
+  // ✅ Real Dislike Review Handler (with API calls)
   const handleDislikeReview = useCallback(
     async (reviewId) => {
       if (!user?.token) {
