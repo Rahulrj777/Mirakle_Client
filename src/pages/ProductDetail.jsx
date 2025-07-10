@@ -144,29 +144,14 @@ const fetchProduct = async () => {
   };
 
   try {
-    // 1. Update Redux store
     dispatch(addToCart(productToAdd));
-
-    // 2. Get current cart from backend
-    const existingRes = await axiosWithToken().get("/cart");
-    const existingItems = existingRes.data || [];
-
-    // 3. Check if already exists
-    const existingIndex = existingItems.findIndex(item => item._id === productToAdd._id);
-    if (existingIndex > -1) {
-      existingItems[existingIndex].quantity += 1;
-    } else {
-      existingItems.push(productToAdd);
-    }
-
-    // 4. Save updated cart to backend
-    await axiosWithToken().post('/cart', { items: existingItems });
-
+    await axiosWithToken().post('/cart/add', { item: productToAdd });
   } catch (err) {
     console.error("❌ Add to cart failed:", err);
     alert("Something went wrong while syncing cart.");
   }
 };
+
 
   const handleBuyNow = async () => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));

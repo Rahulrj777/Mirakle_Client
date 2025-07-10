@@ -28,10 +28,17 @@ const AddToCart = () => {
   }, []);
 
   useEffect(() => {
-    const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
-    if (token && cartItems.length > 0) {
-      axiosWithToken().post('/cart', { items: cartItems }).catch(console.error);
-    }
+    const syncCart = async () => {
+      const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+      if (token && cartItems.length > 0) {
+        try {
+          await axiosWithToken().post('/cart/add', { item }); // make sure `item` is defined in scope
+        } catch (err) {
+          console.error("Cart sync failed:", err);
+        }
+      }
+    };
+    syncCart();
   }, [cartItems]);
 
   return (
