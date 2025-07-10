@@ -5,7 +5,7 @@ import "../Style/login.css";
 import { API_BASE } from '../utils/api';
 import { IoIosEye, IoIosEyeOff } from "react-icons/io";
 import { useDispatch } from "react-redux";
-import { setCartItems, setUserId } from "../Redux/cartSlice";
+import { setcartItem, setUserId } from "../Redux/cartSlice";
 import { axiosWithToken } from "../utils/axiosWithToken";
 
 const LoginSignUp = () => {
@@ -58,11 +58,11 @@ const LoginSignUp = () => {
 
       const savedCart = localStorage.getItem(`cart_${user._id}`);
       if (savedCart) {
-        dispatch(setCartItems(JSON.parse(savedCart)));
+        dispatch(setcartItem(JSON.parse(savedCart)));
       } else {
         const cartRes = await axiosWithToken().get('/cart');
         const serverCart = cartRes.data;
-        dispatch(setCartItems(Array.isArray(serverCart) ? serverCart : []));
+        dispatch(setcartItem(Array.isArray(serverCart) ? serverCart : []));
       }
       navigate("/");
     } catch (error) {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setCartItems, setUserId } from './Redux/cartSlice';
+import { setcartItem, setUserId } from './Redux/cartSlice';
 import Routing from './Routing/Routing';
 
 const App = () => {
@@ -14,7 +14,7 @@ const App = () => {
       dispatch(setUserId(userData.user._id));
       const savedCart = localStorage.getItem(`cart_${userData.user._id}`);
       if (savedCart) {
-        dispatch(setCartItems(JSON.parse(savedCart)));
+        dispatch(setcartItem(JSON.parse(savedCart)));
       }
     }
   }, [dispatch]);
