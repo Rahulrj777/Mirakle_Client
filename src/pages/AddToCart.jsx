@@ -24,7 +24,12 @@ const AddToCart = () => {
     if (!user) {
       alert("Please login to view your cart");
       navigate("/login_signup");
+      return;
     }
+    axiosWithToken()
+      .get("/cart")
+      .then((res) => dispatch(setcartItem(res.data)))
+      .catch((err) => console.error("Cart load failed", err));
   }, []);
 
   useEffect(() => {

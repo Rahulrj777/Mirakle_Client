@@ -15,11 +15,13 @@ const App = () => {
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setcartItem(res.data));
+          dispatch(setcartItem(res.data)); 
         })
         .catch((err) => {
           console.error("❌ Failed to load backend cart:", err);
         });
+    } else {
+      dispatch(clearCart()); // ✅ ensure no cart leak on guest session
     }
   }, [dispatch]);
 
