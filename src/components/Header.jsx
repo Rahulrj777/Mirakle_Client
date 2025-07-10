@@ -1,109 +1,141 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { HiOutlineShoppingBag } from "react-icons/hi2";
-import { FaRegUser } from "react-icons/fa";
-import { useSelector, useDispatch } from "react-redux";
-import { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import logo from "../assets/logo.png";
-import { API_BASE } from "../utils/api";
-import { clearCart, setCartItem, setUserId, clearUser } from "../Redux/cartSlice";
+"use client"
+
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { HiOutlineShoppingBag } from "react-icons/hi2"
+import { FaRegUser } from "react-icons/fa"
+import { useSelector, useDispatch } from "react-redux"
+import { useState, useEffect, useRef } from "react"
+import axios from "axios"
+import logo from "../assets/logo.png"
+import { API_BASE } from "../utils/api"
+import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice"
 
 const Header = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const cartItems = useSelector((state) => state.cart.items) || [];
-  const [searchTerm, setSearchTerm] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
+  const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const cartItems = useSelector((state) => state.cart.items) || []
+  const currentUserId = useSelector((state) => state.cart.userId)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [suggestions, setSuggestions] = useState([])
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
+      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
     } catch {
-      return null;
+      return null
     }
-  });
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef(null);
+  })
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef(null)
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname === path
 
-  // 🔁 Refresh user on route change
+  // 🔥 IMPORTANT: Refresh user on route change and check for user mismatch
   useEffect(() => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
-      setUser(storedUser);
+      const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
+      setUser(storedUser)
+
+      // 🔥 Check if stored user ID matches Redux user ID
+      if (storedUser && currentUserId && storedUser._id !== currentUserId) {
+        console.log("User mismatch detected, clearing cart...")
+        dispatch(clearUser())
+        dispatch(setUserId(storedUser._id))
+
+        // Load correct cart for this user
+        const correctCart = localStorage.getItem(`cart_${storedUser._id}`)
+        if (correctCart) {
+          try {
+            const parsedCart = JSON.parse(correctCart)
+            if (Array.isArray(parsedCart)) {
+              dispatch(setCartItem(parsedCart))
+            }
+          } catch (error) {
+            console.error("Error loading correct cart:", error)
+            dispatch(setCartItem([]))
+          }
+        } else {
+          dispatch(setCartItem([]))
+        }
+      }
     } catch {
-      setUser(null);
+      setUser(null)
     }
-  }, [location.pathname]);
+  }, [location.pathname, currentUserId, dispatch])
 
   useEffect(() => {
-    const stored = localStorage.getItem("mirakleUser");
+    const stored = localStorage.getItem("mirakleUser")
     if (stored) {
       try {
-        const parsed = JSON.parse(stored);
-        const uid = parsed?.user?._id;
+        const parsed = JSON.parse(stored)
+        const uid = parsed?.user?._id
         if (uid) {
-          dispatch(setUserId(uid));
-          const userCart = localStorage.getItem(`cart_${uid}`);
+          dispatch(setUserId(uid))
+          const userCart = localStorage.getItem(`cart_${uid}`)
           if (userCart) {
-            const parsedCart = JSON.parse(userCart);
-            if (Array.isArray(parsedCart)) dispatch(setCartItem(parsedCart));
+            const parsedCart = JSON.parse(userCart)
+            if (Array.isArray(parsedCart)) dispatch(setCartItem(parsedCart))
           }
         }
       } catch {
-        console.warn("Error restoring cart from localStorage");
+        console.warn("Error restoring cart from localStorage")
       }
     }
-  }, [dispatch]);
+  }, [dispatch])
 
   const handleSearchChange = async (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (!value.trim()) return setSuggestions([]);
-
+    const value = e.target.value
+    setSearchTerm(value)
+    if (!value.trim()) return setSuggestions([])
     try {
-      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
-      setSuggestions(res.data.slice(0, 6));
+      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
+      setSuggestions(res.data.slice(0, 6))
     } catch (error) {
-      console.error("Error fetching suggestions:", error);
+      console.error("Error fetching suggestions:", error)
     }
-  };
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && searchTerm.trim()) {
-      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`);
-      setSuggestions([]);
-      setSearchTerm("");
+      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`)
+      setSuggestions([])
+      setSearchTerm("")
     }
-  };
+  }
 
   const handleLogout = () => {
-    const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user;
+    const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user
+
+    // 🔥 IMPORTANT: Clear user-specific cart from localStorage
     if (user?._id) {
-      localStorage.removeItem(`cart_${user._id}`);
+      // Don't remove the cart, just clear Redux state
+      console.log(`Logging out user ${user._id}, keeping their cart in localStorage`)
     }
-    localStorage.removeItem("mirakleUser");
-    dispatch(clearCart());
-    dispatch(clearUser());
-    navigate("/login_signup");
-  };
+
+    // Clear user session
+    localStorage.removeItem("mirakleUser")
+
+    // 🔥 Clear Redux state completely
+    dispatch(clearUser())
+
+    navigate("/login_signup")
+  }
 
   const handleSelectSuggestion = (id) => {
-    navigate(`/product/${id}`);
-    setSearchTerm("");
-    setSuggestions([]);
-  };
+    navigate(`/product/${id}`)
+    setSearchTerm("")
+    setSuggestions([])
+  }
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
+        setShowDropdown(false)
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   return (
     <header className="sticky top-0 z-[150] shadow-md bg-white">
@@ -163,6 +195,7 @@ const Header = () => {
               {showDropdown && (
                 <div className="absolute top-12 right-0 bg-white shadow-md rounded-md z-50 w-40 py-2">
                   <p className="px-4 py-2 text-gray-700 text-sm">{user.name || user.email}</p>
+                  <p className="px-4 py-1 text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
                   <hr />
                   <button
                     onClick={handleLogout}
@@ -184,10 +217,10 @@ const Header = () => {
             className="relative cursor-pointer"
             onClick={() => {
               if (!user) {
-                alert("Please login to view your cart");
-                navigate("/login_signup");
+                alert("Please login to view your cart")
+                navigate("/login_signup")
               } else {
-                navigate("/AddToCart");
+                navigate("/AddToCart")
               }
             }}
           >
@@ -214,15 +247,13 @@ const Header = () => {
               <Link to={item.path} className={isActive(item.path) ? "text-white font-bold" : "text-white"}>
                 {item.list}
               </Link>
-              {isActive(item.path) && (
-                <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />
-              )}
+              {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
             </li>
           ))}
         </ul>
       </nav>
     </header>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header

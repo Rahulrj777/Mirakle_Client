@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
@@ -5,7 +7,7 @@ import "../Style/login.css"
 import { API_BASE } from "../utils/api"
 import { IoIosEye, IoIosEyeOff } from "react-icons/io"
 import { useDispatch } from "react-redux"
-import { setCartItem, setUserId, clearCart, setCartReady } from "../Redux/cartSlice"
+import { setCartItem, setUserId, setCartReady, clearUser } from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
 
 const LoginSignUp = () => {
@@ -18,9 +20,6 @@ const LoginSignUp = () => {
   const [showSignUpPassword, setShowSignUpPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotEmail, setForgotEmail] = useState("")
-  const [forgotLoading, setForgotLoading] = useState(false)
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
@@ -70,6 +69,11 @@ const LoginSignUp = () => {
 
     try {
       setLoading(true)
+
+      // 🔥 CLEAR EVERYTHING FIRST - This is the key fix!
+      dispatch(clearUser())
+      dispatch(setCartReady(false))
+
       const res = await axios.post(`${API_BASE}/api/login`, {
         email: email.trim(),
         password,
@@ -78,30 +82,48 @@ const LoginSignUp = () => {
       const user = res.data.user
       const token = res.data.token
 
+      // Store user data
       localStorage.setItem("mirakleUser", JSON.stringify({ user, token }))
-      dispatch(setUserId(user._id))
-      dispatch(clearCart())
 
+      // Set new user ID
+      dispatch(setUserId(user._id))
+
+      // 🔥 IMPORTANT: Wait a bit for Redux to update
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Load cart for THIS specific user
       const savedCart = localStorage.getItem(`cart_${user._id}`)
+
       if (savedCart) {
-        // Local cart exists → load to Redux first
-        const parsedCart = JSON.parse(savedCart)
-        if (Array.isArray(parsedCart)) {
-          dispatch(setCartItem(parsedCart))
-          // Then sync it to backend
-          try {
+        try {
+          const parsedCart = JSON.parse(savedCart)
+          if (Array.isArray(parsedCart)) {
+            console.log(`Loading cart for user ${user._id}:`, parsedCart)
+            dispatch(setCartItem(parsedCart))
+
+            // Sync to backend
             await axiosWithToken().post("/cart", { items: parsedCart })
-          } catch (syncError) {
-            console.error("Cart sync error:", syncError)
+          } else {
+            dispatch(setCartItem([]))
           }
+        } catch (parseError) {
+          console.error("Error parsing saved cart:", parseError)
+          dispatch(setCartItem([]))
         }
       } else {
         // No local cart → fetch from backend
         try {
           const cartRes = await axiosWithToken().get("/cart")
-          const serverCart = Array.isArray(cartRes.data) ? cartRes.data : []
+          const serverCart = Array.isArray(cartRes.data.items)
+            ? cartRes.data.items
+            : Array.isArray(cartRes.data)
+              ? cartRes.data
+              : []
+
+          console.log(`Loading server cart for user ${user._id}:`, serverCart)
           dispatch(setCartItem(serverCart))
-          // Store server cart into localStorage
+
+          // Store in localStorage for this user
           localStorage.setItem(`cart_${user._id}`, JSON.stringify(serverCart))
         } catch (fetchError) {
           console.error("Fetch cart error:", fetchError)
@@ -119,26 +141,14 @@ const LoginSignUp = () => {
     }
   }
 
-  const handleForgotPassword = async () => {
-    if (!forgotEmail.trim()) {
-      alert("❌ Please enter your email address!")
-      return
-    }
+  const handleForgotPassword = () => {
+    const userEmail = prompt("Enter your registered email:")
+    if (!userEmail || !userEmail.trim()) return
 
-    try {
-      setForgotLoading(true)
-      await axios.post(`${API_BASE}/api/forgot-password`, {
-        email: forgotEmail.trim(),
-      })
-      alert("📩 Reset email sent successfully!")
-      setShowForgotPassword(false)
-      setForgotEmail("")
-    } catch (error) {
-      console.error("Forgot password error:", error)
-      alert("❌ " + (error.response?.data?.message || "Error sending reset email"))
-    } finally {
-      setForgotLoading(false)
-    }
+    axios
+      .post(`${API_BASE}/api/forgot-password`, { email: userEmail.trim() })
+      .then(() => alert("📩 Reset email sent!"))
+      .catch((err) => alert("❌ " + (err.response?.data?.message || "Error sending reset email")))
   }
 
   return (
@@ -171,10 +181,7 @@ const LoginSignUp = () => {
                 {showSignInPassword ? <IoIosEye /> : <IoIosEyeOff />}
               </span>
             </div>
-            <p
-              className="text-sm text-blue-500 mb-4 cursor-pointer hover:underline"
-              onClick={() => setShowForgotPassword(true)}
-            >
+            <p className="text-sm text-blue-500 mb-4 cursor-pointer hover:underline" onClick={handleForgotPassword}>
               Forgot your password?
             </p>
             <button className="form-button" onClick={handleSignIn} disabled={loading}>
@@ -239,41 +246,6 @@ const LoginSignUp = () => {
             </button>
           </div>
         </div>
-
-        {showForgotPassword && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-              <h3 className="text-xl font-bold mb-4">Reset Password</h3>
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full px-3 py-2 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                disabled={forgotLoading}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleForgotPassword}
-                  disabled={forgotLoading}
-                  className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {forgotLoading ? "Sending..." : "Send Reset Email"}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowForgotPassword(false)
-                    setForgotEmail("")
-                  }}
-                  disabled={forgotLoading}
-                  className="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="overlay-container">
           <div className="overlay">

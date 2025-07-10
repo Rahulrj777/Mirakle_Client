@@ -1,65 +1,64 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
   items: [],
   cartReady: false,
   userId: null,
-};
+}
 
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
     setUserId: (state, action) => {
-      state.userId = action.payload;
+      state.userId = action.payload
     },
     setCartItem: (state, action) => {
-      // Ensure we always set an array
-      state.items = Array.isArray(action.payload) ? action.payload : [];
+      // Ensure we always set an array and clear previous data
+      state.items = Array.isArray(action.payload) ? action.payload : []
     },
     clearCart: (state) => {
-      state.items = [];
+      state.items = []
     },
     clearUser: (state) => {
-      state.userId = null;
-      state.items = [];
-      state.cartReady = false;
+      state.userId = null
+      state.items = []
+      state.cartReady = false
     },
     setCartReady: (state, action) => {
-      state.cartReady = action.payload;
+      state.cartReady = action.payload
     },
     addToCart: (state, action) => {
       if (!Array.isArray(state.items)) {
-        state.items = [];
+        state.items = []
       }
       const existingItem = state.items.find(
-        item => item._id === action.payload._id && 
-        item.variantId === action.payload.variantId
-      );
+        (item) => item._id === action.payload._id && item.variantId === action.payload.variantId,
+      )
       if (existingItem) {
-        existingItem.quantity += action.payload.quantity || 1;
+        existingItem.quantity += action.payload.quantity || 1
       } else {
-        state.items.push({ 
-          ...action.payload, 
-          quantity: action.payload.quantity || 1 
-        });
+        state.items.push({
+          ...action.payload,
+          quantity: action.payload.quantity || 1,
+        })
       }
     },
     incrementQuantity: (state, action) => {
-      const item = state.items.find(item => item._id === action.payload);
-      if (item) item.quantity += 1;
+      const item = state.items.find((item) => item._id === action.payload)
+      if (item) item.quantity += 1
     },
     decrementQuantity: (state, action) => {
-      const item = state.items.find(item => item._id === action.payload);
+      const item = state.items.find((item) => item._id === action.payload)
       if (item && item.quantity > 1) {
-        item.quantity -= 1;
+        item.quantity -= 1
       }
     },
     removeFromCart: (state, action) => {
-      state.items = state.items.filter(item => item._id !== action.payload);
+      state.items = state.items.filter((item) => item._id !== action.payload)
     },
   },
-});
+})
 
 export const {
   setUserId,
@@ -71,6 +70,6 @@ export const {
   decrementQuantity,
   removeFromCart,
   setCartReady,
-} = cartSlice.actions;
+} = cartSlice.actions
 
-export default cartSlice.reducer;
+export default cartSlice.reducer
