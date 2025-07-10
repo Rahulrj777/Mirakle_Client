@@ -33,17 +33,19 @@ const AddToCart = () => {
   }, []);
 
   useEffect(() => {
-    const syncCart = async () => {
-      const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
-      if (token && cartItems.length > 0) {
-        try {
-          await axiosWithToken().post('/cart/add', { item }); // make sure `item` is defined in scope
-        } catch (err) {
-          console.error("Cart sync failed:", err);
-        }
+    const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+    if (!token) return;
+
+    const sync = setTimeout(() => {
+      if (cartItems.length > 0) {
+        axiosWithToken()
+          .post('/cart', { items: cartItems })
+          .then(() => console.log("✅ Synced cart"))
+          .catch(err => console.error("❌ Sync failed", err));
       }
-    };
-    syncCart();
+    }, 500);
+
+    return () => clearTimeout(sync);
   }, [cartItems]);
 
   return (

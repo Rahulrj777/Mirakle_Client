@@ -79,9 +79,6 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    if (user?._id) {
-      localStorage.removeItem(`cart_${user._id}`);
-    }
     localStorage.removeItem("mirakleUser");
     dispatch(clearCart());
     setUser(null);

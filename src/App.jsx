@@ -9,21 +9,17 @@ const App = () => {
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-    if (userData?.user?._id) {
-      dispatch(setUserId(userData.user._id));
-
+    if (userData?.token) {
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setcartItem(res.data)); 
+          dispatch(setcartItem(res.data || []));  // Load user-specific cart
         })
         .catch((err) => {
           console.error("❌ Failed to load backend cart:", err);
         });
-    } else {
-      dispatch(clearCart()); // ✅ ensure no cart leak on guest session
     }
-  }, [dispatch]);
+  }, []);
 
   return <Routing />;
 };
