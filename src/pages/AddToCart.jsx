@@ -19,18 +19,15 @@ const AddToCart = () => {
     0
   );
 
+  if (!cartReady) return <div className="text-center py-10">Loading cart...</div>;
+
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("mirakleUser"));
-    if (!user) {
-      alert("Please login to view your cart");
-      navigate("/login_signup");
-      return;
+    const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user;
+    if (user && cartReady) {
+      localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems));
+      axiosWithToken().post('/cart', { items: cartItems }).catch(console.error);
     }
-    axiosWithToken()
-      .get("/cart")
-      .then((res) => dispatch(setcartItem(res.data)))
-      .catch((err) => console.error("Cart load failed", err));
-  }, []);
+  }, [cartItems, cartReady]);
 
   useEffect(() => {
     const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
@@ -47,8 +44,6 @@ const AddToCart = () => {
 
     return () => clearTimeout(sync);
   }, [cartItems]);
-
-  if (!cartReady) return <div className="text-center py-10">Loading cart...</div>;
 
   return (
     <div className="bg-gray-100 py-8 min-h-screen">

@@ -3,19 +3,17 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   items: [],
   cartReady: false,
-  userId: null
+  userId: null,
 };
+
 const cartSlice = createSlice({
   name: "cart",
-  initialState: {
-    items: [],
-    userId: null,
-  },
+  initialState, 
   reducers: {
     setUserId: (state, action) => {
       state.userId = action.payload;
     },
-    setcartItem: (state, action) => {
+    setCartItem: (state, action) => {
       state.items = action.payload;
     },
     clearCart: (state) => {

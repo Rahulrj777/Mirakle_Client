@@ -8,25 +8,25 @@ const App = () => {
   const dispatch = useDispatch();
   const [isCartLoaded, setIsCartLoaded] = useState(false);
 
-
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
     if (userData?.token) {
-      dispatch(clearCart()); // ← prevent old cart
+      dispatch(setUserId(userData.user._id));
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setcartItem(res.data));
-          setIsCartLoaded(true);
+          dispatch(setCartItem(res.data));
+          dispatch(setCartReady(true));
+          localStorage.setItem(`cart_${userData.user._id}`, JSON.stringify(res.data));
         })
         .catch((err) => {
           console.error("❌ Failed to load backend cart:", err);
-          setIsCartLoaded(true); // still mark as loaded
+          dispatch(setCartReady(true));
         });
     } else {
-      setIsCartLoaded(true); // no user, still mark as loaded
+      dispatch(setCartReady(true));
     }
-  }, [dispatch]);
+  }, []);
 
   return <Routing />;
 };

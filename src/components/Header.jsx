@@ -79,11 +79,14 @@ const Header = () => {
   };
 
   const handleLogout = () => {
+    const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user;
+    if (user?._id) {
+      localStorage.removeItem(`cart_${user._id}`);
+    }
     localStorage.removeItem("mirakleUser");
     dispatch(clearCart());
-    setUser(null);
-    navigate("/login_signup");
     dispatch(clearUser());
+    navigate("/login_signup");
   };
 
   const handleSelectSuggestion = (id) => {

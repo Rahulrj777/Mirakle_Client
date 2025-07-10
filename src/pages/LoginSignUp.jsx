@@ -55,24 +55,32 @@ const LoginSignUp = () => {
     const token = res.data.token;
 
     localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
-    dispatch(setUserId(user._id))
-    dispatch(clearCart()); 
-    dispatch(setCartReady(false)); 
+    dispatch(setUserId(user._id));
+    dispatch(clearCart());
 
     const savedCart = localStorage.getItem(`cart_${user._id}`);
+
     if (savedCart) {
-      dispatch(setCartItem(JSON.parse(savedCart)));
+      // ✅ Local cart exists → load to Redux first
+      const parsedCart = JSON.parse(savedCart);
+      dispatch(setCartItem(parsedCart));
+
+      // ✅ Then sync it to backend
+      await axiosWithToken().post('/cart', { items: parsedCart });
     } else {
+      // ✅ No local cart → fetch from backend
       const cartRes = await axiosWithToken().get('/cart');
-      const serverCart = cartRes.data;
-      dispatch(setCartItem(Array.isArray(serverCart) ? serverCart : []));
+      const serverCart = Array.isArray(cartRes.data) ? cartRes.data : [];
+      dispatch(setCartItem(serverCart));
+
+      // ✅ Store server cart into localStorage
+      localStorage.setItem(`cart_${user._id}`, JSON.stringify(serverCart));
     }
 
-    dispatch(setCartReady(true));
+    dispatch(setCartReady(true)); // Important!
     navigate("/");
   } catch (error) {
     alert("Login failed");
-    dispatch(setCartReady(true)); 
   }
 };
 
