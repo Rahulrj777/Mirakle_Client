@@ -48,27 +48,33 @@ const LoginSignUp = () => {
     }
   };
 
-  const handleSignIn = async () => {
-    try {
-      const res = await axios.post(`${API_BASE}/api/login`, { email, password });
-      const user = res.data.user;
-      const token = res.data.token;
-      localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
-      dispatch(setUserId(user._id));
+ const handleSignIn = async () => {
+  try {
+    const res = await axios.post(`${API_BASE}/api/login`, { email, password });
+    const user = res.data.user;
+    const token = res.data.token;
 
-      const savedCart = localStorage.getItem(`cart_${user._id}`);
-      if (savedCart) {
-        dispatch(setCartItem(JSON.parse(savedCart)));
-      } else {
-        const cartRes = await axiosWithToken().get('/cart');
-        const serverCart = cartRes.data;
-        dispatch(setCartItem(Array.isArray(serverCart) ? serverCart : []));
-      }
-      navigate("/");
-    } catch (error) {
-      alert("Login failed");
+    localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
+    dispatch(setUserId(user._id))
+    dispatch(clearCart()); 
+    dispatch(setCartReady(false)); 
+
+    const savedCart = localStorage.getItem(`cart_${user._id}`);
+    if (savedCart) {
+      dispatch(setCartItem(JSON.parse(savedCart)));
+    } else {
+      const cartRes = await axiosWithToken().get('/cart');
+      const serverCart = cartRes.data;
+      dispatch(setCartItem(Array.isArray(serverCart) ? serverCart : []));
     }
-  };
+
+    dispatch(setCartReady(true));
+    navigate("/");
+  } catch (error) {
+    alert("Login failed");
+    dispatch(setCartReady(true)); 
+  }
+};
 
   const handleForgotPassword = () => {
     const userEmail = prompt("Enter your registered email:");

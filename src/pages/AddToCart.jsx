@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from '../utils/axiosWithToken';
 
 const AddToCart = () => {
-  const cartItems = useSelector((state) => state.cart.items) || [];
+  const { items: cartItems, cartReady } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -47,6 +47,8 @@ const AddToCart = () => {
 
     return () => clearTimeout(sync);
   }, [cartItems]);
+
+  if (!cartReady) return <div className="text-center py-10">Loading cart...</div>;
 
   return (
     <div className="bg-gray-100 py-8 min-h-screen">

@@ -6,20 +6,27 @@ import Routing from './Routing/Routing';
 
 const App = () => {
   const dispatch = useDispatch();
+  const [isCartLoaded, setIsCartLoaded] = useState(false);
+
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("mirakleUser"));
     if (userData?.token) {
+      dispatch(clearCart()); // ← prevent old cart
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setcartItem(res.data || []));  // Load user-specific cart
+          dispatch(setcartItem(res.data));
+          setIsCartLoaded(true);
         })
         .catch((err) => {
           console.error("❌ Failed to load backend cart:", err);
+          setIsCartLoaded(true); // still mark as loaded
         });
+    } else {
+      setIsCartLoaded(true); // no user, still mark as loaded
     }
-  }, []);
+  }, [dispatch]);
 
   return <Routing />;
 };
