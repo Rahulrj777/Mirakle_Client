@@ -1,189 +1,214 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { API_BASE } from "../utils/api";
-import { useDispatch, useSelector } from 'react-redux';
-import { addToCart, setCartItem } from '../Redux/cartSlice';
-import { axiosWithToken } from '../utils/axiosWithToken';
-import StarRating from './StarRating';
+"use client"
+
+import { useParams, useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import axios from "axios"
+import { API_BASE } from "../utils/api"
+import { useDispatch, useSelector } from "react-redux"
+import { addToCart, setCartItem } from "../Redux/cartSlice"
+import { axiosWithToken } from "../utils/axiosWithToken"
 
 const ProductDetail = () => {
-  const user = JSON.parse(localStorage.getItem("mirakleUser"));
-  const { id } = useParams();
-  const [product, setProduct] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [selectedImage, setSelectedImage] = useState('');
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [error, setError] = useState('');
-  const [showAllReviews, setShowAllReviews] = useState(false);
-  const [relatedProducts, setRelatedProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const cart = useSelector((state) => state.cart.items) || [];
-  const token = user?.token;
+  const user = JSON.parse(localStorage.getItem("mirakleUser"))
+  const { id } = useParams()
+  const [product, setProduct] = useState(null)
+  const [selectedVariant, setSelectedVariant] = useState(null)
+  const [selectedImage, setSelectedImage] = useState("")
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState("")
+  const [error, setError] = useState("")
+  const [showAllReviews, setShowAllReviews] = useState(false)
+  const [relatedProducts, setRelatedProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [addingToCart, setAddingToCart] = useState(false)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+  // ✅ CRITICAL FIX: Ensure cart is always an array
+  const cartItems = useSelector((state) => {
+    const items = state.cart.items
+    return Array.isArray(items) ? items : []
+  })
+
+  const token = user?.token
 
   useEffect(() => {
-    console.log("Cart Items:", cart);
-  }, [cart]);
+    console.log("Cart Items:", cartItems)
+  }, [cartItems])
 
   useEffect(() => {
     if (id) {
-      fetchProduct();
-      fetchRelated();
+      fetchProduct()
+      fetchRelated()
     }
-  }, [id]);
+  }, [id])
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [id]);
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [id])
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token && cart.length === 0) {
+    const token = localStorage.getItem("token")
+    if (token && cartItems.length === 0) {
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          if (Array.isArray(res.data.items)) {
-            dispatch(setCartItem(res.data.items));
+          console.log("📦 Fetched cart from server:", res.data)
+          if (res.data && Array.isArray(res.data.items)) {
+            dispatch(setCartItem(res.data.items))
+          } else if (Array.isArray(res.data)) {
+            dispatch(setCartItem(res.data))
+          } else {
+            dispatch(setCartItem([]))
           }
         })
         .catch((err) => {
-          console.error("❌ Fetch cart error", err);
-        });
+          console.error("❌ Fetch cart error", err)
+          dispatch(setCartItem([])) // Ensure empty array on error
+        })
     }
-  }, [dispatch, cart.length]);
+  }, [dispatch, cartItems.length])
 
   const fetchProduct = async () => {
     try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE}/api/products/all-products`);
-      const found = res.data.find(p => p._id === id);
+      setLoading(true)
+      const res = await axios.get(`${API_BASE}/api/products/all-products`)
+      const found = res.data.find((p) => p._id === id)
       if (found) {
-        setProduct(found);
-        setSelectedImage(found.images?.others?.[0] || '');
+        setProduct(found)
+        setSelectedImage(found.images?.others?.[0] || "")
         if (found.variants && found.variants.length > 0) {
-          setSelectedVariant(found.variants[0]);
+          setSelectedVariant(found.variants[0])
         }
-        // Pre-fill rating/comment if already submitted
         if (found.reviews?.length > 0 && user) {
-          const existing = found.reviews.find(
-            (r) => r.user === user.userId || r.user === user._id
-          );
+          const existing = found.reviews.find((r) => r.user === user.userId || r.user === user._id)
           if (existing) {
-            setRating(existing.rating);
-            setComment(existing.comment);
+            setRating(existing.rating)
+            setComment(existing.comment)
           } else {
-            setRating(0);
-            setComment('');
+            setRating(0)
+            setComment("")
           }
         } else {
-          setRating(0);
-          setComment('');
+          setRating(0)
+          setComment("")
         }
       } else {
-        setError("Product not found");
+        setError("Product not found")
       }
     } catch (err) {
-      console.error("Error fetching product:", err);
-      setError("Failed to load product");
+      console.error("Error fetching product:", err)
+      setError("Failed to load product")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleSizeClick = (variant) => setSelectedVariant(variant);
+  const handleSizeClick = (variant) => setSelectedVariant(variant)
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!rating || !comment.trim()) {
-      setError("Please provide both rating and review.");
-      return;
+      setError("Please provide both rating and review.")
+      return
     }
-    
+
     try {
-      setError('');
-      // Fixed API endpoint - added missing slash
-      await axiosWithToken().post(`/products/${id}/review`, { 
-        rating, 
-        comment: comment.trim() 
-      });
-      setRating(0);
-      setComment('');
-      fetchProduct(); // Refresh to show new review
+      setError("")
+      await axiosWithToken().post(`/products/${id}/review`, {
+        rating,
+        comment: comment.trim(),
+      })
+      setRating(0)
+      setComment("")
+      fetchProduct()
     } catch (err) {
-      console.error("Review submission error:", err);
-      setError(err.response?.data?.message || "Review submission failed");
+      console.error("Review submission error:", err)
+      setError(err.response?.data?.message || "Review submission failed")
     }
-  };
+  }
 
   const fetchRelated = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/api/products/related/${id}`);
-      setRelatedProducts(Array.isArray(res.data) ? res.data : []);
+      const res = await axios.get(`${API_BASE}/api/products/related/${id}`)
+      setRelatedProducts(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
-      console.error("Failed to fetch related products", err);
-      setRelatedProducts([]);
+      console.error("Failed to fetch related products", err)
+      setRelatedProducts([])
     }
-  };
+  }
 
   const avgRating = product?.reviews?.length
     ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
-    : 0;
+    : 0
 
   const handleAddToCart = async (product) => {
-    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-    const token = userData?.token;
-    
+    if (addingToCart) return // Prevent double clicks
+
+    const userData = JSON.parse(localStorage.getItem("mirakleUser"))
+    const token = userData?.token
+
     if (!token) {
-      alert("Please login to add items to cart");
-      navigate("/login_signup");
-      return;
+      alert("Please login to add items to cart")
+      navigate("/login_signup")
+      return
     }
 
     if (!selectedVariant) {
-      alert("Please select a variant");
-      return;
+      alert("Please select a variant")
+      return
     }
+
+    setAddingToCart(true)
 
     const productToAdd = {
       _id: product._id,
       title: product.title,
       images: product.images,
       variantId: selectedVariant._id,
-      size: selectedVariant.size || selectedVariant.weight?.value + ' ' + selectedVariant.weight?.unit,
+      size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
       weight: {
         value: selectedVariant?.weight?.value || selectedVariant?.size,
-        unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit")
+        unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
       },
-      currentPrice: parseFloat(finalPrice),
+      currentPrice: Number.parseFloat(finalPrice),
       quantity: 1,
-    };
+    }
 
     try {
-      dispatch(addToCart(productToAdd));
-      await axiosWithToken().post('/cart/add', { item: productToAdd });
-      alert("Product added to cart successfully!");
+      console.log("🛒 Adding product to cart:", productToAdd)
+
+      // ✅ Add to Redux first
+      dispatch(addToCart(productToAdd))
+
+      // ✅ Then sync to backend
+      await axiosWithToken().post("/cart/add", { item: productToAdd })
+
+      alert("Product added to cart successfully!")
     } catch (err) {
-      console.error("❌ Add to cart failed:", err);
-      alert("Something went wrong while adding to cart.");
+      console.error("❌ Add to cart failed:", err)
+      alert("Something went wrong while adding to cart: " + (err.message || "Unknown error"))
+
+      // ✅ If backend sync fails, we could optionally remove from Redux
+      // But for now, let's keep it in Redux for better UX
+    } finally {
+      setAddingToCart(false)
     }
-  };
+  }
 
   const handleBuyNow = async () => {
-    const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-    const token = userData?.token;
-    
+    const userData = JSON.parse(localStorage.getItem("mirakleUser"))
+    const token = userData?.token
+
     if (!token) {
-      alert("Please login to proceed with purchase");
-      navigate("/login_signup");
-      return;
+      alert("Please login to proceed with purchase")
+      navigate("/login_signup")
+      return
     }
 
     if (!selectedVariant) {
-      alert("Please select a variant");
-      return;
+      alert("Please select a variant")
+      return
     }
 
     const productToAdd = {
@@ -194,93 +219,113 @@ const ProductDetail = () => {
         value: selectedVariant?.weight?.value || selectedVariant?.size,
         unit: selectedVariant?.weight?.unit || "unit",
       },
-      currentPrice: parseFloat(finalPrice),
-    };
+      currentPrice: Number.parseFloat(finalPrice),
+    }
 
     try {
-      localStorage.setItem("buyNowProduct", JSON.stringify(productToAdd));
+      localStorage.setItem("buyNowProduct", JSON.stringify(productToAdd))
       navigate("/checkout", {
         state: { mode: "buy-now" },
-      });
-      
-      await axiosWithToken().post('/cart', {
+      })
+
+      await axiosWithToken().post("/cart", {
         items: [{ ...productToAdd, quantity: 1 }],
-      });
+      })
     } catch (err) {
-      console.error("❌ Buy Now cart sync failed:", err);
-      alert("Something went wrong while processing Buy Now");
+      console.error("❌ Buy Now cart sync failed:", err)
+      alert("Something went wrong while processing Buy Now")
     }
-  };
+  }
 
   const handleDeleteReview = async (reviewId) => {
     try {
-      await axiosWithToken().delete(`/products/${id}/review/${reviewId}`);
-      fetchProduct();
+      await axiosWithToken().delete(`/products/${id}/review/${reviewId}`)
+      fetchProduct()
     } catch (err) {
-      console.error("Delete review error:", err);
-      alert("Failed to delete review");
+      console.error("Delete review error:", err)
+      alert("Failed to delete review")
     }
-  };
+  }
 
   const handleLike = async (reviewId) => {
     try {
-      await axiosWithToken().post(`/products/${id}/review/${reviewId}/like`);
-      fetchProduct();
+      await axiosWithToken().post(`/products/${id}/review/${reviewId}/like`)
+      fetchProduct()
     } catch (err) {
-      console.error("Like failed", err);
+      console.error("Like failed", err)
     }
-  };
+  }
 
   const handleDislike = async (reviewId) => {
     try {
-      await axiosWithToken().post(`/products/${id}/review/${reviewId}/dislike`);
-      fetchProduct();
+      await axiosWithToken().post(`/products/${id}/review/${reviewId}/dislike`)
+      fetchProduct()
     } catch (err) {
-      console.error("Dislike failed", err);
+      console.error("Dislike failed", err)
     }
-  };
+  }
+
+  // Helper function to render stars inline
+  const renderStars = (rating) => {
+    return (
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <svg
+            key={star}
+            xmlns="http://www.w3.org/2000/svg"
+            fill={rating >= star ? "#facc15" : "none"}
+            viewBox="0 0 24 24"
+            stroke="#facc15"
+            className="w-4 h-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+            />
+          </svg>
+        ))}
+      </div>
+    )
+  }
 
   if (loading) {
-    return <div className="text-center mt-20">Loading...</div>;
+    return <div className="text-center mt-20">Loading...</div>
   }
 
   if (error && !product) {
-    return <div className="text-center mt-20 text-red-500">{error}</div>;
+    return <div className="text-center mt-20 text-red-500">{error}</div>
   }
 
   if (!product || !selectedVariant) {
-    return <div className="text-center mt-20">Product not found</div>;
+    return <div className="text-center mt-20">Product not found</div>
   }
 
-  const price = selectedVariant.price;
-  const discount = selectedVariant.discountPercent || 0;
-  const finalPrice = (price - (price * discount / 100)).toFixed(2);
+  const price = selectedVariant.price
+  const discount = selectedVariant.discountPercent || 0
+  const finalPrice = (price - (price * discount) / 100).toFixed(2)
 
-  const currentUserReview = product?.reviews?.find(
-    (r) => r.user === user?.userId || r.user === user?._id
-  );
-
-  const otherReviews = product?.reviews?.filter(
-    (r) => r.user !== (user?.userId || user?._id)
-  ) || [];
+  const currentUserReview = product?.reviews?.find((r) => r.user === user?.userId || r.user === user?._id)
+  const otherReviews = product?.reviews?.filter((r) => r.user !== (user?.userId || user?._id)) || []
 
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="grid md:grid-cols-2 gap-8">
         {/* Image Preview */}
         <div>
-          <img 
-            src={selectedImage ? `${API_BASE}${selectedImage}` : '/placeholder.svg'} 
-            className="w-full h-[400px] object-contain rounded" 
+          <img
+            src={selectedImage ? `${API_BASE}${selectedImage}` : "/placeholder.svg"}
+            className="w-full h-[400px] object-contain rounded"
             alt={product.title}
           />
           <div className="flex gap-2 mt-2">
             {product.images?.others?.map((img, i) => (
-              <img 
-                key={i} 
+              <img
+                key={i}
                 src={`${API_BASE}${img}`}
                 onClick={() => setSelectedImage(img)}
-                className={`w-20 h-20 object-cover border cursor-pointer ${selectedImage === img ? 'border-blue-500' : ''}`} 
+                className={`w-20 h-20 object-cover border cursor-pointer ${selectedImage === img ? "border-blue-500" : ""}`}
                 alt={`${product.title} ${i + 1}`}
               />
             ))}
@@ -291,9 +336,9 @@ const ProductDetail = () => {
         <div>
           <h1 className="text-2xl font-bold">{product.title}</h1>
           <div className="flex items-center gap-2 my-2">
-            <StarRating value={parseFloat(avgRating)} />
+            {renderStars(Number.parseFloat(avgRating))}
             <span className="text-sm text-gray-700">
-              {avgRating} / 5 ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? 's' : ''})
+              {avgRating} / 5 ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? "s" : ""})
             </span>
           </div>
 
@@ -311,11 +356,11 @@ const ProductDetail = () => {
             <p className="font-medium mb-1">Select Size:</p>
             <div className="flex gap-2 flex-wrap">
               {product.variants?.map((v, i) => (
-                <button 
+                <button
                   key={i}
                   onClick={() => handleSizeClick(v)}
                   className={`px-4 py-1 border rounded-full cursor-pointer ${
-                    v.size === selectedVariant.size ? 'bg-green-600 text-white' : 'hover:bg-gray-200'
+                    v.size === selectedVariant.size ? "bg-green-600 text-white" : "hover:bg-gray-200"
                   }`}
                 >
                   {v.size}
@@ -325,30 +370,29 @@ const ProductDetail = () => {
           </div>
 
           <div className="mt-6 flex gap-4">
-            <button 
-              onClick={() => handleAddToCart(product)} 
-              className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600"
+            <button
+              onClick={() => handleAddToCart(product)}
+              disabled={addingToCart}
+              className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add to Cart
+              {addingToCart ? "Adding..." : "Add to Cart"}
             </button>
-            <button 
-              onClick={handleBuyNow} 
+            <button
+              onClick={handleBuyNow}
               className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer hover:bg-green-700"
             >
               Buy Now
             </button>
           </div>
 
-          <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">
-            {product.description}
-          </div>
+          <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
         </div>
       </div>
 
       {/* Product Details Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-2">Product Details</h2>
-        {product.details && typeof product.details === 'object' ? (
+        {product.details && typeof product.details === "object" ? (
           <ul className="text-gray-700 text-sm list-disc pl-5">
             {Object.entries(product.details).map(([key, value]) => (
               <li key={key}>
@@ -364,7 +408,7 @@ const ProductDetail = () => {
       {/* Ratings & Reviews */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
-        
+
         {/* Review submission */}
         {token && !currentUserReview ? (
           <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
@@ -391,7 +435,7 @@ const ProductDetail = () => {
                 ))}
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Your Review:</label>
               <textarea
@@ -402,13 +446,10 @@ const ProductDetail = () => {
                 placeholder="Write your honest feedback..."
               />
             </div>
-            
+
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-            >
+
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
               Submit Review
             </button>
           </form>
@@ -425,12 +466,10 @@ const ProductDetail = () => {
               <div className="flex justify-between items-center mb-1">
                 <div className="flex gap-2 items-center">
                   <p className="text-sm font-semibold text-blue-800">Your Review</p>
-                  <StarRating value={currentUserReview.rating} />
+                  {renderStars(currentUserReview.rating)}
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs text-gray-400">
-                    {new Date(currentUserReview.createdAt).toLocaleString()}
-                  </p>
+                  <p className="text-xs text-gray-400">{new Date(currentUserReview.createdAt).toLocaleString()}</p>
                   <button
                     onClick={() => handleDeleteReview(currentUserReview._id)}
                     className="text-xs text-red-500 hover:underline"
@@ -451,25 +490,17 @@ const ProductDetail = () => {
             <div key={i} className="border p-4 rounded bg-white shadow-sm">
               <div className="flex justify-between items-center mb-1">
                 <div className="flex gap-2 items-center">
-                  <p className="text-sm font-semibold text-gray-800">{r.name || 'User'}</p>
-                  <StarRating value={r.rating} />
+                  <p className="text-sm font-semibold text-gray-800">{r.name || "User"}</p>
+                  {renderStars(r.rating)}
                 </div>
-                <p className="text-xs text-gray-400">
-                  {new Date(r.createdAt).toLocaleString()}
-                </p>
+                <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleString()}</p>
               </div>
               <p className="text-sm text-gray-700 mt-1">{r.comment}</p>
               <div className="flex items-center gap-2 mt-2">
-                <button
-                  onClick={() => handleLike(r._id)}
-                  className="text-xs text-green-600 hover:underline"
-                >
+                <button onClick={() => handleLike(r._id)} className="text-xs text-green-600 hover:underline">
                   👍 {r.likes?.length || 0}
                 </button>
-                <button
-                  onClick={() => handleDislike(r._id)}
-                  className="text-xs text-red-600 hover:underline"
-                >
+                <button onClick={() => handleDislike(r._id)} className="text-xs text-red-600 hover:underline">
                   👎 {r.dislikes?.length || 0}
                 </button>
               </div>
@@ -493,11 +524,11 @@ const ProductDetail = () => {
           <h2 className="text-xl font-bold mb-4">Related Products</h2>
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
             {relatedProducts.map((p) => {
-              const mainImage = p.images?.others?.[0] || "/placeholder.jpg";
-              const firstVariant = p.variants?.[0];
-              const price = firstVariant?.price || 0;
-              const discount = firstVariant?.discountPercent || 0;
-              const finalPrice = (price - (price * discount / 100)).toFixed(2);
+              const mainImage = p.images?.others?.[0] || "/placeholder.jpg"
+              const firstVariant = p.variants?.[0]
+              const price = firstVariant?.price || 0
+              const discount = firstVariant?.discountPercent || 0
+              const finalPrice = (price - (price * discount) / 100).toFixed(2)
 
               return (
                 <div
@@ -512,17 +543,15 @@ const ProductDetail = () => {
                   />
                   <h4 className="text-sm font-semibold">{p.title}</h4>
                   <p className="text-green-600 font-bold">₹{finalPrice}</p>
-                  {discount > 0 && (
-                    <p className="text-xs text-gray-400 line-through">₹{price}</p>
-                  )}
+                  {discount > 0 && <p className="text-xs text-gray-400 line-through">₹{price}</p>}
                 </div>
-              );
+              )
             })}
           </div>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ProductDetail;
+export default ProductDetail
