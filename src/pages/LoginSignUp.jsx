@@ -70,10 +70,16 @@ const LoginSignUp = () => {
     try {
       setLoading(true)
 
-      // 🔥 CLEAR EVERYTHING FIRST - This is the key fix!
+      // 🔥 STEP 1: Clear everything first
+      console.log("🔄 Clearing previous session...")
       dispatch(clearUser())
       dispatch(setCartReady(false))
 
+      // Small delay to ensure Redux state is cleared
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // 🔥 STEP 2: Login
+      console.log("🔐 Attempting login...")
       const res = await axios.post(`${API_BASE}/api/login`, {
         email: email.trim(),
         password,
@@ -82,60 +88,77 @@ const LoginSignUp = () => {
       const user = res.data.user
       const token = res.data.token
 
-      // Store user data
-      localStorage.setItem("mirakleUser", JSON.stringify({ user, token }))
+      console.log("✅ Login successful for user:", user._id)
 
-      // Set new user ID
+      // 🔥 STEP 3: Store user data
+      localStorage.setItem("mirakleUser", JSON.stringify({ user, token }))
       dispatch(setUserId(user._id))
 
-      // 🔥 IMPORTANT: Wait a bit for Redux to update
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // 🔥 STEP 4: Handle cart loading with better error handling
+      try {
+        console.log("📦 Loading cart for user:", user._id)
 
-      // Load cart for THIS specific user
-      const savedCart = localStorage.getItem(`cart_${user._id}`)
+        // Check localStorage first
+        const savedCart = localStorage.getItem(`cart_${user._id}`)
+        let cartToLoad = []
 
-      if (savedCart) {
-        try {
-          const parsedCart = JSON.parse(savedCart)
-          if (Array.isArray(parsedCart)) {
-            console.log(`Loading cart for user ${user._id}:`, parsedCart)
-            dispatch(setCartItem(parsedCart))
+        if (savedCart) {
+          try {
+            const parsedCart = JSON.parse(savedCart)
+            if (Array.isArray(parsedCart) && parsedCart.length > 0) {
+              console.log("📦 Found local cart with", parsedCart.length, "items")
+              cartToLoad = parsedCart
 
-            // Sync to backend
-            await axiosWithToken().post("/cart", { items: parsedCart })
-          } else {
-            dispatch(setCartItem([]))
+              // Sync local cart to server
+              try {
+                await axiosWithToken().post("/cart", { items: parsedCart })
+                console.log("✅ Local cart synced to server")
+              } catch (syncError) {
+                console.warn("⚠️ Failed to sync local cart to server:", syncError.message)
+              }
+            }
+          } catch (parseError) {
+            console.warn("⚠️ Failed to parse local cart, will fetch from server")
           }
-        } catch (parseError) {
-          console.error("Error parsing saved cart:", parseError)
-          dispatch(setCartItem([]))
         }
-      } else {
-        // No local cart → fetch from backend
-        try {
-          const cartRes = await axiosWithToken().get("/cart")
-          const serverCart = Array.isArray(cartRes.data.items)
-            ? cartRes.data.items
-            : Array.isArray(cartRes.data)
-              ? cartRes.data
-              : []
 
-          console.log(`Loading server cart for user ${user._id}:`, serverCart)
-          dispatch(setCartItem(serverCart))
+        // If no local cart or local cart is empty, fetch from server
+        if (cartToLoad.length === 0) {
+          try {
+            console.log("📦 Fetching cart from server...")
+            const cartRes = await axiosWithToken().get("/cart")
+            const serverCart = cartRes.data?.items || cartRes.data || []
 
-          // Store in localStorage for this user
-          localStorage.setItem(`cart_${user._id}`, JSON.stringify(serverCart))
-        } catch (fetchError) {
-          console.error("Fetch cart error:", fetchError)
-          dispatch(setCartItem([]))
+            if (Array.isArray(serverCart) && serverCart.length > 0) {
+              console.log("📦 Found server cart with", serverCart.length, "items")
+              cartToLoad = serverCart
+              // Save server cart to localStorage
+              localStorage.setItem(`cart_${user._id}`, JSON.stringify(serverCart))
+            }
+          } catch (fetchError) {
+            console.warn("⚠️ Failed to fetch cart from server:", fetchError.message)
+            // Don't throw error, just use empty cart
+          }
         }
+
+        // Set cart in Redux
+        dispatch(setCartItem(cartToLoad))
+        console.log("✅ Cart loaded with", cartToLoad.length, "items")
+      } catch (cartError) {
+        console.error("❌ Cart loading failed:", cartError)
+        // Set empty cart on any cart-related error
+        dispatch(setCartItem([]))
       }
 
+      // 🔥 STEP 5: Mark cart as ready and navigate
       dispatch(setCartReady(true))
+      console.log("✅ Login process completed")
       navigate("/")
     } catch (error) {
-      console.error("Login error:", error)
+      console.error("❌ Login error:", error)
       alert("❌ " + (error.response?.data?.message || "Login failed"))
+      // Clear any partial state on login failure
+      dispatch(clearUser())
     } finally {
       setLoading(false)
     }

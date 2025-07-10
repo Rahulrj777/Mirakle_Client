@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useNavigate } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
@@ -9,7 +9,6 @@ import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
 
 const ProductDetail = () => {
-  const user = JSON.parse(localStorage.getItem("mirakleUser"))
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
@@ -24,52 +23,27 @@ const ProductDetail = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  // ✅ CRITICAL FIX: Ensure cart is always an array
+  // Get user data safely
+  const [user, setUser] = useState(null)
+  useEffect(() => {
+    try {
+      const userData = JSON.parse(localStorage.getItem("mirakleUser"))
+      setUser(userData)
+    } catch {
+      setUser(null)
+    }
+  }, [])
+
+  // ✅ Safe cart selector
   const cartItems = useSelector((state) => {
-    const items = state.cart.items
+    const items = state.cart?.items
     return Array.isArray(items) ? items : []
   })
 
   const token = user?.token
 
-  useEffect(() => {
-    console.log("Cart Items:", cartItems)
-  }, [cartItems])
-
-  useEffect(() => {
-    if (id) {
-      fetchProduct()
-      fetchRelated()
-    }
-  }, [id])
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }, [id])
-
-  useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (token && cartItems.length === 0) {
-      axiosWithToken()
-        .get("/cart")
-        .then((res) => {
-          console.log("📦 Fetched cart from server:", res.data)
-          if (res.data && Array.isArray(res.data.items)) {
-            dispatch(setCartItem(res.data.items))
-          } else if (Array.isArray(res.data)) {
-            dispatch(setCartItem(res.data))
-          } else {
-            dispatch(setCartItem([]))
-          }
-        })
-        .catch((err) => {
-          console.error("❌ Fetch cart error", err)
-          dispatch(setCartItem([])) // Ensure empty array on error
-        })
-    }
-  }, [dispatch, cartItems.length])
-
-  const fetchProduct = async () => {
+  // ✅ Memoized fetch functions to prevent unnecessary re-renders
+  const fetchProduct = useCallback(async () => {
     try {
       setLoading(true)
       const res = await axios.get(`${API_BASE}/api/products/all-products`)
@@ -81,7 +55,7 @@ const ProductDetail = () => {
           setSelectedVariant(found.variants[0])
         }
         if (found.reviews?.length > 0 && user) {
-          const existing = found.reviews.find((r) => r.user === user.userId || r.user === user._id)
+          const existing = found.reviews.find((r) => r.user === user.user?.userId || r.user === user.user?._id)
           if (existing) {
             setRating(existing.rating)
             setComment(existing.comment)
@@ -102,9 +76,62 @@ const ProductDetail = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, user])
 
-  const handleSizeClick = (variant) => setSelectedVariant(variant)
+  const fetchRelated = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/products/related/${id}`)
+      setRelatedProducts(Array.isArray(res.data) ? res.data : [])
+    } catch (err) {
+      console.error("Failed to fetch related products", err)
+      setRelatedProducts([])
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (id) {
+      fetchProduct()
+      fetchRelated()
+    }
+  }, [id, fetchProduct, fetchRelated])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [id])
+
+  // ✅ Improved cart loading with better error handling
+  useEffect(() => {
+    if (token && cartItems.length === 0) {
+      const loadCart = async () => {
+        try {
+          const res = await axiosWithToken().get("/cart")
+          console.log("📦 Fetched cart from server:", res.data)
+          if (res.data && Array.isArray(res.data.items)) {
+            dispatch(setCartItem(res.data.items))
+          } else if (Array.isArray(res.data)) {
+            dispatch(setCartItem(res.data))
+          } else {
+            dispatch(setCartItem([]))
+          }
+        } catch (err) {
+          console.error("❌ Fetch cart error", err)
+          if (err.response?.status === 401) {
+            console.log("🔐 Authentication failed, redirecting to login")
+            localStorage.removeItem("mirakleUser")
+            navigate("/login_signup")
+          } else {
+            dispatch(setCartItem([]))
+          }
+        }
+      }
+
+      loadCart()
+    }
+  }, [token, cartItems.length, dispatch, navigate])
+
+  const handleSizeClick = useCallback((variant) => {
+    setSelectedVariant(variant)
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -128,27 +155,14 @@ const ProductDetail = () => {
     }
   }
 
-  const fetchRelated = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/api/products/related/${id}`)
-      setRelatedProducts(Array.isArray(res.data) ? res.data : [])
-    } catch (err) {
-      console.error("Failed to fetch related products", err)
-      setRelatedProducts([])
-    }
-  }
-
   const avgRating = product?.reviews?.length
     ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
     : 0
 
   const handleAddToCart = async (product) => {
-    if (addingToCart) return // Prevent double clicks
+    if (addingToCart) return
 
-    const userData = JSON.parse(localStorage.getItem("mirakleUser"))
-    const token = userData?.token
-
-    if (!token) {
+    if (!user?.token) {
       alert("Please login to add items to cart")
       navigate("/login_signup")
       return
@@ -178,28 +192,29 @@ const ProductDetail = () => {
     try {
       console.log("🛒 Adding product to cart:", productToAdd)
 
-      // ✅ Add to Redux first
+      // Add to Redux first
       dispatch(addToCart(productToAdd))
 
-      // ✅ Then sync to backend
-      await axiosWithToken().post("/cart/add", { item: productToAdd })
+      // Then sync to backend
+      try {
+        await axiosWithToken().post("/cart/add", { item: productToAdd })
+        console.log("✅ Cart synced to backend")
+      } catch (syncError) {
+        console.warn("⚠️ Backend sync failed:", syncError.message)
+        // Don't remove from Redux if backend sync fails
+      }
 
+      alert("Product added to cart successfully!")
     } catch (err) {
       console.error("❌ Add to cart failed:", err)
       alert("Something went wrong while adding to cart: " + (err.message || "Unknown error"))
-
-      // ✅ If backend sync fails, we could optionally remove from Redux
-      // But for now, let's keep it in Redux for better UX
     } finally {
       setAddingToCart(false)
     }
   }
 
   const handleBuyNow = async () => {
-    const userData = JSON.parse(localStorage.getItem("mirakleUser"))
-    const token = userData?.token
-
-    if (!token) {
+    if (!user?.token) {
       alert("Please login to proceed with purchase")
       navigate("/login_signup")
       return
@@ -265,7 +280,7 @@ const ProductDetail = () => {
   }
 
   // Helper function to render stars inline
-  const renderStars = (rating) => {
+  const renderStars = useCallback((rating) => {
     return (
       <div className="flex">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -287,7 +302,7 @@ const ProductDetail = () => {
         ))}
       </div>
     )
-  }
+  }, [])
 
   if (loading) {
     return <div className="text-center mt-20">Loading...</div>
@@ -305,8 +320,8 @@ const ProductDetail = () => {
   const discount = selectedVariant.discountPercent || 0
   const finalPrice = (price - (price * discount) / 100).toFixed(2)
 
-  const currentUserReview = product?.reviews?.find((r) => r.user === user?.userId || r.user === user?._id)
-  const otherReviews = product?.reviews?.filter((r) => r.user !== (user?.userId || user?._id)) || []
+  const currentUserReview = product?.reviews?.find((r) => r.user === user?.user?.userId || r.user === user?.user?._id)
+  const otherReviews = product?.reviews?.filter((r) => r.user !== (user?.user?.userId || user?.user?._id)) || []
 
   return (
     <div className="max-w-6xl mx-auto p-6">
