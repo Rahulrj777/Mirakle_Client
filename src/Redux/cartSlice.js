@@ -6,7 +6,7 @@ const initialState = {
 };
 const cartSlice = createSlice({
   name: "cart",
-  initialState ,
+  initialState,
   reducers: {
     setUserId: (state, action) => {
       state.userId = action.payload;
