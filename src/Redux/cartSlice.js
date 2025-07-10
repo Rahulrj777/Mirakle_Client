@@ -8,16 +8,22 @@ const initialState = {
 
 const cartSlice = createSlice({
   name: "cart",
-  initialState, 
+  initialState,
   reducers: {
     setUserId: (state, action) => {
       state.userId = action.payload;
     },
     setCartItem: (state, action) => {
-      state.items = action.payload;
+      // Ensure we always set an array
+      state.items = Array.isArray(action.payload) ? action.payload : [];
     },
     clearCart: (state) => {
       state.items = [];
+    },
+    clearUser: (state) => {
+      state.userId = null;
+      state.items = [];
+      state.cartReady = false;
     },
     setCartReady: (state, action) => {
       state.cartReady = action.payload;
@@ -26,11 +32,17 @@ const cartSlice = createSlice({
       if (!Array.isArray(state.items)) {
         state.items = [];
       }
-      const existingItem = state.items.find(item => item._id === action.payload._id);
+      const existingItem = state.items.find(
+        item => item._id === action.payload._id && 
+        item.variantId === action.payload.variantId
+      );
       if (existingItem) {
         existingItem.quantity += action.payload.quantity || 1;
       } else {
-        state.items.push({ ...action.payload, quantity: action.payload.quantity || 1 });
+        state.items.push({ 
+          ...action.payload, 
+          quantity: action.payload.quantity || 1 
+        });
       }
     },
     incrementQuantity: (state, action) => {
@@ -53,6 +65,7 @@ export const {
   setUserId,
   setCartItem,
   clearCart,
+  clearUser,
   addToCart,
   incrementQuantity,
   decrementQuantity,
@@ -60,4 +73,4 @@ export const {
   setCartReady,
 } = cartSlice.actions;
 
-export default cartSlice.reducer
+export default cartSlice.reducer;
