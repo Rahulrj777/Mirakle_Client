@@ -5,13 +5,20 @@ import storage from 'redux-persist/lib/storage';
 import { persistReducer, persistStore } from 'redux-persist';
 import { thunk } from 'redux-thunk';
 
+// ✅ Safely get userId from localStorage (only if running in browser)
+let userId = "guest";
+if (typeof window !== "undefined") {
+  const localUser = JSON.parse(localStorage.getItem("mirakleUser"));
+  userId = localUser?.userId || "guest";
+}
+
 const persistConfig = {
-  key: `cart_${user?.userId || "guest"}`,
+  key: `cart_${userId}`,
   storage,
   whitelist: ["items"],
 };
 
-const persistedCartReducer = persistReducer(cartPersistConfig, cartReducer);
+const persistedCartReducer = persistReducer(persistConfig, cartReducer);
 
 export const store = configureStore({
   reducer: {
