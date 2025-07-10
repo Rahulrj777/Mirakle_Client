@@ -1,8 +1,9 @@
 // store.js
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import cartReducer from '../Redux/cartSlice';
 import storage from 'redux-persist/lib/storage';
 import { persistReducer, persistStore } from 'redux-persist';
+import { thunk } from 'redux-thunk';
 
 let userId = "guest";
 if (typeof window !== "undefined") {
@@ -18,14 +19,16 @@ const persistConfig = {
 
 const persistedCartReducer = persistReducer(persistConfig, cartReducer);
 
+const rootReducer = combineReducers({
+  cart: persistedCartReducer,
+});
+
 export const store = configureStore({
-  reducer: {
-    cart: persistedCartReducer,
-  },
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }),
+    }).concat(thunk),
 });
 
 export const persistor = persistStore(store);

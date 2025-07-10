@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import logo from "../assets/logo.png";
 import { API_BASE } from "../utils/api";
-import { clearCart, setcartItem, setUserId, clearUser } from "../Redux/cartSlice";
+import { clearCart, setCartItem, setUserId, clearUser } from "../Redux/cartSlice";
 
 const Header = () => {
   const location = useLocation();
@@ -48,7 +48,7 @@ const Header = () => {
           const userCart = localStorage.getItem(`cart_${uid}`);
           if (userCart) {
             const parsedCart = JSON.parse(userCart);
-            if (Array.isArray(parsedCart)) dispatch(setcartItem(parsedCart));
+            if (Array.isArray(parsedCart)) dispatch(setCartItem(parsedCart));
           }
         }
       } catch {

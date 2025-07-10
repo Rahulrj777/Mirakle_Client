@@ -14,7 +14,7 @@ const cartSlice = createSlice({
     clearUser: (state) => {
       state.userId = null;
     },
-    setcartItem: (state, action) => {
+    setCartItem: (state, action) => {
       state.items = Array.isArray(action.payload) ? action.payload : [];
     },
     clearCart: (state) => {
@@ -51,7 +51,7 @@ const cartSlice = createSlice({
 export const {
   setUserId,
   clearUser,
-  setcartItem,
+  setCartItem,
   clearCart,
   addToCart,
   incrementQuantity,

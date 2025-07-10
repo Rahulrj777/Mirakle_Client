@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from "../utils/api"; 
 import { useDispatch,useSelector } from 'react-redux';
-import { addToCart,setcartItem } from '../Redux/cartSlice';
+import { addToCart,setCartItem } from '../Redux/cartSlice';
 import { axiosWithToken } from '../utils/axiosWithToken';
 
 const ProductDetail = () => {
@@ -39,11 +39,13 @@ const ProductDetail = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
+    if (token && cart.length === 0) {
       axiosWithToken()
         .get("/cart")
         .then((res) => {
-          dispatch(setcartItem(res.data.items));
+          if (Array.isArray(res.data.items)) {
+            dispatch(setCartItem(res.data.items));
+          }
         })
         .catch((err) => {
           console.error("❌ Fetch cart error", err);
