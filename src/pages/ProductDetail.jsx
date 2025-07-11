@@ -1,14 +1,12 @@
 "use client"
 
 import { useParams, useNavigate } from "react-router-dom"
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback } from "react"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
-import { safeApiCall } from "../utils/axiosWithToken"
-import ReviewForm from "./ReviewForm"
-import ReviewList from "./ReviewList"
+import { axiosWithToken } from "../utils/axiosWithToken"
 
 const ProductDetail = () => {
   const { id } = useParams()
@@ -25,16 +23,18 @@ const ProductDetail = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  // ✅ Safe user data access
-  const user = useMemo(() => {
+  // Get user data safely
+  const [user, setUser] = useState(null)
+  useEffect(() => {
     try {
-      return JSON.parse(localStorage.getItem("mirakleUser"))
+      const userData = JSON.parse(localStorage.getItem("mirakleUser"))
+      setUser(userData)
     } catch {
-      return null
+      setUser(null)
     }
   }, [])
 
-  // ✅ Safe cart selector with memoization
+  // ✅ Safe cart selector
   const cartItems = useSelector((state) => {
     const items = state.cart?.items
     return Array.isArray(items) ? items : []
@@ -42,30 +42,30 @@ const ProductDetail = () => {
 
   const token = user?.token
 
-  // ✅ Memoized fetch functions with better error handling
+  // ✅ Memoized fetch functions to prevent unnecessary re-renders
   const fetchProduct = useCallback(async () => {
     try {
       setLoading(true)
-      setError("")
-
       const res = await axios.get(`${API_BASE}/api/products/all-products`)
       const found = res.data.find((p) => p._id === id)
-
       if (found) {
         setProduct(found)
         setSelectedImage(found.images?.others?.[0] || "")
-
         if (found.variants && found.variants.length > 0) {
           setSelectedVariant(found.variants[0])
         }
-
-        // Handle existing review
-        if (found.reviews?.length > 0 && user?.user) {
-          const existing = found.reviews.find((r) => r.user === user.user.userId || r.user === user.user._id)
+        if (found.reviews?.length > 0 && user) {
+          const existing = found.reviews.find((r) => r.user === user.user?.userId || r.user === user.user?._id)
           if (existing) {
             setRating(existing.rating)
             setComment(existing.comment)
+          } else {
+            setRating(0)
+            setComment("")
           }
+        } else {
+          setRating(0)
+          setComment("")
         }
       } else {
         setError("Product not found")
@@ -88,22 +88,6 @@ const ProductDetail = () => {
     }
   }, [id])
 
-  // ✅ Load cart safely without causing re-renders
-  const loadCartSafely = useCallback(async () => {
-    if (!token || cartItems.length > 0) return
-
-    const cartData = await safeApiCall(async (api) => await api.get("/cart"), { items: [] })
-
-    if (cartData && Array.isArray(cartData.items)) {
-      dispatch(setCartItem(cartData.items))
-    } else if (Array.isArray(cartData)) {
-      dispatch(setCartItem(cartData))
-    } else {
-      dispatch(setCartItem([]))
-    }
-  }, [token, cartItems.length, dispatch])
-
-  // ✅ Effects with proper dependencies
   useEffect(() => {
     if (id) {
       fetchProduct()
@@ -115,122 +99,187 @@ const ProductDetail = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [id])
 
+  // ✅ Improved cart loading with better error handling
   useEffect(() => {
-    loadCartSafely()
-  }, [loadCartSafely])
+    if (token && cartItems.length === 0) {
+      const loadCart = async () => {
+        try {
+          const res = await axiosWithToken().get("/cart")
+          console.log("📦 Fetched cart from server:", res.data)
+          if (res.data && Array.isArray(res.data.items)) {
+            dispatch(setCartItem(res.data.items))
+          } else if (Array.isArray(res.data)) {
+            dispatch(setCartItem(res.data))
+          } else {
+            dispatch(setCartItem([]))
+          }
+        } catch (err) {
+          console.error("❌ Fetch cart error", err)
+          if (err.response?.status === 401) {
+            console.log("🔐 Authentication failed, redirecting to login")
+            localStorage.removeItem("mirakleUser")
+            navigate("/login_signup")
+          } else {
+            dispatch(setCartItem([]))
+          }
+        }
+      }
 
-  // ✅ Memoized handlers
+      loadCart()
+    }
+  }, [token, cartItems.length, dispatch, navigate])
+
   const handleSizeClick = useCallback((variant) => {
     setSelectedVariant(variant)
   }, [])
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault()
-      if (!rating || !comment.trim()) {
-        setError("Please provide both rating and review.")
-        return
-      }
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!rating || !comment.trim()) {
+      setError("Please provide both rating and review.")
+      return
+    }
 
-      const result = await safeApiCall(
-        async (api) =>
-          await api.post(`/products/${id}/review`, {
-            rating,
-            comment: comment.trim(),
-          }),
-      )
+    try {
+      setError("")
+      await axiosWithToken().post(`/products/${id}/review`, {
+        rating,
+        comment: comment.trim(),
+      })
+      setRating(0)
+      setComment("")
+      fetchProduct()
+    } catch (err) {
+      console.error("Review submission error:", err)
+      setError(err.response?.data?.message || "Review submission failed")
+    }
+  }
 
-      if (result) {
-        setRating(0)
-        setComment("")
-        setError("")
-        fetchProduct()
-      } else {
-        setError("Review submission failed")
-      }
-    },
-    [rating, comment, id, fetchProduct],
-  )
+  const avgRating = product?.reviews?.length
+    ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
+    : 0
 
-  const handleAddToCart = useCallback(
-    async (product) => {
-      if (addingToCart) return
+  const handleAddToCart = async (product) => {
+    if (addingToCart) return
 
-      if (!user?.token) {
-        alert("Please login to add items to cart")
-        navigate("/login_signup")
-        return
-      }
+    if (!user?.token) {
+      alert("Please login to add items to cart")
+      navigate("/login_signup")
+      return
+    }
 
-      if (!selectedVariant) {
-        alert("Please select a variant")
-        return
-      }
+    if (!selectedVariant) {
+      alert("Please select a variant")
+      return
+    }
 
-      setAddingToCart(true)
+    setAddingToCart(true)
 
-      const productToAdd = {
-        _id: product._id,
-        title: product.title,
-        images: product.images,
-        variantId: selectedVariant._id,
-        size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
-        weight: {
-          value: selectedVariant?.weight?.value || selectedVariant?.size,
-          unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
-        },
-        currentPrice: Number.parseFloat(finalPrice),
-        quantity: 1,
-      }
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      variantId: selectedVariant._id,
+      size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
+      },
+      currentPrice: Number.parseFloat(finalPrice),
+      quantity: 1,
+    }
 
+    try {
+      console.log("🛒 Adding product to cart:", productToAdd)
+
+      // Add to Redux first
+      dispatch(addToCart(productToAdd))
+
+      // Then sync to backend
       try {
-        // Add to Redux first for immediate UI feedback
-        dispatch(addToCart(productToAdd))
-
-        // Try to sync to backend
-        const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", { item: productToAdd }))
-
-        if (syncResult) {
-          console.log("✅ Cart synced to backend")
-        } else {
-          console.warn("⚠️ Backend sync failed, but item added to local cart")
-        }
-
-        alert("Product added to cart successfully!")
-      } catch (err) {
-        console.error("❌ Add to cart failed:", err)
-        alert("Something went wrong while adding to cart")
-      } finally {
-        setAddingToCart(false)
+        await axiosWithToken().post("/cart/add", { item: productToAdd })
+        console.log("✅ Cart synced to backend")
+      } catch (syncError) {
+        console.warn("⚠️ Backend sync failed:", syncError.message)
+        // Don't remove from Redux if backend sync fails
       }
-    },
-    [addingToCart, user, selectedVariant, navigate, dispatch],
-  )
 
-  // ✅ Memoized calculations
-  const avgRating = useMemo(() => {
-    if (!product?.reviews?.length) return 0
-    return (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
-  }, [product?.reviews])
+      alert("Product added to cart successfully!")
+    } catch (err) {
+      console.error("❌ Add to cart failed:", err)
+      alert("Something went wrong while adding to cart: " + (err.message || "Unknown error"))
+    } finally {
+      setAddingToCart(false)
+    }
+  }
 
-  const finalPrice = useMemo(() => {
-    if (!selectedVariant) return "0.00"
-    const price = selectedVariant.price
-    const discount = selectedVariant.discountPercent || 0
-    return (price - (price * discount) / 100).toFixed(2)
-  }, [selectedVariant])
+  const handleBuyNow = async () => {
+    if (!user?.token) {
+      alert("Please login to proceed with purchase")
+      navigate("/login_signup")
+      return
+    }
 
-  const currentUserReview = useMemo(() => {
-    if (!product?.reviews?.length || !user?.user) return null
-    return product.reviews.find((r) => r.user === user.user.userId || r.user === user.user._id)
-  }, [product?.reviews, user])
+    if (!selectedVariant) {
+      alert("Please select a variant")
+      return
+    }
 
-  const otherReviews = useMemo(() => {
-    if (!product?.reviews?.length || !user?.user) return product?.reviews || []
-    return product.reviews.filter((r) => r.user !== user.user.userId && r.user !== user.user._id)
-  }, [product?.reviews, user])
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || "unit",
+      },
+      currentPrice: Number.parseFloat(finalPrice),
+    }
 
-  // ✅ Memoized star renderer
+    try {
+      localStorage.setItem("buyNowProduct", JSON.stringify(productToAdd))
+      navigate("/checkout", {
+        state: { mode: "buy-now" },
+      })
+
+      await axiosWithToken().post("/cart", {
+        items: [{ ...productToAdd, quantity: 1 }],
+      })
+    } catch (err) {
+      console.error("❌ Buy Now cart sync failed:", err)
+      alert("Something went wrong while processing Buy Now")
+    }
+  }
+
+  const handleDeleteReview = async (reviewId) => {
+    try {
+      await axiosWithToken().delete(`/products/${id}/review/${reviewId}`)
+      fetchProduct()
+    } catch (err) {
+      console.error("Delete review error:", err)
+      alert("Failed to delete review")
+    }
+  }
+
+  const handleLike = async (reviewId) => {
+    try {
+      await axiosWithToken().post(`/products/${id}/review/${reviewId}/like`)
+      fetchProduct()
+    } catch (err) {
+      console.error("Like failed", err)
+    }
+  }
+
+  const handleDislike = async (reviewId) => {
+    try {
+      await axiosWithToken().post(`/products/${id}/review/${reviewId}/dislike`)
+      fetchProduct()
+    } catch (err) {
+      console.error("Dislike failed", err)
+    }
+  }
+
+  // Helper function to render stars inline
   const renderStars = useCallback((rating) => {
     return (
       <div className="flex">
@@ -255,21 +304,8 @@ const ProductDetail = () => {
     )
   }, [])
 
-  // ✅ Loading state with skeleton
   if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="grid md:grid-cols-2 gap-8 animate-pulse">
-          <div className="h-96 bg-gray-200 rounded"></div>
-          <div className="space-y-4">
-            <div className="h-8 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-10 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    )
+    return <div className="text-center mt-20">Loading...</div>
   }
 
   if (error && !product) {
@@ -282,6 +318,10 @@ const ProductDetail = () => {
 
   const price = selectedVariant.price
   const discount = selectedVariant.discountPercent || 0
+  const finalPrice = (price - (price * discount) / 100).toFixed(2)
+
+  const currentUserReview = product?.reviews?.find((r) => r.user === user?.user?.userId || r.user === user?.user?._id)
+  const otherReviews = product?.reviews?.filter((r) => r.user !== (user?.user?.userId || user?.user?._id)) || []
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -292,7 +332,6 @@ const ProductDetail = () => {
             src={selectedImage ? `${API_BASE}${selectedImage}` : "/placeholder.svg"}
             className="w-full h-[400px] object-contain rounded"
             alt={product.title}
-            loading="lazy"
           />
           <div className="flex gap-2 mt-2">
             {product.images?.others?.map((img, i) => (
@@ -300,11 +339,8 @@ const ProductDetail = () => {
                 key={i}
                 src={`${API_BASE}${img}`}
                 onClick={() => setSelectedImage(img)}
-                className={`w-20 h-20 object-cover border cursor-pointer transition-all ${
-                  selectedImage === img ? "border-blue-500 scale-105" : "hover:scale-105"
-                }`}
+                className={`w-20 h-20 object-cover border cursor-pointer ${selectedImage === img ? "border-blue-500" : ""}`}
                 alt={`${product.title} ${i + 1}`}
-                loading="lazy"
               />
             ))}
           </div>
@@ -337,10 +373,8 @@ const ProductDetail = () => {
                 <button
                   key={i}
                   onClick={() => handleSizeClick(v)}
-                  className={`px-4 py-1 border rounded-full cursor-pointer transition-all ${
-                    v.size === selectedVariant.size
-                      ? "bg-green-600 text-white scale-105"
-                      : "hover:bg-gray-200 hover:scale-105"
+                  className={`px-4 py-1 border rounded-full cursor-pointer ${
+                    v.size === selectedVariant.size ? "bg-green-600 text-white" : "hover:bg-gray-200"
                   }`}
                 >
                   {v.size}
@@ -353,11 +387,14 @@ const ProductDetail = () => {
             <button
               onClick={() => handleAddToCart(product)}
               disabled={addingToCart}
-              className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+              className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {addingToCart ? "Adding..." : "Add to Cart"}
             </button>
-            <button className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer hover:bg-green-700 transition-all transform hover:scale-105">
+            <button
+              onClick={handleBuyNow}
+              className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer hover:bg-green-700"
+            >
               Buy Now
             </button>
           </div>
@@ -386,74 +423,113 @@ const ProductDetail = () => {
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
 
-        {/* Review Statistics */}
-        {product.reviews && product.reviews.length > 0 && (
-          <div className="mb-6 p-4 bg-gray-50 rounded">
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-600">{avgRating}</div>
-                <div className="flex justify-center mb-1">{renderStars(Number.parseFloat(avgRating))}</div>
-                <div className="text-sm text-gray-600">
-                  {product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""}
-                </div>
-              </div>
-              <div className="flex-1">
-                {[5, 4, 3, 2, 1].map((star) => {
-                  const count = product.reviews.filter((r) => r.rating === star).length
-                  const percentage = product.reviews.length > 0 ? (count / product.reviews.length) * 100 : 0
-                  return (
-                    <div key={star} className="flex items-center gap-2 mb-1">
-                      <span className="text-sm w-8">{star}★</span>
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div className="bg-yellow-400 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
-                      </div>
-                      <span className="text-sm text-gray-600 w-8">{count}</span>
-                    </div>
-                  )
-                })}
+        {/* Review submission */}
+        {token && !currentUserReview ? (
+          <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
+            <div>
+              <label className="block text-sm font-medium mb-1">Your Rating:</label>
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg
+                    key={star}
+                    onClick={() => setRating(star)}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill={rating >= star ? "#facc15" : "none"}
+                    viewBox="0 0 24 24"
+                    stroke="#facc15"
+                    className="w-6 h-6 cursor-pointer transition hover:scale-110"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                    />
+                  </svg>
+                ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Review Form - Only show if user hasn't reviewed yet */}
-        {token && !currentUserReview ? (
-          <ReviewForm
-            productId={id}
-            user={user}
-            onReviewSubmitted={(newReview) => {
-              fetchProduct() // Refresh product data to get updated reviews
-            }}
-          />
+            <div>
+              <label className="block text-sm font-medium mb-1">Your Review:</label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={4}
+                className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Write your honest feedback..."
+              />
+            </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+              Submit Review
+            </button>
+          </form>
         ) : token && currentUserReview ? (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded">
-            <p className="text-green-700 font-medium">✅ You have already reviewed this product.</p>
-            <p className="text-sm text-green-600">You can delete your review and write a new one if needed.</p>
-          </div>
+          <p className="text-gray-500 mb-4">You have already reviewed this product.</p>
         ) : (
-          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded">
-            <p className="text-gray-600">Please login to write a review.</p>
-          </div>
+          <p className="text-gray-500 mb-4">Please login to write a review.</p>
         )}
 
-        {/* Reviews List */}
-        <ReviewList
-          reviews={product.reviews || []}
-          currentUser={user}
-          productId={id}
-          onReviewDeleted={(reviewId) => {
-            fetchProduct() // Refresh product data
-          }}
-          onReviewUpdated={(reviewId, updatedReviewData) => {
-            // Update the specific review in the product state
-            setProduct((prev) => ({
-              ...prev,
-              reviews: prev.reviews.map((review) =>
-                review._id === reviewId ? { ...review, ...updatedReviewData } : review,
-              ),
-            }))
-          }}
-        />
+        {/* Display reviews */}
+        <div className="space-y-4">
+          {currentUserReview && (
+            <div className="border p-4 rounded bg-blue-50 shadow-sm">
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex gap-2 items-center">
+                  <p className="text-sm font-semibold text-blue-800">Your Review</p>
+                  {renderStars(currentUserReview.rating)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gray-400">{new Date(currentUserReview.createdAt).toLocaleString()}</p>
+                  <button
+                    onClick={() => handleDeleteReview(currentUserReview._id)}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+              <p className="text-sm text-gray-700 mt-1">{currentUserReview.comment}</p>
+            </div>
+          )}
+
+          {otherReviews.length === 0 && !currentUserReview && (
+            <p className="text-gray-400 italic">No reviews yet. Be the first to review this product.</p>
+          )}
+
+          {(showAllReviews ? otherReviews : otherReviews.slice(0, 3)).map((r, i) => (
+            <div key={i} className="border p-4 rounded bg-white shadow-sm">
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex gap-2 items-center">
+                  <p className="text-sm font-semibold text-gray-800">{r.name || "User"}</p>
+                  {renderStars(r.rating)}
+                </div>
+                <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleString()}</p>
+              </div>
+              <p className="text-sm text-gray-700 mt-1">{r.comment}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <button onClick={() => handleLike(r._id)} className="text-xs text-green-600 hover:underline">
+                  👍 {r.likes?.length || 0}
+                </button>
+                <button onClick={() => handleDislike(r._id)} className="text-xs text-red-600 hover:underline">
+                  👎 {r.dislikes?.length || 0}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {otherReviews.length > 3 && (
+            <button
+              onClick={() => setShowAllReviews(!showAllReviews)}
+              className="text-blue-600 text-sm mt-2 hover:underline"
+            >
+              {showAllReviews ? "Show less" : "See more reviews"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Related Products */}
@@ -478,7 +554,6 @@ const ProductDetail = () => {
                     src={`${API_BASE}${mainImage}`}
                     alt={p.title}
                     className="w-full h-48 object-cover rounded mb-2 hover:scale-105 transition-transform duration-200"
-                    loading="lazy"
                   />
                   <h4 className="text-sm font-semibold">{p.title}</h4>
                   <p className="text-green-600 font-bold">₹{finalPrice}</p>
