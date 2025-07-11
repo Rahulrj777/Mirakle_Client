@@ -12,9 +12,11 @@ const ProductOffer = () => {
   axios
     .get(`${API_BASE}/api/banners`)
     .then((res) => {
+      console.log("Banners response:", res.data)
+
       const allBanners = Array.isArray(res.data)
         ? res.data
-        : res.data.banners || [];
+        : res.data.banners || [];  
 
       const side = allBanners.filter((img) => img.type === "side");
       const offers = allBanners.filter((img) => img.type === "offer");
