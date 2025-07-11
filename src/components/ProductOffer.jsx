@@ -21,7 +21,7 @@ const ProductOffer = () => {
         console.log("🔄 Fetching banners from:", `${API_BASE}/api/banners`)
 
         const res = await axios.get(`${API_BASE}/api/banners`, {
-          timeout: 10000,
+          timeout: 15000, // Increased timeout for production server
           headers: {
             "Content-Type": "application/json",
           },
@@ -39,7 +39,7 @@ const ProductOffer = () => {
         console.log(`✅ Loaded ${side.length} side banners and ${offers.length} offer banners`)
       } catch (err) {
         console.error("❌ Banner fetch failed:", err)
-        setError(err.message || "Failed to load banners")
+        setError(err.response?.data?.message || err.message || "Failed to load banners")
 
         // Set empty arrays as fallback
         setSideImages([])
@@ -55,8 +55,21 @@ const ProductOffer = () => {
   if (loading) {
     return (
       <div className="w-[90%] mx-auto py-12 flex flex-col lg:flex-row gap-8">
-        <div className="flex-1 bg-gray-200 rounded-xl animate-pulse h-64"></div>
-        <div className="w-full lg:w-1/3 bg-gray-200 rounded-xl animate-pulse h-64"></div>
+        <div className="flex-1 bg-gray-200 rounded-xl animate-pulse h-64">
+          <div className="p-4">
+            <div className="h-6 bg-gray-300 rounded mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-300 rounded"></div>
+              <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+            </div>
+          </div>
+        </div>
+        <div className="w-full lg:w-1/3 bg-gray-200 rounded-xl animate-pulse h-64">
+          <div className="p-4">
+            <div className="h-6 bg-gray-300 rounded mb-4"></div>
+            <div className="h-32 bg-gray-300 rounded"></div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -66,7 +79,8 @@ const ProductOffer = () => {
       <div className="w-[90%] mx-auto py-12 text-center">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h3 className="text-red-800 font-semibold mb-2">Failed to Load Banners</h3>
-          <p className="text-red-600 text-sm">{error}</p>
+          <p className="text-red-600 text-sm mb-2">{error}</p>
+          <p className="text-gray-500 text-xs mb-4">API: {API_BASE}/api/banners</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
@@ -86,7 +100,18 @@ const ProductOffer = () => {
 
         {sideImages.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No featured products available</p>
+            <div className="mb-4">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
+              </svg>
+            </div>
+            <p className="text-lg font-medium">No featured products available</p>
+            <p className="text-sm mt-2">Featured products will appear here once added</p>
           </div>
         ) : (
           <div className="flex flex-wrap gap-4">
@@ -158,7 +183,18 @@ const ProductOffer = () => {
 
         {offerImages.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No offers available</p>
+            <div className="mb-4">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
+                />
+              </svg>
+            </div>
+            <p className="text-lg font-medium">No offers available</p>
+            <p className="text-sm mt-2">Special offers will appear here</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
