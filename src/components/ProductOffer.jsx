@@ -8,19 +8,22 @@ const ProductOffer = () => {
   const [offerImages, setOfferImages] = useState([])
   const navigate = useNavigate()
 
-  useEffect(() => {
-    axios
-      .get(`${API_BASE}/api/banners`)
-      .then((res) => {
-        const allBanners = res.data
-        const side = allBanners.filter((img) => img.type === "side")
-        const offers = allBanners.filter((img) => img.type === "offer")
+ useEffect(() => {
+  axios
+    .get(`${API_BASE}/api/banners`)
+    .then((res) => {
+      const allBanners = Array.isArray(res.data)
+        ? res.data
+        : res.data.banners || [];
 
-        setSideImages(side)
-        setOfferImages(offers)
-      })
-      .catch((err) => console.error("Banner fetch failed:", err))
-  }, [])
+      const side = allBanners.filter((img) => img.type === "side");
+      const offers = allBanners.filter((img) => img.type === "offer");
+
+      setSideImages(side);
+      setOfferImages(offers);
+    })
+    .catch((err) => console.error("Banner fetch failed:", err));
+}, []);
 
   return (
     <div className="w-[90%] mx-auto py-12 flex flex-col lg:flex-row gap-8">
