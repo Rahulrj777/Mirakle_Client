@@ -167,7 +167,6 @@ const ProductDetail = () => {
           console.warn("⚠️ Backend sync failed, but item added to local cart")
         }
 
-        alert("Product added to cart successfully!")
       } catch (err) {
         console.error("❌ Add to cart failed:", err)
         alert("Something went wrong while adding to cart")
