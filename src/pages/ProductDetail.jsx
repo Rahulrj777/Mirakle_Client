@@ -215,7 +215,6 @@ const ProductDetail = () => {
     [reviewImages, reviewImagePreviews],
   )
 
-  // ✅ Real Review Form Handler (with API calls)
   const handleReviewSubmit = useCallback(
     async (e) => {
       e.preventDefault()
