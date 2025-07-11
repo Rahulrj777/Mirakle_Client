@@ -16,16 +16,16 @@ const ProductOffer = () => {
 
       const allBanners = Array.isArray(res.data)
         ? res.data
-        : res.data.banners || [];  
+        : res.data.banners || []
 
-      const side = allBanners.filter((img) => img.type === "side");
-      const offers = allBanners.filter((img) => img.type === "offer");
+      const side = allBanners.filter((img) => img.type === "side")
+      const offers = allBanners.filter((img) => img.type === "offer")
 
-      setSideImages(side);
-      setOfferImages(offers);
+      setSideImages(side)
+      setOfferImages(offers)
     })
-    .catch((err) => console.error("Banner fetch failed:", err));
-}, []);
+    .catch((err) => console.error("Banner fetch failed:", err))
+}, [])
 
   return (
     <div className="w-[90%] mx-auto py-12 flex flex-col lg:flex-row gap-8">
