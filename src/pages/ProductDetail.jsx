@@ -135,10 +135,10 @@ const ProductDetail = () => {
       const res = await axios.post(`${API_BASE}/api/cart/add`, {
         item: {
           _id: product._id,
-          variantId: selectedVariant?._id, // or null
+          variantId: selectedVariant?._id,
           title: product.title,
           images: {
-            others: product.images || [], // must be array
+            others: product.images || [], 
           },
           size: selectedVariant?.size || "",
           weight: {
