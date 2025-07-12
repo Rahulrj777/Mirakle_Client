@@ -123,61 +123,43 @@ const ProductDetail = () => {
     setSelectedVariant(variant)
   }, [])
 
-  const handleAddToCart = useCallback(
-    async (product) => {
-      if (addingToCart) return
+  const handleAddToCart = async () => {
+    const token = localStorage.getItem("token");
 
-      if (!user?.token) {
-        alert("Please login to add items to cart")
-        navigate("/login_signup")
-        return
-      }
+    if (!token) {
+      alert("You must be logged in");
+      return;
+    }
 
-      if (!selectedVariant) {
-        alert("Please select a variant")
-        return
-      }
-
-      setAddingToCart(true)
-
-      const productToAdd = {
-        _id: product._id,
-        title: product.title,
-        images: product.images,
-        variantId: selectedVariant._id,
-        size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
-        weight: {
-          value: selectedVariant?.weight?.value || selectedVariant?.size,
-          unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
-        },
-        currentPrice: Number.parseFloat(finalPrice),
-        quantity: 1,
-      }
-
-      try {
-        // Add to Redux first for immediate UI feedback
-        dispatch(addToCart(productToAdd))
-
-        // Try to sync to backend
-        const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", { item: productToAdd }))
-
-        if (syncResult) {
-          console.log("✅ Cart synced to backend")
-        } else {
-          console.warn("⚠️ Backend sync failed, but item added to local cart")
+    try {
+      const res = await axios.post(`${API_BASE}/api/cart/add`, {
+        item: {
+          _id: product._id,
+          variantId: selectedVariant?._id, // or null
+          title: product.title,
+          images: {
+            others: product.images || [], // must be array
+          },
+          size: selectedVariant?.size || "",
+          weight: {
+            value: selectedVariant?.weightValue || "",
+            unit: selectedVariant?.weightUnit || "",
+          },
+          currentPrice: product.currentPrice,
+          quantity: 1,
         }
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
 
-      } catch (err) {
-        console.error("❌ Add to cart failed:", err)
-        alert("Something went wrong while adding to cart")
-      } finally {
-        setAddingToCart(false)
-      }
-    },
-    [addingToCart, user, selectedVariant, navigate, dispatch],
-  )
+      console.log("✅ Cart updated:", res.data);
+    } catch (err) {
+      console.error("❌ Add to cart failed:", err.response?.data || err.message);
+    }
+  };
 
-  // ✅ Review Form Handlers
   const handleReviewImageChange = useCallback((e) => {
     const files = Array.from(e.target.files)
 
