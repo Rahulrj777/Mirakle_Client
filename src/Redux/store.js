@@ -7,8 +7,13 @@ import { thunk } from 'redux-thunk';
 
 let userId = "guest";
 if (typeof window !== "undefined") {
-  const localUser = JSON.parse(localStorage.getItem("mirakleUser"));
-  userId = localUser?.user?._id || "guest";
+  try {
+    const localUser = JSON.parse(localStorage.getItem("mirakleUser"));
+    userId = localUser?.user?._id || "guest";
+  } catch (error) {
+    console.warn("❌ Failed to parse mirakleUser", error);
+    userId = "guest";
+  }
 }
 
 const persistConfig = {
