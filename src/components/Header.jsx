@@ -1,5 +1,3 @@
-"use client"
-
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { HiOutlineShoppingBag } from "react-icons/hi2"
 import { FaRegUser } from "react-icons/fa"
