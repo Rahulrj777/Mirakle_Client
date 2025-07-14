@@ -6,12 +6,12 @@ import { FaRegUser } from "react-icons/fa"
 
 const Navigation = () => {
   return (
-    <div className="w-full bg-white shadow px-6 py-3 flex items-center justify-between">
+    <div className="w-full absolute top-0 left-0 z-50 px-10 py-4 flex items-center justify-between bg-transparent text-white">
       {/* Logo */}
       <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
 
-      {/* Nav Links */}
-      <ul className="flex items-center gap-6 font-semibold text-lg text-green-700">
+      {/* Navigation Links */}
+      <ul className="flex items-center gap-6 font-medium text-lg">
         {[
           { path: "/", list: "Home" },
           { path: "/shop/allproduct", list: "Shop" },
@@ -19,26 +19,26 @@ const Navigation = () => {
           { path: "/Contect_Us", list: "Contact Us" },
         ].map((item) => (
           <li key={item.path}>
-            <Link to={item.path} className="hover:text-green-500 transition-colors">
+            <Link to={item.path} className="hover:text-green-200 transition-colors">
               {item.list}
             </Link>
           </li>
         ))}
       </ul>
 
-      {/* Search */}
-      <div className="flex-1 max-w-sm mx-6">
+      {/* Search Bar */}
+      <div className="flex-1 max-w-md mx-6">
         <input
           type="text"
           placeholder="Search the product..."
-          className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
+          className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400"
         />
       </div>
 
       {/* Icons */}
-      <div className="flex items-center gap-4 text-2xl text-black">
-        <FaRegUser className="cursor-pointer hover:text-green-600" />
-        <HiOutlineShoppingBag className="cursor-pointer hover:text-green-600" />
+      <div className="flex items-center gap-5 text-2xl">
+        <FaRegUser className="cursor-pointer hover:text-green-300" />
+        <HiOutlineShoppingBag className="cursor-pointer hover:text-green-300" />
       </div>
     </div>
   )
