@@ -29,15 +29,23 @@ const ProductDetail = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  // ✅ MODIFIED: Safe user data access - use "user" key from localStorage
+  // ✅ MODIFIED: Safe user data access - use "_id" for consistency
   const user = useMemo(() => {
     try {
       const userData = localStorage.getItem("user")
       if (userData) {
         const parsedUser = JSON.parse(userData)
-        console.log("Logged in user data:", parsedUser) // Debugging user data
-        return parsedUser
+        // Ensure we have a consistent ID property, prefer _id
+        if (parsedUser._id) {
+          console.log("Logged in user data (parsed):", parsedUser)
+          return parsedUser
+        } else if (parsedUser.id) {
+          // Fallback if 'id' is used instead of '_id'
+          console.warn("User object has 'id' instead of '_id'. Using 'id'.", parsedUser)
+          return { ...parsedUser, _id: parsedUser.id }
+        }
       }
+      console.log("No user data found in localStorage or invalid format.")
       return null
     } catch (e) {
       console.error("Failed to parse user from localStorage:", e)
@@ -348,22 +356,26 @@ const ProductDetail = () => {
     return (price - (price * discount) / 100).toFixed(2)
   }, [selectedVariant])
 
-  // ✅ MODIFIED: Ensure currentUserReview is correctly identified
+  // ✅ MODIFIED: Ensure currentUserReview is correctly identified using user._id
   const currentUserReview = useMemo(() => {
-    if (!product?.reviews?.length || !user?.id) {
-      console.log("No user or no reviews to find current user review.")
+    if (!product?.reviews?.length || !user?._id) {
+      console.log("DEBUG: No product reviews or user ID to find current user review. User:", user)
       return null
     }
-    const foundReview = product.reviews.find((r) => r.user.toString() === user.id.toString())
-    console.log("Current user review found:", foundReview) // Debugging
+    const foundReview = product.reviews.find((r) => {
+      const isMatch = r.user.toString() === user._id.toString()
+      console.log(`DEBUG: Comparing review user ${r.user} with current user ${user._id}. Match: ${isMatch}`)
+      return isMatch
+    })
+    console.log("DEBUG: Current user review found:", foundReview)
     return foundReview
   }, [product?.reviews, user])
 
   // ✅ MODIFIED: Ensure otherReviews excludes the current user's review
   const otherReviews = useMemo(() => {
     if (!product?.reviews?.length) return []
-    if (!user?.id) return product.reviews // If no user, all are "other"
-    return product.reviews.filter((r) => r.user.toString() !== user.id.toString())
+    if (!user?._id) return product.reviews // If no user, all are "other"
+    return product.reviews.filter((r) => r.user.toString() !== user._id.toString())
   }, [product?.reviews, user])
 
   // ✅ MODIFIED: Memoized star renderer for better visibility
@@ -543,8 +555,8 @@ const ProductDetail = () => {
             </div>
           </div>
         )}
-        {/* Review Form - Only show if user hasn't reviewed yet */}
-        {token && !currentUserReview ? (
+        {/* Review Form - Only show if user is logged in AND hasn't reviewed yet */}
+        {token && user?._id && !currentUserReview ? (
           <form onSubmit={handleReviewSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Write a Review</h3>
             {/* Rating */}
@@ -618,7 +630,7 @@ const ProductDetail = () => {
               {submittingReview ? "Submitting..." : "Submit Review"}
             </button>
           </form>
-        ) : token && currentUserReview ? (
+        ) : token && user?._id && currentUserReview ? (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded">
             <p className="text-green-700 font-medium">✅ You have already reviewed this product.</p>
             <p className="text-sm text-green-600">You can delete your review and write a new one if needed.</p>
@@ -680,8 +692,8 @@ const ProductDetail = () => {
             const isLikeLoading = actionLoading[`like-${review._id}`]
             const isDislikeLoading = actionLoading[`dislike-${review._id}`]
             // Check if current user has liked/disliked this specific review
-            const userHasLiked = review.likes?.includes(user?.id)
-            const userHasDisliked = review.dislikes?.includes(user?.id)
+            const userHasLiked = review.likes?.includes(user?._id)
+            const userHasDisliked = review.dislikes?.includes(user?._id)
 
             return (
               <div key={review._id} className="border p-4 rounded shadow-sm bg-white">
