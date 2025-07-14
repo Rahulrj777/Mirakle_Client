@@ -8,7 +8,7 @@ const Navigation = () => {
   return (
     <div className="w-full bg-white shadow px-6 py-3 flex items-center justify-between gap-6">
       {/* Logo */}
-      <img src={logo} alt="logo" className="w-35 h-20 object-contain" />
+      <img src={logo} alt="logo" className="w-40 h-25 object-contain" />
 
       {/* Navigation Links */}
       <ul className="flex items-center gap-6 font-semibold text-lg text-green-700">
