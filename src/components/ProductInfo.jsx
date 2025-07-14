@@ -14,7 +14,7 @@ const SliderSection = () => {
 
   useEffect(() => {
     axios.get(`${API_BASE}/api/banners`).then((res) => {
-      const sliders = res.data.filter((img) => img.type === "slider");
+      const sliders = res.data.filter((img) => img.type === "main");
       setOriginalImages(sliders);
 
       if (sliders.length > 0) {
