@@ -77,7 +77,7 @@ const ProductOffer = () => {
                       <span className="text-green-600 font-bold text-lg">
                         ₹{Number.parseFloat(banner.price).toFixed(0)}
                       </span>
-                      {banner.oldPrice > 0 && (
+                      {banner.oldPrice > banner.price && (
                         <span className="text-gray-400 line-through text-sm">
                           ₹{Number.parseFloat(banner.oldPrice).toFixed(0)}
                         </span>

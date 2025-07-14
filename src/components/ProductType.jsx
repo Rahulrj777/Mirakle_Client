@@ -110,7 +110,7 @@ const ProductType = () => {
                             <span className="text-green-600 mr-1">
                               ₹ {parseFloat(item.price).toFixed(0)}
                             </span>
-                            {item.oldPrice > 0 && (
+                            {item.oldPrice > item.price && (
                               <span className="text-gray-400 line-through text-xs">
                                 ₹ {parseFloat(item.oldPrice).toFixed(0)}
                               </span>
