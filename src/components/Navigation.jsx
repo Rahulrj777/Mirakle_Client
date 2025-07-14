@@ -6,11 +6,11 @@ import { FaRegUser } from "react-icons/fa"
 
 const Navigation = () => {
   return (
-    <div className="w-full bg-white shadow px-6 py-3 flex items-center justify-between gap-6">
+    <div className="w-full bg-white shadow px-6 py-3 flex items-center justify-between">
       {/* Logo */}
-      <img src={logo} alt="logo" className="w-50 h-30 object-contain" />
+      <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
 
-      {/* Navigation Links */}
+      {/* Nav Links */}
       <ul className="flex items-center gap-6 font-semibold text-lg text-green-700">
         {[
           { path: "/", list: "Home" },
@@ -26,8 +26,8 @@ const Navigation = () => {
         ))}
       </ul>
 
-      {/* Search bar */}
-      <div className="flex-1 max-w-md mx-4">
+      {/* Search */}
+      <div className="flex-1 max-w-sm mx-6">
         <input
           type="text"
           placeholder="Search the product..."
@@ -36,7 +36,7 @@ const Navigation = () => {
       </div>
 
       {/* Icons */}
-      <div className="flex items-center gap-5 text-2xl text-black">
+      <div className="flex items-center gap-4 text-2xl text-black">
         <FaRegUser className="cursor-pointer hover:text-green-600" />
         <HiOutlineShoppingBag className="cursor-pointer hover:text-green-600" />
       </div>

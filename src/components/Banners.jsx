@@ -6,17 +6,17 @@ import BannerType3 from '../assets/bannerType3.jpg'
 
 const Banners = () => {
   return (
-    <div className="flex gap-4">
-      {/* Left side: Main banner */}
+    <div className="flex max-w-[1200px] mx-auto mt-6 gap-4">
+      {/* Main Banner */}
       <div className="w-2/3">
-        <img src={Banner} alt="Main Banner" className="w-full h-full object-cover rounded-xl" />
+        <img src={Banner} alt="Main Banner" className="w-full h-full rounded-xl object-cover" />
       </div>
 
-      {/* Right side: 3 stacked banners */}
+      {/* Side Banners */}
       <div className="w-1/3 flex flex-col gap-4">
-        <img src={BannerType1} alt="Banner 1" className="w-full h-[33%] object-cover rounded-xl" />
-        <img src={BannerType2} alt="Banner 2" className="w-full h-[33%] object-cover rounded-xl" />
-        <img src={BannerType3} alt="Banner 3" className="w-full h-[33%] object-cover rounded-xl" />
+        <img src={BannerType1} alt="Banner 1" className="w-full h-[33%] rounded-xl object-cover" />
+        <img src={BannerType2} alt="Banner 2" className="w-full h-[33%] rounded-xl object-cover" />
+        <img src={BannerType3} alt="Banner 3" className="w-full h-[33%] rounded-xl object-cover" />
       </div>
     </div>
   )
