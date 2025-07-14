@@ -1,5 +1,3 @@
-"use client"
-
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -17,7 +15,6 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [addingToCart, setAddingToCart] = useState(false)
-
   // Review form states
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewComment, setReviewComment] = useState("")
@@ -25,18 +22,16 @@ const ProductDetail = () => {
   const [reviewImagePreviews, setReviewImagePreviews] = useState([])
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewError, setReviewError] = useState("")
-
   // Review list states
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
-
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  // ✅ Safe user data access
+  // ✅ MODIFIED: Safe user data access - use "user" key from localStorage
   const user = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem("mirakleUser"))
+      return JSON.parse(localStorage.getItem("user")) // Changed from "mirakleUser" to "user"
     } catch {
       return null
     }
@@ -48,21 +43,19 @@ const ProductDetail = () => {
     return Array.isArray(items) ? items : []
   })
 
-  const token = user?.token
+  const token = localStorage.getItem("authToken") // Get token directly from localStorage
 
   // ✅ Memoized fetch functions with better error handling
   const fetchProduct = useCallback(async () => {
     try {
       setLoading(true)
       setError("")
-
-      const res = await axios.get(`${API_BASE}/api/products/all-products`)
+      // Fetch product by ID to get its specific data, including reviews
+      const res = await axios.get(`${API_BASE}/api/products/all-products`) // Assuming this fetches all products and you filter
       const found = res.data.find((p) => p._id === id)
-
       if (found) {
-        setProduct(found) // Use actual product data without mock reviews
+        setProduct(found)
         setSelectedImage(found.images?.others?.[0] || "")
-
         if (found.variants && found.variants.length > 0) {
           setSelectedVariant(found.variants[0])
         }
@@ -90,9 +83,7 @@ const ProductDetail = () => {
   // ✅ Load cart safely without causing re-renders
   const loadCartSafely = useCallback(async () => {
     if (!token || cartItems.length > 0) return
-
     const cartData = await safeApiCall(async (api) => await api.get("/cart"), { items: [] })
-
     if (cartData && Array.isArray(cartData.items)) {
       dispatch(setCartItem(cartData.items))
     } else if (Array.isArray(cartData)) {
@@ -126,20 +117,16 @@ const ProductDetail = () => {
   const handleAddToCart = useCallback(
     async (product) => {
       if (addingToCart) return
-
-      if (!user?.token) {
+      if (!token) {
         alert("Please login to add items to cart")
-        navigate("/login_signup")
+        navigate("/login") // Changed to /login
         return
       }
-
       if (!selectedVariant) {
         alert("Please select a variant")
         return
       }
-
       setAddingToCart(true)
-
       const productToAdd = {
         _id: product._id,
         title: product.title,
@@ -150,23 +137,19 @@ const ProductDetail = () => {
           value: selectedVariant?.weight?.value || selectedVariant?.size,
           unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
         },
-        currentPrice: Number.parseFloat(finalPrice),
+        currentPrice: Number.parseFloat(product.variants?.[0]?.price),
         quantity: 1,
       }
-
       try {
         // Add to Redux first for immediate UI feedback
         dispatch(addToCart(productToAdd))
-
         // Try to sync to backend
         const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", { item: productToAdd }))
-
         if (syncResult) {
           console.log("✅ Cart synced to backend")
         } else {
           console.warn("⚠️ Backend sync failed, but item added to local cart")
         }
-
       } catch (err) {
         console.error("❌ Add to cart failed:", err)
         alert("Something went wrong while adding to cart")
@@ -174,28 +157,24 @@ const ProductDetail = () => {
         setAddingToCart(false)
       }
     },
-    [addingToCart, user, selectedVariant, navigate, dispatch],
+    [addingToCart, token, selectedVariant, navigate, dispatch], // Removed finalPrice from dependencies
   )
 
   // ✅ Review Form Handlers
   const handleReviewImageChange = useCallback((e) => {
     const files = Array.from(e.target.files)
-
     if (files.length > 5) {
       setReviewError("You can upload maximum 5 images")
       return
     }
-
     // Validate file sizes (5MB each)
     const oversizedFiles = files.filter((file) => file.size > 5 * 1024 * 1024)
     if (oversizedFiles.length > 0) {
       setReviewError("Each image must be less than 5MB")
       return
     }
-
     setReviewImages(files)
     setReviewError("")
-
     // Create previews
     const previews = files.map((file) => URL.createObjectURL(file))
     setReviewImagePreviews(previews)
@@ -205,10 +184,8 @@ const ProductDetail = () => {
     (index) => {
       const newImages = reviewImages.filter((_, i) => i !== index)
       const newPreviews = reviewImagePreviews.filter((_, i) => i !== index)
-
       // Revoke the URL to prevent memory leaks
       URL.revokeObjectURL(reviewImagePreviews[index])
-
       setReviewImages(newImages)
       setReviewImagePreviews(newPreviews)
     },
@@ -218,27 +195,22 @@ const ProductDetail = () => {
   const handleReviewSubmit = useCallback(
     async (e) => {
       e.preventDefault()
-
       if (!reviewRating || !reviewComment.trim()) {
         setReviewError("Please provide both rating and review.")
         return
       }
-
       if (reviewComment.trim().length < 10) {
         setReviewError("Review must be at least 10 characters long.")
         return
       }
-
       setSubmittingReview(true)
       setReviewError("")
-
       try {
         const formData = new FormData()
         formData.append("rating", reviewRating)
         formData.append("comment", reviewComment.trim())
-
         // Add images to form data
-        reviewImages.forEach((image, index) => {
+        reviewImages.forEach((image) => {
           formData.append("images", image)
         })
 
@@ -249,7 +221,6 @@ const ProductDetail = () => {
             },
           })
         })
-
         if (result) {
           // Reset form
           setReviewRating(0)
@@ -257,10 +228,8 @@ const ProductDetail = () => {
           setReviewImages([])
           setReviewImagePreviews([])
           setReviewError("")
-
           // Refresh product data
           fetchProduct()
-
           alert("Review submitted successfully!")
         } else {
           setReviewError("Failed to submit review. Please try again.")
@@ -279,21 +248,23 @@ const ProductDetail = () => {
   const handleDeleteReview = useCallback(
     async (reviewId) => {
       if (!confirm("Are you sure you want to delete your review?")) return
-
       setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: true }))
-
-      const result = await safeApiCall(async (api) => {
-        return await api.delete(`/products/${id}/review/${reviewId}`)
-      })
-
-      if (result) {
-        fetchProduct() // Refresh product data
-        alert("Review deleted successfully!")
-      } else {
+      try {
+        const result = await safeApiCall(async (api) => {
+          return await api.delete(`/products/${id}/review/${reviewId}`)
+        })
+        if (result) {
+          fetchProduct() // Refresh product data
+          alert("Review deleted successfully!")
+        } else {
+          alert("Failed to delete review. Please try again.")
+        }
+      } catch (err) {
+        console.error("Delete review failed:", err)
         alert("Failed to delete review. Please try again.")
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: false }))
       }
-
-      setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: false }))
     },
     [id, fetchProduct],
   )
@@ -301,55 +272,59 @@ const ProductDetail = () => {
   // ✅ Real Like Review Handler (with API calls)
   const handleLikeReview = useCallback(
     async (reviewId) => {
-      if (!user?.token) {
+      if (!token) {
         alert("Please login to like reviews")
+        navigate("/login")
         return
       }
-
       setActionLoading((prev) => ({ ...prev, [`like-${reviewId}`]: true }))
-
-      const result = await safeApiCall(async (api) => {
-        return await api.post(`/products/${id}/review/${reviewId}/like`)
-      })
-
-      if (result) {
-        // Update the specific review in the product state
-        setProduct((prev) => ({
-          ...prev,
-          reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
-        }))
+      try {
+        const result = await safeApiCall(async (api) => {
+          return await api.post(`/products/${id}/review/${reviewId}/like`)
+        })
+        if (result) {
+          // Update the specific review in the product state
+          setProduct((prev) => ({
+            ...prev,
+            reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
+          }))
+        }
+      } catch (err) {
+        console.error("Like review failed:", err)
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [`like-${reviewId}`]: false }))
       }
-
-      setActionLoading((prev) => ({ ...prev, [`like-${reviewId}`]: false }))
     },
-    [user, id],
+    [token, id, navigate],
   )
 
   // ✅ Real Dislike Review Handler (with API calls)
   const handleDislikeReview = useCallback(
     async (reviewId) => {
-      if (!user?.token) {
+      if (!token) {
         alert("Please login to dislike reviews")
+        navigate("/login")
         return
       }
-
       setActionLoading((prev) => ({ ...prev, [`dislike-${reviewId}`]: true }))
-
-      const result = await safeApiCall(async (api) => {
-        return await api.post(`/products/${id}/review/${reviewId}/dislike`)
-      })
-
-      if (result) {
-        // Update the specific review in the product state
-        setProduct((prev) => ({
-          ...prev,
-          reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
-        }))
+      try {
+        const result = await safeApiCall(async (api) => {
+          return await api.post(`/products/${id}/review/${reviewId}/dislike`)
+        })
+        if (result) {
+          // Update the specific review in the product state
+          setProduct((prev) => ({
+            ...prev,
+            reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
+          }))
+        }
+      } catch (err) {
+        console.error("Dislike review failed:", err)
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [`dislike-${reviewId}`]: false }))
       }
-
-      setActionLoading((prev) => ({ ...prev, [`dislike-${reviewId}`]: false }))
     },
-    [user, id],
+    [token, id, navigate],
   )
 
   // ✅ Memoized calculations
@@ -366,13 +341,13 @@ const ProductDetail = () => {
   }, [selectedVariant])
 
   const currentUserReview = useMemo(() => {
-    if (!product?.reviews?.length || !user?.user) return null
-    return product.reviews.find((r) => r.user === user.user.userId || r.user === user.user._id)
+    if (!product?.reviews?.length || !user?.id) return null // Use user.id from localStorage
+    return product.reviews.find((r) => r.user.toString() === user.id.toString()) // Compare IDs as strings
   }, [product?.reviews, user])
 
   const otherReviews = useMemo(() => {
-    if (!product?.reviews?.length || !user?.user) return product?.reviews || []
-    return product.reviews.filter((r) => r.user !== user.user.userId && r.user !== user.user._id)
+    if (!product?.reviews?.length || !user?.id) return product?.reviews || [] // Use user.id
+    return product.reviews.filter((r) => r.user.toString() !== user.id.toString()) // Compare IDs as strings
   }, [product?.reviews, user])
 
   // ✅ Memoized star renderer
@@ -392,7 +367,7 @@ const ProductDetail = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="1.5"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
             />
           </svg>
         ))}
@@ -416,19 +391,15 @@ const ProductDetail = () => {
       </div>
     )
   }
-
   if (error && !product) {
     return <div className="text-center mt-20 text-red-500">{error}</div>
   }
-
   if (!product || !selectedVariant) {
     return <div className="text-center mt-20">Product not found</div>
   }
-
   const price = selectedVariant.price
   const discount = selectedVariant.discountPercent || 0
   const reviewsToShow = showAllReviews ? otherReviews : otherReviews.slice(0, 3)
-
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* Product Images and Info */}
@@ -456,7 +427,6 @@ const ProductDetail = () => {
             ))}
           </div>
         </div>
-
         {/* Product Info */}
         <div>
           <h1 className="text-2xl font-bold">{product.title}</h1>
@@ -466,7 +436,6 @@ const ProductDetail = () => {
               {avgRating} / 5 ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? "s" : ""})
             </span>
           </div>
-
           <div className="text-3xl font-bold text-green-600 mb-2">
             ₹{finalPrice}
             {discount > 0 && (
@@ -476,7 +445,6 @@ const ProductDetail = () => {
               </>
             )}
           </div>
-
           <div className="mt-4">
             <p className="font-medium mb-1">Select Size:</p>
             <div className="flex gap-2 flex-wrap">
@@ -495,7 +463,6 @@ const ProductDetail = () => {
               ))}
             </div>
           </div>
-
           <div className="mt-6 flex gap-4">
             <button
               onClick={() => handleAddToCart(product)}
@@ -508,11 +475,9 @@ const ProductDetail = () => {
               Buy Now
             </button>
           </div>
-
           <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
         </div>
       </div>
-
       {/* Product Details Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-2">Product Details</h2>
@@ -528,11 +493,9 @@ const ProductDetail = () => {
           <p className="text-gray-500 text-sm">No additional info</p>
         )}
       </div>
-
       {/* Ratings & Reviews Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
-
         {/* Review Statistics */}
         {product.reviews && product.reviews.length > 0 && (
           <div className="mb-6 p-4 bg-gray-50 rounded">
@@ -562,12 +525,10 @@ const ProductDetail = () => {
             </div>
           </div>
         )}
-
         {/* Review Form - Only show if user hasn't reviewed yet */}
         {token && !currentUserReview ? (
           <form onSubmit={handleReviewSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Write a Review</h3>
-
             {/* Rating */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
@@ -595,7 +556,6 @@ const ProductDetail = () => {
                 </span>
               </div>
             </div>
-
             {/* Comment */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Review:</label>
@@ -612,7 +572,6 @@ const ProductDetail = () => {
                 {reviewComment.length < 10 && reviewComment.length > 0 && "(minimum 10 required)"}
               </div>
             </div>
-
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium mb-1">Add Photos (Optional):</label>
@@ -625,7 +584,6 @@ const ProductDetail = () => {
               />
               <div className="text-xs text-gray-500 mt-1">You can upload up to 5 images (max 5MB each)</div>
             </div>
-
             {/* Image Previews */}
             {reviewImagePreviews.length > 0 && (
               <div>
@@ -650,9 +608,7 @@ const ProductDetail = () => {
                 </div>
               </div>
             )}
-
             {reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
-
             <button
               type="submit"
               disabled={submittingReview || !reviewRating || !reviewComment.trim() || reviewComment.trim().length < 10}
@@ -671,7 +627,6 @@ const ProductDetail = () => {
             <p className="text-gray-600">Please login to write a review.</p>
           </div>
         )}
-
         {/* Reviews List */}
         <div className="space-y-4">
           {/* Current User's Review */}
@@ -693,9 +648,7 @@ const ProductDetail = () => {
                   </button>
                 </div>
               </div>
-
               <p className="text-sm text-gray-700 mb-3">{currentUserReview.comment}</p>
-
               {/* Review Images */}
               {currentUserReview.images && currentUserReview.images.length > 0 && (
                 <div className="mb-3">
@@ -716,17 +669,18 @@ const ProductDetail = () => {
               )}
             </div>
           )}
-
           {/* Other Reviews */}
           {reviewsToShow.length === 0 && !currentUserReview && (
             <div className="text-center py-8">
               <p className="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
             </div>
           )}
-
           {reviewsToShow.map((review) => {
             const isLikeLoading = actionLoading[`like-${review._id}`]
             const isDislikeLoading = actionLoading[`dislike-${review._id}`]
+            // Check if current user has liked/disliked this specific review
+            const userHasLiked = review.likes?.includes(user?.id)
+            const userHasDisliked = review.dislikes?.includes(user?.id)
 
             return (
               <div key={review._id} className="border p-4 rounded shadow-sm bg-white">
@@ -737,9 +691,7 @@ const ProductDetail = () => {
                   </div>
                   <p className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>
                 </div>
-
                 <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
-
                 {/* Review Images */}
                 {review.images && review.images.length > 0 && (
                   <div className="mb-3">
@@ -758,14 +710,13 @@ const ProductDetail = () => {
                     </div>
                   </div>
                 )}
-
                 {/* Like/Dislike buttons */}
                 <div className="flex items-center gap-4 mt-2">
                   <button
                     onClick={() => handleLikeReview(review._id)}
                     disabled={isLikeLoading}
                     className={`text-xs flex items-center gap-1 hover:underline transition-colors ${
-                      review.userLiked ? "text-blue-600 font-semibold" : "text-green-600"
+                      userHasLiked ? "text-blue-600 font-semibold" : "text-green-600"
                     } disabled:opacity-50`}
                   >
                     <span>👍</span>
@@ -775,7 +726,7 @@ const ProductDetail = () => {
                     onClick={() => handleDislikeReview(review._id)}
                     disabled={isDislikeLoading}
                     className={`text-xs flex items-center gap-1 hover:underline transition-colors ${
-                      review.userDisliked ? "text-red-600 font-semibold" : "text-red-500"
+                      userHasDisliked ? "text-red-600 font-semibold" : "text-red-500"
                     } disabled:opacity-50`}
                   >
                     <span>👎</span>
@@ -785,7 +736,6 @@ const ProductDetail = () => {
               </div>
             )
           })}
-
           {/* Show More/Less Button */}
           {otherReviews.length > 3 && (
             <div className="text-center">
@@ -799,7 +749,6 @@ const ProductDetail = () => {
           )}
         </div>
       </div>
-
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div className="mt-10">
@@ -811,7 +760,6 @@ const ProductDetail = () => {
               const price = firstVariant?.price || 0
               const discount = firstVariant?.discountPercent || 0
               const finalPrice = (price - (price * discount) / 100).toFixed(2)
-
               return (
                 <div
                   key={p._id}
@@ -836,5 +784,4 @@ const ProductDetail = () => {
     </div>
   )
 }
-
 export default ProductDetail
