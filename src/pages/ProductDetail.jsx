@@ -1,3 +1,4 @@
+"use client"
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -31,8 +32,15 @@ const ProductDetail = () => {
   // ✅ MODIFIED: Safe user data access - use "user" key from localStorage
   const user = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem("user")) // Changed from "mirakleUser" to "user"
-    } catch {
+      const userData = localStorage.getItem("user")
+      if (userData) {
+        const parsedUser = JSON.parse(userData)
+        console.log("Logged in user data:", parsedUser) // Debugging user data
+        return parsedUser
+      }
+      return null
+    } catch (e) {
+      console.error("Failed to parse user from localStorage:", e)
       return null
     }
   }, [])
@@ -340,34 +348,44 @@ const ProductDetail = () => {
     return (price - (price * discount) / 100).toFixed(2)
   }, [selectedVariant])
 
+  // ✅ MODIFIED: Ensure currentUserReview is correctly identified
   const currentUserReview = useMemo(() => {
-    if (!product?.reviews?.length || !user?.id) return null // Use user.id from localStorage
-    return product.reviews.find((r) => r.user.toString() === user.id.toString()) // Compare IDs as strings
+    if (!product?.reviews?.length || !user?.id) {
+      console.log("No user or no reviews to find current user review.")
+      return null
+    }
+    const foundReview = product.reviews.find((r) => r.user.toString() === user.id.toString())
+    console.log("Current user review found:", foundReview) // Debugging
+    return foundReview
   }, [product?.reviews, user])
 
+  // ✅ MODIFIED: Ensure otherReviews excludes the current user's review
   const otherReviews = useMemo(() => {
-    if (!product?.reviews?.length || !user?.id) return product?.reviews || [] // Use user.id
-    return product.reviews.filter((r) => r.user.toString() !== user.id.toString()) // Compare IDs as strings
+    if (!product?.reviews?.length) return []
+    if (!user?.id) return product.reviews // If no user, all are "other"
+    return product.reviews.filter((r) => r.user.toString() !== user.id.toString())
   }, [product?.reviews, user])
 
-  // ✅ Memoized star renderer
-  const renderStars = useCallback((rating) => {
+  // ✅ MODIFIED: Memoized star renderer for better visibility
+  const renderStars = useCallback((rating, size = "w-4 h-4", clickable = false, setRating = null) => {
     return (
-      <div className="flex">
+      <div className="flex items-center">
         {[1, 2, 3, 4, 5].map((star) => (
           <svg
             key={star}
+            onClick={clickable && setRating ? () => setRating(star) : undefined}
             xmlns="http://www.w3.org/2000/svg"
+            // Use a solid fill for active stars, and a lighter stroke for empty ones
             fill={rating >= star ? "#facc15" : "none"}
+            stroke={rating >= star ? "#facc15" : "#d1d5db"} // Gray stroke for empty stars
             viewBox="0 0 24 24"
-            stroke="#facc15"
-            className="w-4 h-4"
+            className={`${size} ${clickable ? "cursor-pointer transition hover:scale-110" : ""}`}
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="1.5"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
             />
           </svg>
         ))}
@@ -502,7 +520,7 @@ const ProductDetail = () => {
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-yellow-600">{avgRating}</div>
-                <div className="flex justify-center mb-1">{renderStars(Number.parseFloat(avgRating))}</div>
+                <div className="flex justify-center mb-1">{renderStars(Number.parseFloat(avgRating), "w-5 h-5")}</div>
                 <div className="text-sm text-gray-600">
                   {product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""}
                 </div>
@@ -533,24 +551,7 @@ const ProductDetail = () => {
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
               <div className="flex items-center space-x-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    onClick={() => setReviewRating(star)}
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill={reviewRating >= star ? "#facc15" : "none"}
-                    viewBox="0 0 24 24"
-                    stroke="#facc15"
-                    className="w-8 h-8 cursor-pointer transition hover:scale-110"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1.5"
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
-                    />
-                  </svg>
-                ))}
+                {renderStars(reviewRating, "w-8 h-8", true, setReviewRating)}
                 <span className="ml-2 text-sm text-gray-600">
                   {reviewRating > 0 ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}` : "Click to rate"}
                 </span>
@@ -629,7 +630,7 @@ const ProductDetail = () => {
         )}
         {/* Reviews List */}
         <div className="space-y-4">
-          {/* Current User's Review */}
+          {/* Current User's Review - Always at the top if exists */}
           {currentUserReview && (
             <div className="border p-4 rounded shadow-sm bg-blue-50 border-blue-200">
               <div className="flex justify-between items-start mb-2">
