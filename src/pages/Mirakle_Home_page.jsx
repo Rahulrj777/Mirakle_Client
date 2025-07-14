@@ -5,9 +5,9 @@ import ProductType from "../components/ProductType"
 const Mirakle_Home_page = () => {
   return (
     <>
-      <ProductInfo/>
+      {/* <ProductInfo/>
       <ProductOffer/>
-      <ProductType/>
+      <ProductType/> */}
     </>
   )
 }
