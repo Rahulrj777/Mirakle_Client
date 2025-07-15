@@ -357,12 +357,14 @@ const ProductDetail = () => {
 
   const avgRating = useMemo(() => {
     if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
-
-    const validRatings = product.reviews.filter(r => typeof r?.rating === 'number')
+    const validRatings = product.reviews.filter(
+      (r) => r && typeof r.rating === 'number'
+    )
+    if (validRatings.length === 0) return 0
     const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
-
     return (total / validRatings.length).toFixed(1)
   }, [product?.reviews])
+
 
   const finalPrice = useMemo(() => {
     if (!selectedVariant) return "0.00"
