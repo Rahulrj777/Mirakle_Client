@@ -36,18 +36,18 @@ const Banners = () => {
             <input
               type="text"
               placeholder="Search the product..."
-              className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400"
+              className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 border-black"
             />
           </div>
 
           {/* Icons */}
           <div className="flex items-center gap-5 text-2xl">
-            <FaRegUser className="cursor-pointer hover:text-green-300" />
-            <HiOutlineShoppingBag className="cursor-pointer hover:text-green-300" />
+            <FaRegUser className="cursor-pointer text-black" />
+            <HiOutlineShoppingBag className="cursor-pointer text-black" />
           </div>
         </div>
 
-        <div className="relative flex gap-4 px-6 mx-10">
+        <div className="relative flex gap-4 px-6 mt-6">
           {/* Left side: Main big banner */}
           <div className="w-[80%] h-[550px]">
             <img
