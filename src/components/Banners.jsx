@@ -31,6 +31,12 @@ const Banners = () => {
             ))}
           </ul>
 
+          {/* Icons */}
+          <div className="flex items-center gap-5 text-2xl">
+            <FaRegUser className="cursor-pointer text-black" />
+            <HiOutlineShoppingBag className="cursor-pointer text-black" />
+          </div>
+
           {/* Search Bar */}
           <div className="flex-1 max-w-md mx-6">
             <input
@@ -38,12 +44,6 @@ const Banners = () => {
               placeholder="Search the product..."
               className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 border-black border-solid 1px"
             />
-          </div>
-
-          {/* Icons */}
-          <div className="flex items-center gap-5 text-2xl">
-            <FaRegUser className="cursor-pointer text-black" />
-            <HiOutlineShoppingBag className="cursor-pointer text-black" />
           </div>
         </div>
 
