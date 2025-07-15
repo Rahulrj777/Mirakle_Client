@@ -3,9 +3,7 @@ import logo from "../assets/logo.png";
 import { Link } from "react-router-dom";
 import { HiOutlineShoppingBag } from "react-icons/hi2";
 import { FaRegUser } from "react-icons/fa";
-import { useEffect, useState, useRef, useCallback } from "react"
-import axios from "axios"
-import { API_BASE } from "../utils/api"
+import Banner from "../assets/banner.jpg"; // Main banner image
 import BannerType1 from "../assets/bannerType1.jpg";
 import BannerType2 from "../assets/bannerType2.jpg";
 import BannerType3 from "../assets/bannerType3.jpg";
