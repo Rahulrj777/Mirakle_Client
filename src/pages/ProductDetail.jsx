@@ -372,18 +372,23 @@ const ProductDetail = () => {
   }, [selectedVariant])
 
   const currentUserReview = useMemo(() => {
-    if (!Array.isArray(product?.reviews) || !user?.user) return null
-    return product.reviews.find((r) =>
-      r?.user === user.user.userId || r?.user === user.user._id
-    )
+    if (!Array.isArray(product?.reviews)) return null
+
+    const currentUserId = user?.user?.userId || user?.user?._id
+    if (!currentUserId) return null
+
+    return product.reviews.find((r) => r?.user === currentUserId)
   }, [product?.reviews, user])
 
   const otherReviews = useMemo(() => {
-    if (!product?.reviews?.length || !user?.user) return product?.reviews || []
-    return product.reviews.filter((r) => r.user !== user.user.userId && r.user !== user.user._id)
+    if (!Array.isArray(product?.reviews)) return []
+    const currentUserId = user?.user?.userId || user?.user?._id
+    if (!currentUserId) return product.reviews
+    return product.reviews.filter(
+      (r) => r?.user !== currentUserId
+    )
   }, [product?.reviews, user])
 
-  // ✅ Memoized star renderer
   const renderStars = useCallback((rating) => {
     return (
       <div className="flex">
