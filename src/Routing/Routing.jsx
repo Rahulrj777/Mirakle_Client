@@ -17,8 +17,8 @@ import Navigation from '../components/Navigation';
 const Routing = () => {
   return (
     <BrowserRouter>
-      {/* <ScrollToTop /> */}
-      <Header />
+      <ScrollToTop />
+      {/* <Header /> */}
       <Navigation/>
       <Routes>
         <Route path="/" element={<Mirakle_Home_page />} />
