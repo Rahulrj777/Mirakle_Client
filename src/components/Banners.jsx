@@ -284,9 +284,9 @@ const Banners = () => {
 }, []);
 
   return (
-    <div className="w-full h-full relative rounded-xl overflow-hidden">
+    <div className="w-full h-full relative rounded-xl overflow-hidden flex gap-4 mt-6 max-w-7xl mx-auto">
       <div
-        className="w-full max-w-7xl mx-auto relative overflow-hidden h-[370px] rounded-xl mt-6"
+        className=" max-w-7xl mx-auto mt-6 w-[75%] relative overflow-hidden h-[370px] rounded-xl"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
@@ -420,7 +420,7 @@ const Banners = () => {
         </div>
       </div>
 
-      <div className="w-[20%] h-full flex flex-col justify-start items-center gap-6 pt-10">
+      <div className="h-full justify-start items-center pt-10 w-[25%] flex flex-col gap-6">
         {/* Search */}
         <div className="relative w-full max-w-full mx-4">
           <input
@@ -460,11 +460,11 @@ const Banners = () => {
 
         {/* Right stacked banners (dynamic from admin) */}
         <div className="flex-1 flex flex-col justify-between bg-white rounded-xl shadow-md p-4">
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 flex-1 flex-col">
             {sideImages.slice(0, 3).map((banner, i) => (
               <div
                 key={banner._id}
-                className="w-full md:w-[48%] lg:w-[30%] rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer relative"
+                className="w-full md:w-[48%] lg:w-[30%] relative rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
                 onClick={() => {
                   const productId =
                     typeof banner.productId === "object"
@@ -483,7 +483,7 @@ const Banners = () => {
                   <img
                     src={`${API_BASE}${banner.imageUrl || banner.productImageUrl}?v=${banner._id}`}
                     alt={banner.title || `Best Seller ${i + 1}`}
-                    className="w-full h-[200px] object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-[110px] object-cover hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
                 </div>
@@ -500,7 +500,7 @@ const Banners = () => {
                           ₹{Number.parseFloat(banner.price).toFixed(0)}
                         </span>
                         {banner.oldPrice > banner.price && (
-                          <span className="text-gray-400 line-through text-sm">
+                          <span className="text-gray-400 line-through text-xs">
                             ₹{Number.parseFloat(banner.oldPrice).toFixed(0)}
                           </span>
                         )}
