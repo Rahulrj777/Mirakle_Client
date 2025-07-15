@@ -18,7 +18,6 @@ const Banners = () => {
   const [sliderImages, setSliderImages] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(1);
   const sliderRef = useRef(null);
-  const [sideBanners, setSideBanners] = useState([]);
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -215,13 +214,6 @@ const Banners = () => {
       }
     });
   }, []);
-
-  useEffect(() => {
-    axios.get(`${API_BASE}/api/banners`).then((res) => {
-      const sides = res.data.filter((img) => img.type === "side")
-      setSideBanners(sides)
-    })
-  }, [])
 
   useEffect(() => {
     axios.get(`${API_BASE}/api/banners`).then((res) => {
