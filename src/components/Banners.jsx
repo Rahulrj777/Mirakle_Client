@@ -283,140 +283,151 @@ const Banners = () => {
   return () => document.removeEventListener("mousedown", handler);
 }, []);
 
+
+
+
+
+
+
+
+
+
   return (
     <div className="w-full h-full relative rounded-xl overflow-hidden flex gap-4 mt-6 max-w-7xl mx-auto">
-      <div
-        className=" max-w-7xl mx-auto mt-6 w-[75%] relative overflow-hidden h-[370px] rounded-xl"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      >
-        {/* Slider */}
+      <div className="">
         <div
-          ref={sliderRef}
-          className="flex h-full"
-          style={{
-            width: `${sliderImages.length * 100}%`,
-            transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
-            transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
-          }}
-          onTransitionEnd={handleTransitionEnd}
+          className=" max-w-7xl mx-auto mt-6 w-[75%] relative overflow-hidden h-[370px] rounded-xl"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
         >
-          {sliderImages.map((img, i) => (
-            <img
-              key={`${img._id || i}-${i}`}
-              src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-              alt={img.title || `Slide ${i + 1}`}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover flex-shrink-0"
-              style={{ width: `${100 / sliderImages.length}%` }}
-            />
-          ))}
-        </div>
-
-        {/* Arrows */}
-        {sliderImages.length > 1 && (
-          <>
-            <button
-              onClick={handlePrev}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-            >
-              <FiChevronLeft size={22} />
-            </button>
-            <button
-              onClick={handleNext}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-            >
-              <FiChevronRight size={22} />
-            </button>
-          </>
-        )}
-
-        {/* Dot Indicators */}
-        {originalImages.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-            {originalImages.map((_, i) => (
-              <div
-                key={i}
-                className={`w-3 h-3 rounded-full transition ${
-                  i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
-                }`}
+          {/* Slider */}
+          <div
+            ref={sliderRef}
+            className="flex h-full"
+            style={{
+              width: `${sliderImages.length * 100}%`,
+              transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
+              transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
+            }}
+            onTransitionEnd={handleTransitionEnd}
+          >
+            {sliderImages.map((img, i) => (
+              <img
+                key={`${img._id || i}-${i}`}
+                src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                alt={img.title || `Slide ${i + 1}`}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover flex-shrink-0"
+                style={{ width: `${100 / sliderImages.length}%` }}
               />
             ))}
           </div>
-        )}
-      </div>
 
-      <div className="absolute top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white">
-        <img
-          src={logo}
-          alt="logo"
-          className="w-[150px] h-auto object-contain"
-        />
-
-        {/* Nav Links */}
-        <nav className="bg-[rgb(119,221,119)]">
-          <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
-            {[
-              { path: "/", list: "Home" },
-              { path: "/shop/allproduct", list: "Shop" },
-              { path: "/About_Us", list: "About Us" },
-              { path: "/Contect_Us", list: "Contact Us" },
-            ].map((item) => (
-              <li key={item.path} className="cursor-pointer flex flex-col items-center">
-                <Link
-                  to={item.path}
-                  className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
-                >
-                  {item.list}
-                </Link>
-                {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Icons */}
-        <div className="flex items-center gap-5 text-[24px] relative">
-          {user ? (
-            <div ref={dropdownRef} className="relative">
-              <div
-                className="text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold hover:bg-green-700 transition-colors"
-                onClick={handleUserClick}
+          {/* Arrows */}
+          {sliderImages.length > 1 && (
+            <>
+              <button
+                onClick={handlePrev}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
               >
-                {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
-              </div>
-              {/* ✅ Fixed: Only show dropdown when showDropdown is true */}
-              {showDropdown && (
-                <div className="absolute top-12 right-0 bg-white shadow-lg rounded-md z-50 w-48 py-2 border">
-                  <div className="px-4 py-2 border-b">
-                    <p className="text-gray-700 text-sm font-medium">{user.name || user.email}</p>
-                    <p className="text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <span onClick={handleUserClick} className="cursor-pointer hover:text-green-600 transition-colors">
-              <FaRegUser className="text-black" />
-            </span>
+                <FiChevronLeft size={22} />
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
+              >
+                <FiChevronRight size={22} />
+              </button>
+            </>
           )}
 
-          {/* Cart icon */}
-          <span className="relative cursor-pointer" onClick={handleCartClick}>
-            <HiOutlineShoppingBag className="text-black hover:text-green-600 transition-colors" />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                {cartCount}
+          {/* Dot Indicators */}
+          {originalImages.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+              {originalImages.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full transition ${
+                    i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="absolute top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white">
+          <img
+            src={logo}
+            alt="logo"
+            className="w-[150px] h-auto object-contain"
+          />
+
+          {/* Nav Links */}
+          <nav>
+            <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
+              {[
+                { path: "/", list: "Home" },
+                { path: "/shop/allproduct", list: "Shop" },
+                { path: "/About_Us", list: "About Us" },
+                { path: "/Contect_Us", list: "Contact Us" },
+              ].map((item) => (
+                <li key={item.path} className="cursor-pointer flex flex-col items-center">
+                  <Link
+                    to={item.path}
+                    className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
+                  >
+                    {item.list}
+                  </Link>
+                  {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Icons */}
+          <div className="flex items-center gap-5 text-[24px] relative">
+            {user ? (
+              <div ref={dropdownRef} className="relative">
+                <div
+                  className="text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold hover:bg-green-700 transition-colors"
+                  onClick={handleUserClick}
+                >
+                  {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                </div>
+                {/* ✅ Fixed: Only show dropdown when showDropdown is true */}
+                {showDropdown && (
+                  <div className="absolute top-12 right-0 bg-white shadow-lg rounded-md z-50 w-48 py-2 border">
+                    <div className="px-4 py-2 border-b">
+                      <p className="text-gray-700 text-sm font-medium">{user.name || user.email}</p>
+                      <p className="text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span onClick={handleUserClick} className="cursor-pointer hover:text-green-600 transition-colors">
+                <FaRegUser className="text-black" />
               </span>
             )}
-          </span>
+
+            {/* Cart icon */}
+            <span className="relative cursor-pointer" onClick={handleCartClick}>
+              <HiOutlineShoppingBag className="text-black hover:text-green-600 transition-colors" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {cartCount}
+                </span>
+              )}
+            </span>
+          </div>
         </div>
       </div>
 
