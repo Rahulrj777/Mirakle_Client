@@ -12,7 +12,6 @@ import ResetPassword from '../pages/ResetPassword';
 import ScrollToTop from '../pages/ScrollToTop';
 import CartPage from '../pages/CartPage';
 import Checkout from '../pages/Checkout';
-import Navigation from '../components/Navigation';
 
 const Routing = () => {
   return (

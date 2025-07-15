@@ -286,66 +286,66 @@ const Banners = () => {
   return (
     <div className="w-full h-full relative rounded-xl overflow-hidden">
       <div
-      className="w-full max-w-7xl mx-auto relative overflow-hidden h-[370px] rounded-xl mt-6"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Slider */}
-      <div
-        ref={sliderRef}
-        className="flex h-full"
-        style={{
-          width: `${sliderImages.length * 100}%`,
-          transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
-          transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
-        }}
-        onTransitionEnd={handleTransitionEnd}
+        className="w-full max-w-7xl mx-auto relative overflow-hidden h-[370px] rounded-xl mt-6"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
-        {sliderImages.map((img, i) => (
-          <img
-            key={`${img._id || i}-${i}`}
-            src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-            alt={img.title || `Slide ${i + 1}`}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover flex-shrink-0"
-            style={{ width: `${100 / sliderImages.length}%` }}
-          />
-        ))}
-      </div>
-
-      {/* Arrows */}
-      {sliderImages.length > 1 && (
-        <>
-          <button
-            onClick={handlePrev}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-          >
-            <FiChevronLeft size={22} />
-          </button>
-          <button
-            onClick={handleNext}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-          >
-            <FiChevronRight size={22} />
-          </button>
-        </>
-      )}
-
-      {/* Dot Indicators */}
-      {originalImages.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-          {originalImages.map((_, i) => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full transition ${
-                i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
-              }`}
+        {/* Slider */}
+        <div
+          ref={sliderRef}
+          className="flex h-full"
+          style={{
+            width: `${sliderImages.length * 100}%`,
+            transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
+            transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
+          }}
+          onTransitionEnd={handleTransitionEnd}
+        >
+          {sliderImages.map((img, i) => (
+            <img
+              key={`${img._id || i}-${i}`}
+              src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+              alt={img.title || `Slide ${i + 1}`}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover flex-shrink-0"
+              style={{ width: `${100 / sliderImages.length}%` }}
             />
           ))}
         </div>
-      )}
-    </div>
+
+        {/* Arrows */}
+        {sliderImages.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
+            >
+              <FiChevronLeft size={22} />
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
+            >
+              <FiChevronRight size={22} />
+            </button>
+          </>
+        )}
+
+        {/* Dot Indicators */}
+        {originalImages.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+            {originalImages.map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full transition ${
+                  i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="absolute top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white">
         <img
