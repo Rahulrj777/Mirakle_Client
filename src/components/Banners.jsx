@@ -228,22 +228,15 @@ const Banners = () => {
   };
 
   const handleTransitionEnd = () => {
-    if (!sliderRef.current) return;
-
-    let newIndex = currentIndex;
-    sliderRef.current.style.transition = "none";
-
-    if (currentIndex === sliderImages.length - 1) {
-      newIndex = 1;
-    } else if (currentIndex === 0) {
-      newIndex = sliderImages.length - 2;
-    }
-
-    setTimeout(() => {
-      setCurrentIndex(newIndex);
-      setIsTransitioning(false);
-    }, 20);
-  };
+  setIsTransitioning(false);
+  if (currentIndex === extendedImages.length - 1) {
+    // Jump to first real slide
+    setCurrentIndex(1);
+  } else if (currentIndex === 0) {
+    // Jump to last real slide
+    setCurrentIndex(extendedImages.length - 2);
+  }
+};
 
   const handlePrev = () => {
     if (currentIndex <= 0) return;
@@ -305,13 +298,13 @@ const Banners = () => {
             ref={sliderRef}
             className="flex h-full"
             style={{
-              width: `${sliderImages.length * 100}%`,
-              transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
+              width: `${extendedImages.length * 100}%`,
+              transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
               transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
             }}
             onTransitionEnd={handleTransitionEnd}
           >
-            {sliderImages.map((img, i) => (
+            {extendedImages.map((img, i) => (
               <img
                 key={`${img._id || i}-${i}`}
                 src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
@@ -319,7 +312,7 @@ const Banners = () => {
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover flex-shrink-0"
-                style={{ width: `${100 / sliderImages.length}%` }}
+                style={{ width: `${100 / extendedImages.length}%` }}
               />
             ))}
           </div>
