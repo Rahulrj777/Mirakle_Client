@@ -294,9 +294,9 @@ const Banners = () => {
 
   return (
     <div>
-      <div className="max-w-7xl mx-auto mt-6 px-4 flex gap-6 h-[550px]">
+      <div className="w-[80%] max-w-7xl mx-auto mt-6 px-4 flex gap-6 h-[550px]">
         <div
-          className="w-[80%] h-full relative rounded-xl overflow-hidden"
+          className="w-full h-full relative rounded-xl overflow-hidden"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
