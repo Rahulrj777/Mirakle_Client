@@ -47,23 +47,12 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Center Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-white text-center h-full px-4">
-        <h1 className="text-4xl md:text-6xl font-bold mb-4">Shoppable content explained</h1>
-        <p className="text-lg md:text-xl max-w-2xl mb-6">
-          Choosing packaging with care – discover our premium product range
-        </p>
-        <Link
-          to="/shop/allproduct"
-          className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-full text-white text-lg transition"
-        >
-          Shop Now
-        </Link>
-
-        {/* Scroll Down Arrow */}
-        <FaArrowDown
-          onClick={scrollToNext}
-          className="mt-10 text-white text-2xl animate-bounce cursor-pointer"
+      {/* Search Bar */}
+      <div className="flex-1 max-w-md mx-6">
+        <input
+          type="text"
+          placeholder="Search the product..."
+          className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400"
         />
       </div>
     </div>
