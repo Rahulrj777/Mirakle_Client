@@ -386,7 +386,7 @@ const Banners = () => {
             {user ? (
               <div ref={dropdownRef} className="relative">
                 <div
-                  className="text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold hover:bg-green-700 transition-colors"
+                  className="text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold bg-green-500 hover:bg-green-700 transition-colors"
                   onClick={handleUserClick}
                 >
                   {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
