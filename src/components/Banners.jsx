@@ -36,6 +36,12 @@ const Banners = () => {
   const [sideImages, setSideImages] = useState([])
 
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
+  
+  const extendedImages = [
+    sliderImages[sliderImages.length - 1], // Clone last at beginning
+    ...sliderImages,
+    sliderImages[0], // Clone first at end
+  ];
 
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems) ? cartItems.length : 0
