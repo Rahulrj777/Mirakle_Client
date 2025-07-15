@@ -296,7 +296,7 @@ const Banners = () => {
     <div className="w-full h-full flex">
       <div className="w-[80%] mx-auto mt-6 px-4 flex gap-6 h-[510px]">
         <div
-          className=" h-full relative rounded-xl overflow-hidden"
+          className="w-full h-full relative rounded-xl overflow-hidden"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
