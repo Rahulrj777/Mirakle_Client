@@ -355,10 +355,13 @@ const ProductDetail = () => {
     [user, id],
   )
 
-  // ✅ Memoized calculations
   const avgRating = useMemo(() => {
-    if (!product?.reviews?.length) return 0
-    return (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
+    if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
+
+    const validRatings = product.reviews.filter(r => typeof r?.rating === 'number')
+    const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
+
+    return (total / validRatings.length).toFixed(1)
   }, [product?.reviews])
 
   const finalPrice = useMemo(() => {
