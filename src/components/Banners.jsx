@@ -357,7 +357,7 @@ const Banners = () => {
           )}
         </div>
 
-        <div className="absolute top-5 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] bg-gradient-to-b from-black/50 via-transparent to-transparent">
+        <div className="absolute top-5 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
           <img src={logo} alt="logo" className="w-[150px] h-auto object-contain"/>
           {/* Nav Links */}
           <nav>
