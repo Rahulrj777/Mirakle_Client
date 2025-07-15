@@ -303,7 +303,7 @@ const Banners = () => {
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="flex h-full w-full relative overflow-hidden"
+            className="flex h-full w-[550px] relative overflow-hidden"
             style={{
               width: `${sliderImages.length * 100}%`,
               transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
