@@ -10,33 +10,18 @@ import Sauce from "../assets/bannerType3.jpg"
 const HeroSection = () => {
   const [showScrollTop, setShowScrollTop] = useState(false)
 
-  // Show arrow when scrolling down
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 100)
-    }
+    const handleScroll = () => setShowScrollTop(window.scrollY > 100)
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" })
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      {/* Banner Background */}
-      <img
-        src={banner}
-        alt="Hero"
-        className="absolute inset-0 w-full h-full object-cover brightness-95"
-      />
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/30 z-0" />
-
+    <div className="relative w-full min-h-screen bg-white overflow-hidden">
       {/* Top Navigation */}
-      <div className="relative z-10 px-8 py-6 flex items-center justify-between text-white">
+      <div className="absolute top-0 left-0 w-full z-30 px-10 py-4 flex items-center justify-between text-white">
         {/* Logo */}
         <img src={logo} alt="Logo" className="w-[120px] object-contain" />
 
@@ -56,7 +41,7 @@ const HeroSection = () => {
           ))}
         </ul>
 
-        {/* Search */}
+        {/* Search Bar */}
         <div className="flex-1 max-w-md mx-6">
           <input
             type="text"
@@ -66,32 +51,27 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Center + Side Banners */}
-      <div className="relative z-10 flex items-center justify-between h-full px-8">
-        {/* Left Text Block */}
-        <div className="text-white max-w-xl">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Shoppable content explained</h1>
-          <p className="text-lg md:text-xl mb-6">
-            Choosing packaging with care – discover our premium product range
-          </p>
-          <Link
-            to="/shop/allproduct"
-            className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-full text-white text-lg transition"
-          >
-            Shop Now
-          </Link>
+      {/* Main Banner and Right Stacked Images */}
+      <div className="flex flex-col md:flex-row items-stretch pt-20 md:pt-32 px-6 gap-4">
+        {/* Left side: Main banner */}
+        <div className="w-full md:w-[70%] h-[420px] relative rounded-xl overflow-hidden shadow-lg">
+          <img
+            src={banner}
+            alt="Main Banner"
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        {/* Right Side Category Banners */}
-        <div className="flex flex-col gap-4 w-[180px]">
+        {/* Right side: 3 stacked banners */}
+        <div className="w-full md:w-[30%] flex flex-col gap-4">
           {[{ img: Oil, label: "Oil Product" }, { img: Seasoning, label: "Seasoning" }, { img: Sauce, label: "Sauce" }].map((item, i) => (
-            <div key={i} className="relative rounded-lg overflow-hidden shadow-lg">
+            <div key={i} className="relative h-[130px] rounded-xl overflow-hidden shadow-md">
               <img
                 src={item.img}
                 alt={item.label}
-                className="w-full h-[100px] object-cover"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-1 left-2 text-white text-sm font-semibold drop-shadow">
+              <div className="absolute bottom-2 left-3 bg-black/50 px-2 py-1 rounded text-white text-sm font-semibold">
                 {item.label}
               </div>
             </div>
@@ -99,7 +79,7 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Scroll to Top Arrow */}
+      {/* Scroll to Top Button */}
       {showScrollTop && (
         <button
           onClick={scrollToTop}
