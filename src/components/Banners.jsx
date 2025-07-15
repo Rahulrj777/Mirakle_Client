@@ -59,7 +59,7 @@ const Banners = () => {
       </div>
 
       {/* Right: Search + 3 stacked banners */}
-      <div className="w-[20%] h-full flex flex-col justify-start items-center gap-6 pt-8">
+      <div className="w-[20%] h-full flex flex-col justify-start items-center gap-6 pt-10">
         {/* Search Bar */}
         <input
           type="text"
