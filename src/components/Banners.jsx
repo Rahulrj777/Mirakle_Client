@@ -221,16 +221,15 @@ const Banners = () => {
   };
 
   useEffect(() => {
-    if (!hovered && sliderImages.length > 1) {
+    if (!hovered && extendedImages.length > 1) {
       startAutoPlay();
     }
     return stopAutoPlay;
-  }, [hovered, sliderImages.length, startAutoPlay]);
+  }, [hovered, extendedImages.length]);
 
   const slideTo = (index) => {
-    if (isTransitioning || !sliderRef.current) return;
+    if (!sliderRef.current || isTransitioning) return;
     setIsTransitioning(true);
-
     sliderRef.current.style.transition = "transform 0.5s ease-in-out";
     sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * index}%)`;
     setCurrentIndex(index);
@@ -241,14 +240,16 @@ const Banners = () => {
     if (!sliderRef.current) return;
 
     if (currentIndex === extendedImages.length - 1) {
-      // Jump instantly to first real slide
+      // Jump to real first slide (index 1)
       sliderRef.current.style.transition = "none";
       sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length)}%)`;
       setCurrentIndex(1);
-    } else if (currentIndex === 0) {
-      // Jump instantly to last real slide
+    }
+
+    if (currentIndex === 0) {
+      // Jump to real last slide
       sliderRef.current.style.transition = "none";
-      sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * (extendedImages.length - 2)}%)`;
+      sliderRef.current.style.transform = `translateX(-${((extendedImages.length - 2) * 100) / extendedImages.length}%)`;
       setCurrentIndex(extendedImages.length - 2);
     }
   };
@@ -312,25 +313,21 @@ const Banners = () => {
           <div
             ref={sliderRef}
             className="flex h-full"
+            onTransitionEnd={handleTransitionEnd}
             style={{
               width: `${extendedImages.length * 100}%`,
               transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
               transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
             }}
-            onTransitionEnd={handleTransitionEnd}
           >
             {extendedImages.map((img, i) => (
-              img && (
-                <img
-                  key={`${img._id || i}-${i}`}
-                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                  alt={img.title || `Slide ${i + 1}`}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover flex-shrink-0"
-                  style={{ width: `${100 / extendedImages.length}%` }}
-                />
-              )
+              <img
+                key={`${img._id || i}-${i}`}
+                src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                alt={img.title || `Slide ${i + 1}`}
+                className="w-full h-full object-cover flex-shrink-0"
+                style={{ width: `${100 / extendedImages.length}%` }}
+              />
             ))}
           </div>
 
