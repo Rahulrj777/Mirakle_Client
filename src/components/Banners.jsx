@@ -221,11 +221,11 @@ const Banners = () => {
   };
 
   useEffect(() => {
-    if (!hovered && originalImages.length > 1) {
+    if (!hovered && sliderImages.length > 1) {
       startAutoPlay();
     }
     return stopAutoPlay;
-  }, [hovered, originalImages.length, startAutoPlay]);
+  }, [hovered, sliderImages.length, startAutoPlay]);
 
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
@@ -235,15 +235,23 @@ const Banners = () => {
   };
 
   const handleTransitionEnd = () => {
-  setIsTransitioning(false);
-  if (currentIndex === extendedImages.length - 1) {
-    // Jump to first real slide
-    setCurrentIndex(1);
-  } else if (currentIndex === 0) {
-    // Jump to last real slide
-    setCurrentIndex(extendedImages.length - 2);
-  }
-};
+    setIsTransitioning(false);
+    if (!sliderRef.current) return;
+    if (currentIndex === extendedImages.length - 1) {
+      sliderRef.current.style.transition = "none";
+      setCurrentIndex(1);
+      requestAnimationFrame(() => {
+        sliderRef.current.style.transition = "";
+      });
+    } else if (currentIndex === 0) {
+      sliderRef.current.style.transition = "none";
+      setCurrentIndex(extendedImages.length - 2);
+
+      requestAnimationFrame(() => {
+        sliderRef.current.style.transition = "";
+      });
+    }
+  };
 
   const handlePrev = () => {
     if (currentIndex <= 0) return;
