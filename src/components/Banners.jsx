@@ -1,4 +1,8 @@
 import React from 'react'
+import logo from "../assets/logo.png"
+import { Link } from "react-router-dom"
+import { HiOutlineShoppingBag } from "react-icons/hi2"
+import { FaRegUser } from "react-icons/fa"
 import Banner from '../assets/banner.png'
 import BannerType1 from '../assets/bannerType1.jpg'
 import BannerType2 from '../assets/bannerType2.jpg'
@@ -42,7 +46,7 @@ const Banners = () => {
             <HiOutlineShoppingBag className="cursor-pointer hover:text-green-300" />
           </div>
         </div>
-        
+
         <div className="flex gap-4 mt-28 px-6">
           {/* Left side: Main big banner */}
           <div className="w-[70%] h-[420px]">
