@@ -36,7 +36,7 @@ const Banners = () => {
             <input
               type="text"
               placeholder="Search the product..."
-              className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 border-black"
+              className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 border-black border-solid 1px"
             />
           </div>
 
