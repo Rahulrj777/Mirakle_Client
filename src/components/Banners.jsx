@@ -49,7 +49,7 @@ const Banners = () => {
 
         <div className="relative flex gap-4 px-6 mx-10">
           {/* Left side: Main big banner */}
-          <div className="w-[80%] h-[600px]">
+          <div className="w-[80%] h-[550px]">
             <img
               src={Banner}
               alt="Main Banner"
