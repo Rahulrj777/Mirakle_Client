@@ -468,29 +468,26 @@ const Banners = () => {
             </ul>
           )}
         </div> 
-        
-        {/* Right stacked banners – static style with title overlays */}
-        <div className="flex flex-col items-center gap-4">
-          {[
-            { img: BannerType1, label: "Oil" },
-            { img: BannerType2, label: "Seasoning" },
-            { img: BannerType3, label: "Sauce" },
-          ].map((item, i) => (
+        {/* Dynamic Side Banners from backend */}
+        <div className="flex flex-col items-center gap-4 w-full">
+          {sideImages.map((item, i) => (
             <div
-              key={i}
+              key={item._id || i}
               className="relative w-[200px] h-[120px] rounded-xl overflow-hidden shadow hover:shadow-md transition"
             >
               <img
-                src={item.img}
-                alt={`Banner ${i + 1}`}
+                src={`${API_BASE}${item.imageUrl}`}
+                alt={item.title || `Banner ${i + 1}`}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-1 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                {item.label}
-              </div>
+              {item.title && (
+                <div className="absolute bottom-1 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                  {item.title}
+                </div>
+              )}
             </div>
           ))}
-        </div>        
+        </div>                
       </div>
     </div>
   );
