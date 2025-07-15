@@ -10,7 +10,7 @@ import BannerType3 from '../assets/bannerType3.jpg'
 
 const Banners = () => {
   return (
-    <div className="">
+    <div className="w-full h-full">
        <div className=" absolute w-full top-0 left-0 z-50 px-10 py-4 flex items-center justify-between text-white">
           {/* Logo */}
           <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
@@ -49,7 +49,7 @@ const Banners = () => {
 
         <div className="relative flex gap-4 px-6">
           {/* Left side: Main big banner */}
-          <div className="w-[70%] h-[420px]">
+          <div className="w-[80%] h-[600px]">
             <img
               src={Banner}
               alt="Main Banner"
@@ -58,7 +58,7 @@ const Banners = () => {
           </div>
 
           {/* Right side: Smaller 3 stacked banners */}
-          <div className="w-[30%] flex flex-col gap-4">
+          <div className="w-[20%] flex flex-col gap-4">
             {[BannerType1, BannerType2, BannerType3].map((img, i) => (
               <img
                 key={i}
