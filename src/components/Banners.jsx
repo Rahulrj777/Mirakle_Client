@@ -10,17 +10,14 @@ import BannerType3 from "../assets/bannerType3.jpg";
 
 const Banners = () => {
   return (
-    <div className="w-full h-screen flex m-5">
-      {/* ✅ Left 80% with Banner and Navbar */}
+    <div className="w-full h-screen flex">
       <div className="w-[80%] h-full relative">
-        {/* ✅ Banner Image */}
         <img
           src={Banner}
           alt="Main Banner"
           className="w-full h-full object-cover rounded-xl"
         />
 
-        {/* ✅ Navbar over Banner */}
         <div className="absolute top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white">
           {/* Logo */}
           <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
@@ -49,7 +46,6 @@ const Banners = () => {
         </div>
       </div>
 
-      {/* ✅ Right 20% panel */}
       <div className="w-[20%] h-full flex flex-col justify-start items-center gap-6 p-4 mt-5">
         {/* Search Bar */}
         <input
@@ -58,7 +54,6 @@ const Banners = () => {
           className="w-full px-4 py-2 rounded-full border border-black text-black placeholder-gray-500 focus:outline-none"
         />
 
-        {/* 3 Stacked Banners */}
         {[{ img: BannerType1, label: "Oil" }, { img: BannerType2, label: "Seasoning" }, { img: BannerType3, label: "Sauce" }].map((item, i) => (
           <div key={i} className="relative w-full h-[120px] rounded-xl overflow-hidden shadow">
             <img src={item.img} alt={`Banner ${i + 1}`} className="w-full h-full object-cover" />
