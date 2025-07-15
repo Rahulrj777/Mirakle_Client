@@ -11,7 +11,7 @@ import BannerType3 from '../assets/bannerType3.jpg'
 const Banners = () => {
   return (
     <div className="">
-       <div className=" absolute w-full top-0 left-0 z-50 px-10 py-4 flex items-center justify-between bg-transparent text-white backdrop-blur-md">
+       <div className=" absolute w-full top-0 left-0 z-50 px-10 py-4 flex items-center justify-between text-white">
           {/* Logo */}
           <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
 
