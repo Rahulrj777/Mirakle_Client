@@ -47,7 +47,7 @@ const Banners = () => {
           </div>
         </div>
 
-        <div className="relative flex gap-4 px-6">
+        <div className="relative flex gap-4 px-6 mx-10">
           {/* Left side: Main big banner */}
           <div className="w-[80%] h-[600px]">
             <img
@@ -58,7 +58,7 @@ const Banners = () => {
           </div>
 
           {/* Right side: Smaller 3 stacked banners */}
-          <div className="w-[20%] flex flex-col gap-4">
+          <div className="w-[20%] flex flex-col gap-4 mt-20">
             {[BannerType1, BannerType2, BannerType3].map((img, i) => (
               <img
                 key={i}
