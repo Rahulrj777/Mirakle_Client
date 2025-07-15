@@ -19,7 +19,7 @@ const Routing = () => {
     <BrowserRouter>
       <ScrollToTop />
       {/* <Header /> */}
-      <Navigation/>
+      {/* <Navigation/> */}
       <Routes>
         <Route path="/" element={<Mirakle_Home_page />} />
 
