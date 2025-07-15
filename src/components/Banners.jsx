@@ -36,13 +36,6 @@ const Banners = () => {
   const [sideImages, setSideImages] = useState([])
 
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
-  
-  const extendedImages = useMemo(() => {
-    if (sliderImages.length < 1) return [];
-    const first = sliderImages[0];
-    const last = sliderImages[sliderImages.length - 1];
-    return [last, ...sliderImages, first];
-  }, [sliderImages]);
 
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems) ? cartItems.length : 0
@@ -212,52 +205,53 @@ const Banners = () => {
   const startAutoPlay = useCallback(() => {
     stopAutoPlay();
     intervalRef.current = setInterval(() => {
-      setCurrentIndex(prev => prev + 1);
+      slideTo(currentIndex + 1);
     }, 3000);
-  }, []);
+  }, [currentIndex]);
 
   const stopAutoPlay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
 
   useEffect(() => {
-    if (!hovered && extendedImages.length > 1) {
+    if (!hovered && originalImages.length > 1) {
       startAutoPlay();
     }
     return stopAutoPlay;
-  }, [hovered, extendedImages.length]);
+  }, [hovered, originalImages.length, startAutoPlay]);
 
   const slideTo = (index) => {
-    if (!sliderRef.current || isTransitioning) return;
+    if (isTransitioning || !sliderRef.current) return;
     setIsTransitioning(true);
     sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-    sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * index}%)`;
     setCurrentIndex(index);
   };
 
   const handleTransitionEnd = () => {
-    setIsTransitioning(false);
     if (!sliderRef.current) return;
-    if (currentIndex === extendedImages.length - 1) {
-      // Jump instantly to first real slide
-      sliderRef.current.style.transition = "none";
-      sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length)}%)`;
-      setCurrentIndex(1);
+
+    let newIndex = currentIndex;
+    sliderRef.current.style.transition = "none";
+
+    if (currentIndex === sliderImages.length - 1) {
+      newIndex = 1;
     } else if (currentIndex === 0) {
-      // Jump instantly to last real slide
-      sliderRef.current.style.transition = "none";
-      sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * (extendedImages.length - 2)}%)`;
-      setCurrentIndex(extendedImages.length - 2);
+      newIndex = sliderImages.length - 2;
     }
+
+    setTimeout(() => {
+      setCurrentIndex(newIndex);
+      setIsTransitioning(false);
+    }, 20);
   };
 
   const handlePrev = () => {
-    if (isTransitioning) return;
+    if (currentIndex <= 0) return;
     slideTo(currentIndex - 1);
   };
 
   const handleNext = () => {
-    if (isTransitioning) return;
+    if (currentIndex >= sliderImages.length - 1) return;
     slideTo(currentIndex + 1);
   };
 
@@ -310,20 +304,22 @@ const Banners = () => {
           <div
             ref={sliderRef}
             className="flex h-full"
-            onTransitionEnd={handleTransitionEnd}
             style={{
-              width: `${extendedImages.length * 100}%`,
-              transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
+              width: `${sliderImages.length * 100}%`,
+              transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
               transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
             }}
+            onTransitionEnd={handleTransitionEnd}
           >
-            {extendedImages.map((img, i) => (
+            {sliderImages.map((img, i) => (
               <img
                 key={`${img._id || i}-${i}`}
                 src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
                 alt={img.title || `Slide ${i + 1}`}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover flex-shrink-0"
-                style={{ width: `${100 / extendedImages.length}%` }}
+                style={{ width: `${100 / sliderImages.length}%` }}
               />
             ))}
           </div>
