@@ -24,7 +24,7 @@ const Banners = () => {
               { path: "/Contect_Us", list: "Contact Us" },
             ].map((item) => (
               <li key={item.path}>
-                <Link to={item.path} className="hover:text-green-200 transition-colors">
+                <Link to={item.path} >
                   {item.list}
                 </Link>
               </li>
