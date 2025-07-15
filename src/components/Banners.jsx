@@ -11,32 +11,45 @@ import BannerType3 from '../assets/bannerType3.jpg'
 const Banners = () => {
   return (
     <div className="w-full h-full m-5">
-       <div className=" absolute w-full top-0 left-0 z-50 px-10 py-4 flex items-center justify-between text-white">
-          {/* Logo */}
-          <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
+       <div className=" absolute w-[80%]  h-[550px] flex items-center justify-between text-white">
+          <div className="absolute top-0 left-0 z-50 px-10 py-4 flex items-center justify-between">
+            {/* Logo */}
+            <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
 
-          {/* Navigation Links */}
-          <ul className="flex items-center gap-6 font-medium text-lg">
-            {[
-              { path: "/", list: "Home" },
-              { path: "/shop/allproduct", list: "Shop" },
-              { path: "/About_Us", list: "About Us" },
-              { path: "/Contect_Us", list: "Contact Us" },
-            ].map((item) => (
-              <li key={item.path}>
-                <Link to={item.path} >
-                  {item.list}
-                </Link>
-              </li>
-            ))}
-          </ul>
+            {/* Navigation Links */}
+            <ul className="flex items-center gap-6 font-medium text-lg">
+              {[
+                { path: "/", list: "Home" },
+                { path: "/shop/allproduct", list: "Shop" },
+                { path: "/About_Us", list: "About Us" },
+                { path: "/Contect_Us", list: "Contact Us" },
+              ].map((item) => (
+                <li key={item.path}>
+                  <Link to={item.path} >
+                    {item.list}
+                  </Link>
+                </li>
+              ))}
+            </ul>
 
-          {/* Icons */}
-          <div className="flex items-center gap-5 text-2xl">
-            <FaRegUser className="cursor-pointer text-black" />
-            <HiOutlineShoppingBag className="cursor-pointer text-black" />
+            {/* Icons */}
+            <div className="flex items-center gap-5 text-2xl">
+              <FaRegUser className="cursor-pointer text-black" />
+              <HiOutlineShoppingBag className="cursor-pointer text-black" />
+            </div>
           </div>
+          <div className="relative">
+            <div className="">
+              <img
+                src={Banner}
+                alt="Main Banner"
+                className="w-full h-full object-cover rounded-xl shadow-md"
+              />
+            </div>
+          </div>
+        </div>
 
+        <div className="flex-col gap-4"> 
           {/* Search Bar */}
           <div className="flex-1 max-w-md mx-6">
             <input
@@ -45,18 +58,7 @@ const Banners = () => {
               className="w-full px-4 py-1 rounded-full bg-white text-black placeholder-gray-400 focus:outline-none focus:ring-2 border-black border-solid 1px"
             />
           </div>
-        </div>
-
-        <div className="relative flex gap-4">
-          {/* Left side: Main big banner */}
-          <div className="w-[80%] h-[550px]">
-            <img
-              src={Banner}
-              alt="Main Banner"
-              className="w-full h-full object-cover rounded-xl shadow-md"
-            />
-          </div>
-
+          
           {/* Right side: Smaller 3 stacked banners */}
           <div className="w-[20%] flex flex-col gap-4 mt-20">
             {[BannerType1, BannerType2, BannerType3].map((img, i) => (
