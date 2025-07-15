@@ -6,7 +6,7 @@ import BannerType3 from '../assets/bannerType3.jpg'
 
 const Banners = () => {
   return (
-    <div className="flex gap-4 mt-28 px-6">
+    <div className="flex gap-4 mt-[100px] px-6">
       {/* Left side: Main big banner */}
       <div className="w-[70%] h-[420px]">
         <img

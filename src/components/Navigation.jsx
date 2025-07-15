@@ -6,7 +6,7 @@ import { FaRegUser } from "react-icons/fa"
 
 const Navigation = () => {
   return (
-    <div className="w-full absolute top-0 left-0 z-50 px-10 py-4 flex items-center justify-between bg-transparent text-white">
+    <div className="w-full fixed top-0 left-0 z-50 px-10 py-4 flex items-center justify-between bg-transparent text-white backdrop-blur-md">
       {/* Logo */}
       <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
 
