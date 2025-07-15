@@ -52,9 +52,9 @@ const HeroSection = () => {
       </div>
 
       {/* Main Banner and Right Stacked Images */}
-      <div className="flex flex-col md:flex-row absolute items-stretch pt-20 md:pt-32 px-6 gap-4">
+      <div className="flex flex-col md:flex-row items-stretch pt-20 md:pt-32 px-6 gap-4">
         {/* Left side: Main banner */}
-        <div className="w-full md:w-[70%] h-[420px] rounded-xl overflow-hidden shadow-lg">
+        <div className="w-full md:w-[70%] h-[420px] relative rounded-xl overflow-hidden shadow-lg">
           <img
             src={banner}
             alt="Main Banner"
@@ -65,7 +65,7 @@ const HeroSection = () => {
         {/* Right side: 3 stacked banners */}
         <div className="w-full md:w-[30%] flex flex-col gap-4">
           {[{ img: Oil, label: "Oil Product" }, { img: Seasoning, label: "Seasoning" }, { img: Sauce, label: "Sauce" }].map((item, i) => (
-            <div key={i} className="h-[130px] rounded-xl overflow-hidden shadow-md">
+            <div key={i} className="relative h-[130px] rounded-xl overflow-hidden shadow-md">
               <img
                 src={item.img}
                 alt={item.label}
