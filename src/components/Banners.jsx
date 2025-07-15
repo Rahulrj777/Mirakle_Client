@@ -10,7 +10,7 @@ import BannerType3 from '../assets/bannerType3.jpg'
 
 const Banners = () => {
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full m-5">
        <div className=" absolute w-full top-0 left-0 z-50 px-10 py-4 flex items-center justify-between text-white">
           {/* Logo */}
           <img src={logo} alt="logo" className="w-[120px] h-auto object-contain" />
@@ -47,7 +47,7 @@ const Banners = () => {
           </div>
         </div>
 
-        <div className="relative flex gap-4 px-6 mt-6">
+        <div className="relative flex gap-4">
           {/* Left side: Main big banner */}
           <div className="w-[80%] h-[550px]">
             <img
