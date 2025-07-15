@@ -293,10 +293,10 @@ const Banners = () => {
 
 
   return (
-    <div className="w-full h-full relative rounded-xl overflow-hidden flex gap-4 mt-6 max-w-7xl mx-auto px-4 pt-4">
+    <div className="max-w-7xl mx-auto mt-6 px-4 pt-4 flex gap-6">
       <div className="">
         <div
-          className=" max-w-7xl mx-auto mt-6 w-[80%] h-full relative rounded-xl overflow-hidden"
+          className="w-[80%] relative rounded-xl overflow-hidden"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
@@ -431,9 +431,9 @@ const Banners = () => {
         </div>
       </div>
 
-      <div className="h-full justify-start items-center pt-10 w-[25%] flex flex-col gap-6">
-        {/* Search */}
-        <div className="relative w-full max-w-full mx-4">
+      <div className="w-[20%] flex flex-col items-center gap-6 pt-4">
+        {/* Search Box */}
+        <div className="w-full px-2">
           <input
             type="text"
             value={searchTerm}
@@ -441,10 +441,10 @@ const Banners = () => {
             onKeyDown={handleKeyDown}
             onBlur={() => setTimeout(() => setSuggestions([]), 150)}
             placeholder="Search the product..."
-            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
+            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
           />
           {searchTerm.trim() && suggestions.length > 0 && (
-            <ul className="absolute z-50 w-full bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto">
+            <ul className="absolute z-50 bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto w-full">
               {suggestions.map((item) => (
                 <li
                   key={item._id}
@@ -467,13 +467,14 @@ const Banners = () => {
               ))}
             </ul>
           )}
-        </div> 
-        {/* Dynamic Side Banners from backend */}
-        <div className="flex flex-col items-center gap-4 w-full">
+        </div>
+
+        {/* Dynamic Side Banners */}
+        <div className="flex flex-col items-center gap-4 w-full px-2">
           {sideImages.map((item, i) => (
             <div
               key={item._id || i}
-              className="relative w-[200px] h-[120px] rounded-xl overflow-hidden shadow hover:shadow-md transition"
+              className="relative w-full h-[110px] rounded-xl overflow-hidden shadow hover:shadow-md transition"
             >
               <img
                 src={`${API_BASE}${item.imageUrl}`}
@@ -487,7 +488,7 @@ const Banners = () => {
               )}
             </div>
           ))}
-        </div>                
+        </div>               
       </div>
     </div>
   );
