@@ -37,11 +37,12 @@ const Banners = () => {
 
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
   
-  const extendedImages = [
-    sliderImages[sliderImages.length - 1], // Clone last at beginning
-    ...sliderImages,
-    sliderImages[0], // Clone first at end
-  ];
+  const extendedImages = useMemo(() => {
+    if (sliderImages.length < 1) return [];
+    const first = sliderImages[0];
+    const last = sliderImages[sliderImages.length - 1];
+    return [last, ...sliderImages, first];
+  }, [sliderImages]);
 
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems) ? cartItems.length : 0
@@ -311,15 +312,17 @@ const Banners = () => {
             onTransitionEnd={handleTransitionEnd}
           >
             {extendedImages.map((img, i) => (
-              <img
-                key={`${img._id || i}-${i}`}
-                src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                alt={img.title || `Slide ${i + 1}`}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover flex-shrink-0"
-                style={{ width: `${100 / extendedImages.length}%` }}
-              />
+              img && (
+                <img
+                  key={`${img._id || i}-${i}`}
+                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                  alt={img.title || `Slide ${i + 1}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover flex-shrink-0"
+                  style={{ width: `${100 / extendedImages.length}%` }}
+                />
+              )
             ))}
           </div>
 
