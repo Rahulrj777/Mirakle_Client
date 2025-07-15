@@ -313,10 +313,12 @@ const ProductDetail = () => {
       })
 
       if (result) {
-        // Update the specific review in the product state
+        // ✅ Better: Replace full review object
         setProduct((prev) => ({
           ...prev,
-          reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
+          reviews: prev.reviews.map((review) =>
+            review._id === reviewId ? result.review : review
+          ),
         }))
       }
 
@@ -340,10 +342,12 @@ const ProductDetail = () => {
       })
 
       if (result) {
-        // Update the specific review in the product state
+        // ✅ Better: Replace full review object
         setProduct((prev) => ({
           ...prev,
-          reviews: prev.reviews.map((review) => (review._id === reviewId ? { ...review, ...result.review } : review)),
+          reviews: prev.reviews.map((review) =>
+            review._id === reviewId ? result.review : review
+          ),
         }))
       }
 
