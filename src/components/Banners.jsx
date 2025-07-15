@@ -9,7 +9,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice"
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
-
 const Banners = () => {
   const [hovered, setHovered] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -203,32 +202,6 @@ const Banners = () => {
     }
   }, [user, navigate])
 
-  useEffect(() => {
-    axios.get(`${API_BASE}/api/banners`).then((res) => {
-      const main = res.data.filter((img) => img.type === "main");
-      if (main.length) {
-        const first = main[0];
-        const last = main[main.length - 1];
-        setOriginalImages(main);
-        setSliderImages([last, ...main, first]);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    axios.get(`${API_BASE}/api/banners`).then((res) => {
-      const sliders = res.data.filter((img) => img.type === "main");
-      setOriginalImages(sliders);
-
-      if (sliders.length > 0) {
-        const first = sliders[0];
-        const last = sliders[sliders.length - 1];
-        setSliderImages([last, ...sliders, first]);
-        setCurrentIndex(1);
-      }
-    });
-  }, []);
-
   const startAutoPlay = useCallback(() => {
     stopAutoPlay();
     intervalRef.current = setInterval(() => {
@@ -283,28 +256,37 @@ const Banners = () => {
   };
 
   useEffect(() => {
-  axios
-    .get(`${API_BASE}/api/banners`)
-    .then((res) => {
-      console.log("Banners response:", res.data)
+    axios.get(`${API_BASE}/api/banners`).then((res) => {
+      const banners = Array.isArray(res.data) ? res.data : res.data.banners || [];
+      const main = banners.filter((img) => img.type === "main");
+      const side = banners.filter((img) => img.type === "side");
 
-      const allBanners = Array.isArray(res.data)
-        ? res.data
-        : res.data.banners || []
+      setOriginalImages(main);
+      setSideImages(side);
 
-      const side = allBanners.filter((img) => img.type === "side")
-      const offers = allBanners.filter((img) => img.type === "offer")
+      if (main.length) {
+        const first = main[0];
+        const last = main[main.length - 1];
+        setSliderImages([last, ...main, first]);
+        setCurrentIndex(1);
+      }
+    });
+  }, []);
 
-      setSideImages(side)
-      setOfferImages(offers)
-    })
-    .catch((err) => console.error("Banner fetch failed:", err))
-}, [])
+  useEffect(() => {
+  const handler = (e) => {
+    if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+      setSuggestions([]);
+    }
+  };
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+}, []);
 
   return (
     <div className="w-full h-full relative rounded-xl overflow-hidden">
       <div
-      className="w-[90%] mx-auto relative overflow-hidden h-[370px] rounded-xl mt-6"
+      className="w-full max-w-7xl mx-auto relative overflow-hidden h-[370px] rounded-xl mt-6"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -372,20 +354,27 @@ const Banners = () => {
           className="w-[150px] h-auto object-contain"
         />
 
-        <ul className="flex items-center gap-6 font-medium text-lg">
+        {/* Nav Links */}
+      <nav className="bg-[rgb(119,221,119)]">
+        <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
           {[
             { path: "/", list: "Home" },
             { path: "/shop/allproduct", list: "Shop" },
             { path: "/About_Us", list: "About Us" },
             { path: "/Contect_Us", list: "Contact Us" },
           ].map((item) => (
-            <li key={item.path}>
-              <Link to={item.path} className="hover:text-black transition">
+            <li key={item.path} className="cursor-pointer flex flex-col items-center">
+              <Link
+                to={item.path}
+                className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
+              >
                 {item.list}
               </Link>
+              {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
             </li>
           ))}
         </ul>
+      </nav>
 
         {/* Icons */}
         <div className="flex items-center gap-5 text-[24px] relative">
@@ -497,12 +486,6 @@ const Banners = () => {
                     className="w-full h-[200px] object-cover hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
-                  {/* Discount Badge */}
-                  {banner.discountPercent > 0 && (
-                    <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
-                      {banner.discountPercent}% OFF
-                    </span>
-                  )}
                 </div>
 
                 {/* Product Details */}
