@@ -293,17 +293,17 @@ const Banners = () => {
 
 
   return (
-    <div className="max-w-7xl mx-auto mt-6 px-4 flex gap-6">
-      <div className="">
+    <div>
+      <div className="max-w-7xl mx-auto mt-6 px-4 pt-4 flex gap-6 h-[550px]">
         <div
-          className="w-[80%] relative rounded-xl overflow-hidden"
+          className="w-[80%] h-full relative rounded-xl overflow-hidden"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="flex h-full w-[550px]"
+            className="flex h-full"
             style={{
               width: `${sliderImages.length * 100}%`,
               transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
@@ -357,16 +357,11 @@ const Banners = () => {
           )}
         </div>
 
-        <div className="absolute top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white">
-          <img
-            src={logo}
-            alt="logo"
-            className="w-[150px] h-auto object-contain"
-          />
-
+        <div className="absolute top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] bg-gradient-to-b from-black/50 via-transparent to-transparent">
+          <img src={logo} alt="logo" className="w-[150px] h-auto object-contain"/>
           {/* Nav Links */}
           <nav>
-            <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
+            <ul className="flex justify-center gap-6 font-semibold text-white text-lg">
               {[
                 { path: "/", list: "Home" },
                 { path: "/shop/allproduct", list: "Shop" },
@@ -430,10 +425,9 @@ const Banners = () => {
           </div>
         </div>
       </div>
-
-      <div className="w-[20%] flex flex-col items-center gap-6 pt-4">
-        {/* Search Box */}
-        <div className="w-full px-2">
+      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0">
+        {/* Search */}
+        <div className="px-2">
           <input
             type="text"
             value={searchTerm}
@@ -444,7 +438,7 @@ const Banners = () => {
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
           />
           {searchTerm.trim() && suggestions.length > 0 && (
-            <ul className="absolute z-50 bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto w-full">
+            <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto w-full">
               {suggestions.map((item) => (
                 <li
                   key={item._id}
@@ -469,12 +463,12 @@ const Banners = () => {
           )}
         </div>
 
-        {/* Dynamic Side Banners */}
-        <div className="flex flex-col items-center gap-4 w-full px-2">
+        {/* Scrollable Side Banners */}
+        <div className="flex-1 overflow-y-auto px-2">
           {sideImages.map((item, i) => (
             <div
               key={item._id || i}
-              className="relative w-full h-[110px] rounded-xl overflow-hidden shadow hover:shadow-md transition"
+              className="relative w-full h-[110px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition"
             >
               <img
                 src={`${API_BASE}${item.imageUrl}`}
@@ -488,7 +482,7 @@ const Banners = () => {
               )}
             </div>
           ))}
-        </div>               
+        </div>
       </div>
     </div>
   );
