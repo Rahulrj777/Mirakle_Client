@@ -372,8 +372,10 @@ const ProductDetail = () => {
   }, [selectedVariant])
 
   const currentUserReview = useMemo(() => {
-    if (!product?.reviews?.length || !user?.user) return null
-    return product.reviews.find((r) => r.user === user.user.userId || r.user === user.user._id)
+    if (!Array.isArray(product?.reviews) || !user?.user) return null
+    return product.reviews.find((r) =>
+      r?.user === user.user.userId || r?.user === user.user._id
+    )
   }, [product?.reviews, user])
 
   const otherReviews = useMemo(() => {
