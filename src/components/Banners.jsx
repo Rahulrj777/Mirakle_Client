@@ -212,9 +212,9 @@ const Banners = () => {
   const startAutoPlay = useCallback(() => {
     stopAutoPlay();
     intervalRef.current = setInterval(() => {
-      slideTo(currentIndex + 1);
+      setCurrentIndex(prev => prev + 1);
     }, 3000);
-  }, [currentIndex]);
+  }, []);
 
   const stopAutoPlay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -230,36 +230,36 @@ const Banners = () => {
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
     setIsTransitioning(true);
+
     sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+    sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * index}%)`;
     setCurrentIndex(index);
   };
 
   const handleTransitionEnd = () => {
     setIsTransitioning(false);
     if (!sliderRef.current) return;
-    if (currentIndex === extendedImages.length - 1) {
-      sliderRef.current.style.transition = "none";
-      setCurrentIndex(1);
-      requestAnimationFrame(() => {
-        sliderRef.current.style.transition = "";
-      });
-    } else if (currentIndex === 0) {
-      sliderRef.current.style.transition = "none";
-      setCurrentIndex(extendedImages.length - 2);
 
-      requestAnimationFrame(() => {
-        sliderRef.current.style.transition = "";
-      });
+    if (currentIndex === extendedImages.length - 1) {
+      // Jump instantly to first real slide
+      sliderRef.current.style.transition = "none";
+      sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length)}%)`;
+      setCurrentIndex(1);
+    } else if (currentIndex === 0) {
+      // Jump instantly to last real slide
+      sliderRef.current.style.transition = "none";
+      sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * (extendedImages.length - 2)}%)`;
+      setCurrentIndex(extendedImages.length - 2);
     }
   };
 
   const handlePrev = () => {
-    if (currentIndex <= 0) return;
+    if (isTransitioning) return;
     slideTo(currentIndex - 1);
   };
 
   const handleNext = () => {
-    if (currentIndex >= sliderImages.length - 1) return;
+    if (isTransitioning) return;
     slideTo(currentIndex + 1);
   };
 
