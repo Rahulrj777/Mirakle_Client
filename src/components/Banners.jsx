@@ -10,7 +10,7 @@ import BannerType3 from "../assets/bannerType3.jpg";
 
 const Banners = () => {
   return (
-    <div className="w-full h-screen flex gap-4 px-4">
+    <div className="w-full h-screen flex gap-4 px-4 pt-4">
       {/* Left: Main Banner + Navbar */}
       <div className="w-[80%] h-full relative rounded-xl overflow-hidden">
         <img
@@ -59,7 +59,7 @@ const Banners = () => {
       </div>
 
       {/* Right: Search + 3 stacked banners */}
-      <div className="w-[20%] h-full flex flex-col justify-start items-center gap-6 pt-6">
+      <div className="w-[20%] h-full flex flex-col justify-start items-center gap-6 pt-8">
         {/* Search Bar */}
         <input
           type="text"
