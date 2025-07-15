@@ -355,26 +355,26 @@ const Banners = () => {
         />
 
         {/* Nav Links */}
-      <nav className="bg-[rgb(119,221,119)]">
-        <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
-          {[
-            { path: "/", list: "Home" },
-            { path: "/shop/allproduct", list: "Shop" },
-            { path: "/About_Us", list: "About Us" },
-            { path: "/Contect_Us", list: "Contact Us" },
-          ].map((item) => (
-            <li key={item.path} className="cursor-pointer flex flex-col items-center">
-              <Link
-                to={item.path}
-                className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
-              >
-                {item.list}
-              </Link>
-              {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
-            </li>
-          ))}
-        </ul>
-      </nav>
+        <nav className="bg-[rgb(119,221,119)]">
+          <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
+            {[
+              { path: "/", list: "Home" },
+              { path: "/shop/allproduct", list: "Shop" },
+              { path: "/About_Us", list: "About Us" },
+              { path: "/Contect_Us", list: "Contact Us" },
+            ].map((item) => (
+              <li key={item.path} className="cursor-pointer flex flex-col items-center">
+                <Link
+                  to={item.path}
+                  className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
+                >
+                  {item.list}
+                </Link>
+                {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         {/* Icons */}
         <div className="flex items-center gap-5 text-[24px] relative">
