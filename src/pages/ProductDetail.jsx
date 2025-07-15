@@ -342,7 +342,6 @@ const ProductDetail = () => {
       })
 
       if (result) {
-        // ✅ Better: Replace full review object
         setProduct((prev) => ({
           ...prev,
           reviews: prev.reviews.map((review) =>
