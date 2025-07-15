@@ -294,9 +294,9 @@ const Banners = () => {
 
   return (
     <div>
-      <div className="w-[80%] max-w-7xl mx-auto mt-6 px-4 flex gap-6 h-[550px]">
+      <div className="max-w-7xl mx-auto mt-6 px-4 flex gap-6 h-[550px]">
         <div
-          className="w-full h-full relative rounded-xl overflow-hidden"
+          className="w-[80%] h-full relative rounded-xl overflow-hidden"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
@@ -357,7 +357,7 @@ const Banners = () => {
           )}
         </div>
 
-        <div className="absolute top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] bg-gradient-to-b from-black/50 via-transparent to-transparent">
+        <div className="relative top-0 left-0 w-full z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] bg-gradient-to-b from-black/50 via-transparent to-transparent">
           <img src={logo} alt="logo" className="w-[150px] h-auto object-contain"/>
           {/* Nav Links */}
           <nav>
