@@ -561,7 +561,9 @@ const ProductDetail = () => {
               </div>
               <div className="flex-1">
                 {[5, 4, 3, 2, 1].map((star) => {
-                  const count = product.reviews.filter((r) => r.rating === star).length
+                  const count = product.reviews.filter(
+                    (r) => r && typeof r.rating === "number" && r.rating === star
+                  ).length
                   const percentage = product.reviews.length > 0 ? (count / product.reviews.length) * 100 : 0
                   return (
                     <div key={star} className="flex items-center gap-2 mb-1">
