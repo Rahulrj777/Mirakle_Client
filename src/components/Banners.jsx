@@ -426,7 +426,7 @@ const Banners = () => {
         </div>
       </div>
       
-      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0">
+      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-6">
         {/* Search */}
         <div className="px-2">
           <input
