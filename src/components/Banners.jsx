@@ -205,12 +205,10 @@ const Banners = () => {
 
   useEffect(() => {
     if (!hovered && originalImages.length > 1) {
-      const interval = setInterval(() => {
-        slideTo(currentIndex + 1);
-      }, 3000);
-      return () => clearInterval(interval);
+      startAutoPlay();
     }
-  }, [currentIndex, hovered, originalImages.length]);
+    return stopAutoPlay;
+  }, [hovered, originalImages.length, startAutoPlay]);
 
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
@@ -222,25 +220,21 @@ const Banners = () => {
     if (!sliderRef.current) return;
 
     let newIndex = currentIndex;
+    sliderRef.current.style.transition = "none";
 
     if (currentIndex === sliderImages.length - 1) {
-      sliderRef.current.style.transition = "none";
-      newIndex = 1;
-      setCurrentIndex(newIndex);
-
-      // force reflow to restart transition
-      void sliderRef.current.offsetWidth;
-      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+      newIndex = 1; 
     } else if (currentIndex === 0) {
-      sliderRef.current.style.transition = "none";
-      newIndex = sliderImages.length - 2;
-      setCurrentIndex(newIndex);
-
-      void sliderRef.current.offsetWidth;
-      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+      newIndex = sliderImages.length - 2; 
     }
 
-    setIsTransitioning(false);
+    setCurrentIndex(newIndex);
+    setTimeout(() => {
+      if (sliderRef.current) {
+        sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+      }
+      setIsTransitioning(false);
+    }, 20);
   };
 
   const handleNext = () => {
