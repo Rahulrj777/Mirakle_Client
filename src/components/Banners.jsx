@@ -246,20 +246,6 @@ const Banners = () => {
   };
 
   useEffect(() => {
-  if (sliderRef.current && sliderImages.length > 0) {
-    sliderRef.current.style.transition = "none"; // No animation
-    sliderRef.current.style.transform = `translateX(-${100}%)`; // Jump to first real slide
-    // Then re-enable transition after small delay
-    setTimeout(() => {
-      if (sliderRef.current) {
-        sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-      }
-    }, 50);
-  }
-}, [sliderImages]);
-
-
-  useEffect(() => {
     axios.get(`${API_BASE}/api/banners`)
       .then((res) => {
         const banners = Array.isArray(res.data) ? res.data : res.data.banners || [];
@@ -280,12 +266,6 @@ const Banners = () => {
           const last = sliders[sliders.length - 1];
           setSliderImages([last, ...sliders, first]);
           setCurrentIndex(1);
-          setTimeout(() => {
-          if (sliderRef.current) {
-            sliderRef.current.style.transition = "none";
-            sliderRef.current.style.transform = `translateX(-${100}%)`; // reset to first visible
-          }
-        }, 50); // slight delay to ensure DOM updates
         }
       })
       .catch((err) => {
@@ -302,14 +282,6 @@ const Banners = () => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-  if (originalImages.length === 0) {
-    return (
-      <div className="w-full h-[500px] flex items-center justify-center">
-        <p className="text-gray-500">No banners available</p>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full h-full flex">
@@ -329,29 +301,23 @@ const Banners = () => {
             }}
             onTransitionEnd={handleTransitionEnd}
           >
-            {sliderImages.length > 0 ? (
-              sliderImages.map((img, i) => (
-                <div
-                  key={`${img._id || i}-${i}`}
-                  className="flex-shrink-0 h-full"
-                  style={{
-                    width: `${100 / sliderImages.length}%`,
-                  }}
-                >
-                  <img
-                    src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                    alt={img.title || `Slide ${i + 1}`}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
-                No banners available
+            {sliderImages.map((img, i) => (
+              <div
+                key={`${img._id || i}-${i}`}
+                className="flex-shrink-0 h-full"
+                style={{
+                  width: `${100 / sliderImages.length}%`,
+                }}
+              >
+                <img
+                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                  alt={img.title || `Slide ${i + 1}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
               </div>
-            )}
+            ))}
           </div>
 
           {/* Arrows */}
