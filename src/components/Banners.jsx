@@ -194,9 +194,9 @@ const Banners = () => {
   const startAutoPlay = useCallback(() => {
     stopAutoPlay();
     intervalRef.current = setInterval(() => {
-      setCurrentIndex((prevIndex) => prevIndex + 1);
+      slideTo(currentIndex + 1);
     }, 3000);
-  }, []);
+  }, [currentIndex]);
 
   const stopAutoPlay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -212,19 +212,15 @@ const Banners = () => {
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
 
-    if (index >= sliderImages.length) {
-      index = 1;
-    }
-
     setIsTransitioning(true);
-    sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-    setCurrentIndex(index);
+    requestAnimationFrame(() => {
+      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+      setCurrentIndex(index);
+    });
   };
 
   const handleTransitionEnd = () => {
     if (!sliderRef.current) return;
-
-    sliderRef.current.style.transition = "none";
 
     let newIndex = currentIndex;
 
@@ -234,10 +230,12 @@ const Banners = () => {
       newIndex = sliderImages.length - 2;
     }
 
-    // Apply new index AFTER removing transition
+    setIsTransitioning(false);
+
     requestAnimationFrame(() => {
+      if (!sliderRef.current) return;
+      sliderRef.current.style.transition = "none";
       setCurrentIndex(newIndex);
-      setIsTransitioning(false);
     });
   };
 
