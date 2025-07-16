@@ -459,7 +459,7 @@ const Banners = () => {
         </div>
 
         {/* Scrollable Side Banners */}
-        <div className="flex-1 overflow-y-auto px-2 gap-5">
+        <div className="flex-1 overflow-y-auto px-2 ">
           {sideImages.map((item, i) => (
             <div
               key={item._id || i}
