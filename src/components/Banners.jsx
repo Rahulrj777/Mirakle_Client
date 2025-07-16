@@ -224,8 +224,9 @@ const Banners = () => {
   const handleTransitionEnd = () => {
     if (!sliderRef.current) return;
 
-    let newIndex = currentIndex;
     sliderRef.current.style.transition = "none";
+
+    let newIndex = currentIndex;
 
     if (currentIndex === sliderImages.length - 1) {
       newIndex = 1;
@@ -233,10 +234,11 @@ const Banners = () => {
       newIndex = sliderImages.length - 2;
     }
 
-    setTimeout(() => {
+    // Apply new index AFTER removing transition
+    requestAnimationFrame(() => {
       setCurrentIndex(newIndex);
       setIsTransitioning(false);
-    }, 20);
+    });
   };
 
   const handlePrev = () => {
@@ -343,17 +345,17 @@ const Banners = () => {
 
           {/* Dot Indicators */}
           {originalImages.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-              {originalImages.map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-3 h-3 rounded-full transition ${
-                    i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
-                  }`}
-                />
-              ))}
-            </div>
-          )}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+            {originalImages.map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full transition duration-300 ${
+                  i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
+                }`}
+              />
+            ))}
+          </div>
+        )}
         </div>
 
         <div className="absolute top-5 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
