@@ -9,7 +9,7 @@ const Mirakle_Home_page = () => {
       {/* <ProductInfo/> */}
       
       <Banners/>
-      {/* <ProductOffer/> */}
+      <ProductOffer/>
       <ProductType/>
     </>
   )

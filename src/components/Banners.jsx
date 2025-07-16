@@ -424,35 +424,33 @@ const Banners = () => {
       
       <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
         {/* Search */}
-        <div className="px-2">
+        <div className="relative w-full" ref={searchBoxRef}>
           <input
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
             onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-            placeholder="Search the product..."
-            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
+            placeholder="Search..."
+            className="w-full px-3 py-1.5 text-xs border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
           />
           {searchTerm.trim() && suggestions.length > 0 && (
-            <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto w-full">
+            <ul className="absolute top-full left-0 z-50 bg-white border border-gray-200 mt-1 rounded shadow-md max-h-60 overflow-y-auto w-full text-sm">
               {suggestions.map((item) => (
                 <li
                   key={item._id}
                   onClick={() => handleSelectSuggestion(item._id)}
-                  className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {item.images?.others?.[0] && (
                       <img
                         src={`${API_BASE}${item.images.others[0]}`}
                         alt={item.title}
-                        className="w-10 h-10 object-cover rounded"
+                        className="w-8 h-8 object-cover rounded"
                       />
                     )}
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.title}</div>
-                    </div>
+                    <span className="flex-1 truncate">{item.title}</span>
                   </div>
                 </li>
               ))}
