@@ -249,11 +249,11 @@ const Banners = () => {
       .then((res) => {
         const banners = Array.isArray(res.data) ? res.data : res.data.banners || [];
 
-        const sliders = banners.filter((img) => img.type === "slider");
-        const side = banners.filter((img) => img.type === "side");
+        const sliders = banners.filter((img) => img.type === "banner");
+        const category = banners.filter((img) => img.type === "category");
 
         setOriginalImages(sliders);
-        setSideImages(side);
+        setSideImages(category);
 
         if (sliders.length > 0) {
           const first = sliders[0];
