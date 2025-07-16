@@ -7,8 +7,10 @@ import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { safeApiCall } from "../utils/axiosWithToken"
+import Header from "../components/Header"
 
 const ProductDetail = () => {
+  <Header/>
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)

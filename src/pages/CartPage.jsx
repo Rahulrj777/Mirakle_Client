@@ -2,8 +2,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { incrementQuantity, decrementQuantity, removeFromCart } from '../Redux/cartSlice';
 import { API_BASE } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
 
 const CartPage = () => {
+  <Header/>
   const cartItems = useSelector((state) => state.cart.items) || [];
   const dispatch = useDispatch();
   const navigate = useNavigate();
