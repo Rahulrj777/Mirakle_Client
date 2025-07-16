@@ -34,32 +34,22 @@ const Banners = () => {
   const [showDropdown, setShowDropdown] = useState(false) // ✅ Fixed: Default to false
   const dropdownRef = useRef(null)
   const [sideImages, setSideImages] = useState([])
-
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
-
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems) ? cartItems.length : 0
   }, [cartItems])
-
-  // ✅ Debounced search to improve performance
   const [searchTimeout, setSearchTimeout] = useState(null)
-
   const handleSearchChange = useCallback(
     async (e) => {
       const value = e.target.value
       setSearchTerm(value)
-
-      // Clear previous timeout
       if (searchTimeout) {
         clearTimeout(searchTimeout)
       }
-
       if (!value.trim()) {
         setSuggestions([])
         return
       }
-
-      // Debounce search by 300ms
       const timeout = setTimeout(async () => {
         try {
           const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
@@ -69,7 +59,6 @@ const Banners = () => {
           setSuggestions([])
         }
       }, 300)
-
       setSearchTimeout(timeout)
     },
     [searchTimeout],
@@ -224,6 +213,7 @@ const Banners = () => {
     if (isTransitioning || !sliderRef.current) return;
     setIsTransitioning(true);
     sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+    sliderRef.current.style.transform = `translateX(-${(100 / sliderImages.length) * index}%)`;
     setCurrentIndex(index);
   };
 
@@ -231,17 +221,25 @@ const Banners = () => {
     if (!sliderRef.current) return;
 
     let newIndex = currentIndex;
-    sliderRef.current.style.transition = "none";
+    const slideWidth = 100 / sliderImages.length;
 
     if (currentIndex === sliderImages.length - 1) {
       newIndex = 1;
     } else if (currentIndex === 0) {
       newIndex = sliderImages.length - 2;
+    } else {
+      setIsTransitioning(false);
+      return;
     }
 
     setTimeout(() => {
+      sliderRef.current.style.transition = "none";
+      sliderRef.current.style.transform = `translateX(-${slideWidth * newIndex}%)`;
       setCurrentIndex(newIndex);
-      setIsTransitioning(false);
+      setTimeout(() => {
+        sliderRef.current.style.transition = "transform 0.5s ease-in-out"; // Reset transition
+        setIsTransitioning(false);
+      }, 20);
     }, 20);
   };
 
