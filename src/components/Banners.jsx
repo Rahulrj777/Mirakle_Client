@@ -297,24 +297,29 @@ const Banners = () => {
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="flex h-full"
+            className="flex transition-transform duration-500 ease-in-out"
             style={{
-              width: `${sliderImages.length * 100}%`,
               transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
-              transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
+              width: `${sliderImages.length * 100}%`,
             }}
             onTransitionEnd={handleTransitionEnd}
           >
             {sliderImages.map((img, i) => (
-              <img
+              <div
                 key={`${img._id || i}-${i}`}
-                src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                alt={img.title || `Slide ${i + 1}`}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover flex-shrink-0"
-                style={{ width: `${100 / sliderImages.length}%` }}
-              />
+                className="flex-shrink-0 h-full"
+                style={{
+                  width: `${100 / sliderImages.length}%`,
+                }}
+              >
+                <img
+                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                  alt={img.title || `Slide ${i + 1}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             ))}
           </div>
 
