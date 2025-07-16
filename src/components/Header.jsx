@@ -1,237 +1,177 @@
-import { Link, useLocation, useNavigate } from "react-router-dom"
-import { HiOutlineShoppingBag } from "react-icons/hi2"
-import { FaRegUser } from "react-icons/fa"
-import { useSelector, useDispatch } from "react-redux"
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import axios from "axios"
-import logo from "../assets/logo.png"
-import { API_BASE } from "../utils/api"
-import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice"
+import logo from "../assets/logo.png";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { HiOutlineShoppingBag } from "react-icons/hi2";
+import { FaRegUser } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { clearUser } from "../Redux/cartSlice";
+import axios from "axios";
+import { API_BASE } from "../utils/api";
 
 const Header = () => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
-  const cartItems = useSelector((state) => state.cart.items) || []
-  const currentUserId = useSelector((state) => state.cart.userId)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [suggestions, setSuggestions] = useState([])
+  const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const cartItems = useSelector((state) => state.cart.items) || [];
+  const cartCount = cartItems.length;
+
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
+      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
     } catch {
-      return null
+      return null;
     }
-  })
-  const [showDropdown, setShowDropdown] = useState(false) // ✅ Fixed: Default to false
-  const dropdownRef = useRef(null)
+  });
 
-  const isActive = useCallback((path) => location.pathname === path, [location.pathname])
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
 
-  // ✅ Memoize cart count to prevent unnecessary re-renders
-  const cartCount = useMemo(() => {
-    return Array.isArray(cartItems) ? cartItems.length : 0
-  }, [cartItems])
+  const searchBoxRef = useRef(null);
+  const dropdownRef = useRef(null);
 
-  // ✅ Debounced search to improve performance
-  const [searchTimeout, setSearchTimeout] = useState(null)
+  // Check if route is active
+  const isActive = useCallback((path) => location.pathname === path, [location.pathname]);
 
-  const handleSearchChange = useCallback(
-    async (e) => {
-      const value = e.target.value
-      setSearchTerm(value)
-
-      // Clear previous timeout
-      if (searchTimeout) {
-        clearTimeout(searchTimeout)
-      }
-
-      if (!value.trim()) {
-        setSuggestions([])
-        return
-      }
-
-      // Debounce search by 300ms
-      const timeout = setTimeout(async () => {
-        try {
-          const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
-          setSuggestions(Array.isArray(res.data) ? res.data.slice(0, 6) : [])
-        } catch (error) {
-          console.error("Error fetching suggestions:", error)
-          setSuggestions([])
-        }
-      }, 300)
-
-      setSearchTimeout(timeout)
-    },
-    [searchTimeout],
-  )
-
-  // ✅ Cleanup timeout on unmount
+  // Handle search suggestions click outside
   useEffect(() => {
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout)
+    const handleClickOutside = (e) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setSuggestions([]);
       }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Handle search input
+  const handleSearchChange = useCallback(async (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    if (!value.trim()) {
+      setSuggestions([]);
+      return;
     }
-  }, [searchTimeout])
 
-  // ✅ Improved user state management
-  useEffect(() => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
-      setUser(storedUser)
-
-      // Check for user mismatch
-      if (storedUser && currentUserId && storedUser._id !== currentUserId) {
-        console.log("User mismatch detected, clearing cart...")
-        dispatch(clearUser())
-        dispatch(setUserId(storedUser._id))
-
-        // Load correct cart for this user
-        const correctCart = localStorage.getItem(`cart_${storedUser._id}`)
-        if (correctCart) {
-          try {
-            const parsedCart = JSON.parse(correctCart)
-            if (Array.isArray(parsedCart)) {
-              dispatch(setCartItem(parsedCart))
-            }
-          } catch (error) {
-            console.error("Error loading correct cart:", error)
-            dispatch(setCartItem([]))
-          }
-        } else {
-          dispatch(setCartItem([]))
-        }
-      }
-    } catch {
-      setUser(null)
+      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
+      setSuggestions(Array.isArray(res.data) ? res.data.slice(0, 6) : []);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSuggestions([]);
     }
-  }, [location.pathname, currentUserId, dispatch])
+  }, []);
 
-  // ✅ Initialize user cart on mount
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && searchTerm.trim()) {
+      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`);
+      setSuggestions([]);
+      setSearchTerm("");
+    }
+  };
+
+  const handleSelectSuggestion = (id) => {
+    navigate(`/product/${id}`);
+    setSuggestions([]);
+    setSearchTerm("");
+  };
+
+  // Handle user dropdown click outside
   useEffect(() => {
-    const stored = localStorage.getItem("mirakleUser")
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        const uid = parsed?.user?._id
-        if (uid) {
-          dispatch(setUserId(uid))
-          const userCart = localStorage.getItem(`cart_${uid}`)
-          if (userCart) {
-            const parsedCart = JSON.parse(userCart)
-            if (Array.isArray(parsedCart)) dispatch(setCartItem(parsedCart))
-          }
-        }
-      } catch {
-        console.warn("Error restoring cart from localStorage")
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
       }
-    }
-  }, [dispatch])
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (e.key === "Enter" && searchTerm.trim()) {
-        navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`)
-        setSuggestions([])
-        setSearchTerm("")
-      }
-    },
-    [searchTerm, navigate],
-  )
-
-  const handleLogout = useCallback(() => {
-    const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user
-
-    if (user?._id) {
-      console.log(`Logging out user ${user._id}, keeping their cart in localStorage`)
-    }
-
-    // Clear user session
-    localStorage.removeItem("mirakleUser")
-    dispatch(clearUser())
-    setShowDropdown(false) // ✅ Close dropdown on logout
-    navigate("/login_signup")
-  }, [dispatch, navigate])
-
-  const handleSelectSuggestion = useCallback(
-    (id) => {
-      navigate(`/product/${id}`)
-      setSearchTerm("")
-      setSuggestions([])
-    },
-    [navigate],
-  )
-
-  // ✅ Click outside handler for dropdown
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  // ✅ Handle cart click
-  const handleCartClick = useCallback(() => {
-    if (!user) {
-      alert("Please login to view your cart")
-      navigate("/login_signup")
-    } else {
-      navigate("/AddToCart")
-    }
-  }, [user, navigate])
-
-  // ✅ Handle user icon click
-  const handleUserClick = useCallback(() => {
+  const handleUserClick = () => {
     if (user) {
-      setShowDropdown((prev) => !prev)
+      setShowDropdown((prev) => !prev);
     } else {
-      navigate("/login_signup")
+      navigate("/login_signup");
     }
-  }, [user, navigate])
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("mirakleUser");
+    dispatch(clearUser());
+    setUser(null);
+    setShowDropdown(false);
+    navigate("/login_signup");
+  };
+
+  const handleCartClick = () => {
+    if (!user) {
+      alert("Please login to view your cart");
+      navigate("/login_signup");
+    } else {
+      navigate("/AddToCart");
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-[150] shadow-md bg-white">
-      <div className="px-4 py-3 max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/">
-          <img src={logo || "/placeholder.svg"} alt="logo" className="w-25 h-10 object-contain" />
-        </Link>
+    <header className="w-full px-10 py-5 flex items-center justify-between bg-transparent text-white h-[80px] absolute top-0 left-0 z-50">
+      {/* Logo */}
+      <Link to="/">
+        <img src={logo} alt="logo" className="w-[150px] object-contain" />
+      </Link>
 
-        {/* Search */}
-        <div className="relative w-full max-w-full mx-4">
+      {/* Navigation Links */}
+      <nav>
+        <ul className="flex gap-6 font-semibold text-lg">
+          {[
+            { path: "/", label: "Home" },
+            { path: "/shop/allproduct", label: "Shop" },
+            { path: "/About_Us", label: "About Us" },
+            { path: "/Contact_Us", label: "Contact Us" },
+          ].map((item) => (
+            <li key={item.path} className="cursor-pointer flex flex-col items-center">
+              <Link
+                to={item.path}
+                className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "font-bold" : ""}`}
+              >
+                {item.label}
+              </Link>
+              {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px]" />}
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* Search & Icons */}
+      <div className="flex items-center gap-5 text-[24px] relative">
+        {/* Search Box */}
+        <div className="relative" ref={searchBoxRef}>
           <input
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-            placeholder="Search the product..."
-            className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
+            placeholder="Search..."
+            className="w-[200px] px-3 py-1.5 text-sm text-black border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
           />
           {searchTerm.trim() && suggestions.length > 0 && (
-            <ul className="absolute z-50 w-full bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto">
+            <ul className="absolute top-full left-0 z-50 bg-white text-black border mt-1 rounded shadow-md max-h-60 overflow-y-auto w-full text-sm">
               {suggestions.map((item) => (
                 <li
                   key={item._id}
                   onClick={() => handleSelectSuggestion(item._id)}
-                  className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {item.images?.others?.[0] && (
                       <img
                         src={`${API_BASE}${item.images.others[0]}`}
                         alt={item.title}
-                        className="w-10 h-10 object-cover rounded"
+                        className="w-8 h-8 object-cover rounded"
                       />
                     )}
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.title}</div>
-                    </div>
+                    <span className="flex-1 truncate">{item.title}</span>
                   </div>
                 </li>
               ))}
@@ -239,73 +179,48 @@ const Header = () => {
           )}
         </div>
 
-        {/* Icons */}
-        <div className="flex items-center gap-5 text-[24px] relative">
-          {user ? (
-            <div ref={dropdownRef} className="relative">
-              <div
-                className="bg-green-600 text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold hover:bg-green-700 transition-colors"
-                onClick={handleUserClick}
-              >
-                {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
-              </div>
-              {/* ✅ Fixed: Only show dropdown when showDropdown is true */}
-              {showDropdown && (
-                <div className="absolute top-12 right-0 bg-white shadow-lg rounded-md z-50 w-48 py-2 border">
-                  <div className="px-4 py-2 border-b">
-                    <p className="text-gray-700 text-sm font-medium">{user.name || user.email}</p>
-                    <p className="text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
+        {/* User Icon */}
+        {user ? (
+          <div ref={dropdownRef} className="relative">
+            <div
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-700 cursor-pointer"
+              onClick={handleUserClick}
+            >
+              {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
             </div>
-          ) : (
-            <span onClick={handleUserClick} className="cursor-pointer hover:text-green-600 transition-colors">
-              <FaRegUser className="text-black" />
+            {showDropdown && (
+              <div className="absolute top-12 right-0 bg-white text-black shadow-lg rounded-md z-50 w-48 py-2 border">
+                <div className="px-4 py-2 border-b">
+                  <p className="text-gray-700 text-sm font-medium">{user.name || user.email}</p>
+                  <p className="text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <span onClick={handleUserClick} className="cursor-pointer hover:text-green-600 transition-colors">
+            <FaRegUser />
+          </span>
+        )}
+
+        {/* Cart Icon */}
+        <span className="relative cursor-pointer" onClick={handleCartClick}>
+          <HiOutlineShoppingBag className="hover:text-green-600 transition-colors" />
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+              {cartCount}
             </span>
           )}
-
-          {/* Cart icon */}
-          <span className="relative cursor-pointer" onClick={handleCartClick}>
-            <HiOutlineShoppingBag className="text-black hover:text-green-600 transition-colors" />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                {cartCount}
-              </span>
-            )}
-          </span>
-        </div>
+        </span>
       </div>
-
-      {/* Nav Links */}
-      <nav className="bg-[rgb(119,221,119)]">
-        <ul className="max-w-7xl mx-auto px-4 py-2 flex justify-center gap-6 font-semibold text-white text-lg">
-          {[
-            { path: "/", list: "Home" },
-            { path: "/shop/allproduct", list: "Shop" },
-            { path: "/About_Us", list: "About Us" },
-            { path: "/Contect_Us", list: "Contact Us" },
-          ].map((item) => (
-            <li key={item.path} className="cursor-pointer flex flex-col items-center">
-              <Link
-                to={item.path}
-                className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
-              >
-                {item.list}
-              </Link>
-              {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
-            </li>
-          ))}
-        </ul>
-      </nav>
     </header>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;
