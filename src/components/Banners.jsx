@@ -194,9 +194,9 @@ const Banners = () => {
   const startAutoPlay = useCallback(() => {
     stopAutoPlay();
     intervalRef.current = setInterval(() => {
-      slideTo(currentIndex + 1);
+      setCurrentIndex((prevIndex) => prevIndex + 1);
     }, 3000);
-  }, [currentIndex]);
+  }, []);
 
   const stopAutoPlay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -211,6 +211,11 @@ const Banners = () => {
 
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
+
+    if (index >= sliderImages.length) {
+      index = 1;
+    }
+
     setIsTransitioning(true);
     sliderRef.current.style.transition = "transform 0.5s ease-in-out";
     setCurrentIndex(index);
