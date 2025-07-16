@@ -212,9 +212,7 @@ const Banners = () => {
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
     setIsTransitioning(true);
-    const slideWidth = 100 / sliderImages.length;
     sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-    sliderRef.current.style.transform = `translateX(-${slideWidth * index}%)`;
     setCurrentIndex(index);
   };
 
@@ -222,41 +220,27 @@ const Banners = () => {
     if (!sliderRef.current) return;
 
     let newIndex = currentIndex;
-    const slideWidth = 100 / sliderImages.length;
+    sliderRef.current.style.transition = "none";
 
     if (currentIndex === sliderImages.length - 1) {
       newIndex = 1;
     } else if (currentIndex === 0) {
       newIndex = sliderImages.length - 2;
-    } else {
-      setIsTransitioning(false);
-      return;
     }
 
     setTimeout(() => {
-      const slider = sliderRef.current;
-      if (!slider) return;
-
-      slider.style.transition = "none";
-      slider.style.transform = `translateX(-${slideWidth * newIndex}%)`;
-
-      void slider.offsetWidth;
       setCurrentIndex(newIndex);
-
-      setTimeout(() => {
-        if (slider) {
-          slider.style.transition = "transform 0.5s ease-in-out";
-        }
-        setIsTransitioning(false);
-      }, 20);
+      setIsTransitioning(false);
     }, 20);
   };
 
   const handlePrev = () => {
+    if (currentIndex <= 0) return;
     slideTo(currentIndex - 1);
   };
 
   const handleNext = () => {
+    if (currentIndex >= sliderImages.length - 1) return;
     slideTo(currentIndex + 1);
   };
 
