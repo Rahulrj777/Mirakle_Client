@@ -3,10 +3,8 @@ import axios from 'axios';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { FiSearch } from 'react-icons/fi';
 import { API_BASE } from "../utils/api";
-import Header from '../components/Header';
 
 const ShopingPage = () => {
-  <Header/>
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [filterType, setFilterType] = useState('all');

@@ -1,10 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/api";
-import Header from "../components/Header";
 
 const Checkout = () => {
-  <Header/>
   const location = useLocation();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);

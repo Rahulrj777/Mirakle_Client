@@ -8,10 +8,8 @@ import {
 import { API_BASE } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from '../utils/axiosWithToken';
-import Header from "../components/Header";
 
 const AddToCart = () => {
-  <Header/>
   const { items: cartItems, cartReady } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();

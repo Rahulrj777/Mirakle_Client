@@ -9,10 +9,8 @@ import { IoIosEye, IoIosEyeOff } from "react-icons/io"
 import { useDispatch } from "react-redux"
 import { setCartItem, setUserId, setCartReady, clearUser } from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
-import Header from "../components/Header"
 
 const LoginSignUp = () => {
-  <Header/>
   const [isSignUp, setIsSignUp] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
