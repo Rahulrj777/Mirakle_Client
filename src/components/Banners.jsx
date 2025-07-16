@@ -195,9 +195,9 @@ const Banners = () => {
   const startAutoPlay = useCallback(() => {
     stopAutoPlay();
     intervalRef.current = setInterval(() => {
-      slideTo(currentIndex + 1);
+      setCurrentIndex(prev => prev + 1); // ✅ Updated to avoid stale closure
     }, 3000);
-  }, [currentIndex]);
+  }, []);
 
   const stopAutoPlay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
