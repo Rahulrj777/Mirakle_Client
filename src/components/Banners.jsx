@@ -1,4 +1,4 @@
-import logo from "../assets/logo.png";
+import logo from "../assets/logo.png"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
 import { Link, useLocation, useNavigate } from "react-router-dom"
@@ -7,16 +7,16 @@ import { FaRegUser } from "react-icons/fa"
 import { useSelector, useDispatch } from "react-redux"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice"
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
 
 const Banners = () => {
-  const [hovered, setHovered] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const intervalRef = useRef(null);
-  const [originalImages, setOriginalImages] = useState([]);
-  const [sliderImages, setSliderImages] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(1);
-  const sliderRef = useRef(null);
+  const [hovered, setHovered] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const intervalRef = useRef(null)
+  const [originalImages, setOriginalImages] = useState([])
+  const [sliderImages, setSliderImages] = useState([])
+  const [currentIndex, setCurrentIndex] = useState(1)
+  const sliderRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -31,13 +31,15 @@ const Banners = () => {
       return null
     }
   })
-  const [showDropdown, setShowDropdown] = useState(false) // ✅ Fixed: Default to false
+  const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef(null)
   const [sideImages, setSideImages] = useState([])
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
+
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems) ? cartItems.length : 0
   }, [cartItems])
+
   const [searchTimeout, setSearchTimeout] = useState(null)
   const handleSearchChange = useCallback(
     async (e) => {
@@ -64,7 +66,6 @@ const Banners = () => {
     [searchTimeout],
   )
 
-  // ✅ Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (searchTimeout) {
@@ -73,19 +74,14 @@ const Banners = () => {
     }
   }, [searchTimeout])
 
-  // ✅ Improved user state management
   useEffect(() => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
       setUser(storedUser)
-
-      // Check for user mismatch
       if (storedUser && currentUserId && storedUser._id !== currentUserId) {
         console.log("User mismatch detected, clearing cart...")
         dispatch(clearUser())
         dispatch(setUserId(storedUser._id))
-
-        // Load correct cart for this user
         const correctCart = localStorage.getItem(`cart_${storedUser._id}`)
         if (correctCart) {
           try {
@@ -106,7 +102,6 @@ const Banners = () => {
     }
   }, [location.pathname, currentUserId, dispatch])
 
-  // ✅ Initialize user cart on mount
   useEffect(() => {
     const stored = localStorage.getItem("mirakleUser")
     if (stored) {
@@ -140,15 +135,12 @@ const Banners = () => {
 
   const handleLogout = useCallback(() => {
     const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user
-
     if (user?._id) {
       console.log(`Logging out user ${user._id}, keeping their cart in localStorage`)
     }
-
-    // Clear user session
     localStorage.removeItem("mirakleUser")
     dispatch(clearUser())
-    setShowDropdown(false) // ✅ Close dropdown on logout
+    setShowDropdown(false)
     navigate("/login_signup")
   }, [dispatch, navigate])
 
@@ -161,7 +153,6 @@ const Banners = () => {
     [navigate],
   )
 
-  // ✅ Click outside handler for dropdown
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -172,7 +163,6 @@ const Banners = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // ✅ Handle cart click
   const handleCartClick = useCallback(() => {
     if (!user) {
       alert("Please login to view your cart")
@@ -182,7 +172,6 @@ const Banners = () => {
     }
   }, [user, navigate])
 
-  // ✅ Handle user icon click
   const handleUserClick = useCallback(() => {
     if (user) {
       setShowDropdown((prev) => !prev)
@@ -191,100 +180,124 @@ const Banners = () => {
     }
   }, [user, navigate])
 
+  // This useMemo is crucial for the infinite loop effect
+  const extendedImages = useMemo(() => {
+    if (originalImages.length < 1) return []
+    const first = originalImages[0]
+    const last = originalImages[originalImages.length - 1]
+    return [last, ...originalImages, first]
+  }, [originalImages])
+
   const startAutoPlay = useCallback(() => {
-    stopAutoPlay();
+    stopAutoPlay()
     intervalRef.current = setInterval(() => {
-      slideTo(currentIndex + 1);
-    }, 3000);
-  }, [currentIndex]);
+      setCurrentIndex((prev) => prev + 1)
+    }, 3000)
+  }, []) // Removed currentIndex from dependencies as slideTo handles it
 
   const stopAutoPlay = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  };
+    if (intervalRef.current) clearInterval(intervalRef.current)
+  }
 
   useEffect(() => {
     if (!hovered && originalImages.length > 1) {
-      startAutoPlay();
+      startAutoPlay()
     }
-    return stopAutoPlay;
-  }, [hovered, originalImages.length, startAutoPlay]);
+    return stopAutoPlay
+  }, [hovered, originalImages.length, startAutoPlay])
 
-  const slideTo = (index) => {
-    if (isTransitioning || !sliderRef.current) return;
-    setIsTransitioning(true);
-    setCurrentIndex(index);
-  };
+  const slideTo = useCallback(
+    (index) => {
+      if (isTransitioning || !sliderRef.current || extendedImages.length === 0) return
+      setIsTransitioning(true)
+      sliderRef.current.style.transition = "transform 0.5s ease-in-out"
+      sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * index}%)`
+      setCurrentIndex(index)
+    },
+    [isTransitioning, extendedImages.length],
+  )
 
-  const handleTransitionEnd = () => {
-    if (!sliderRef.current) return;
+  const handleTransitionEnd = useCallback(() => {
+    if (!sliderRef.current) return
 
-    let newIndex = currentIndex;
-    sliderRef.current.style.transition = "none";
+    let newIndex = currentIndex
 
-    if (currentIndex === sliderImages.length - 1) {
-      newIndex = 1; 
+    if (currentIndex === extendedImages.length - 1) {
+      // If we slid to the cloned first image (at the end), instantly jump to the real first image
+      newIndex = 1
     } else if (currentIndex === 0) {
-      newIndex = sliderImages.length - 2; 
+      // If we slid to the cloned last image (at the start), instantly jump to the real last image
+      newIndex = extendedImages.length - 2
     }
 
-    setCurrentIndex(newIndex);
+    // Apply 'none' transition for the instant jump
+    sliderRef.current.style.transition = "none"
+    sliderRef.current.style.transform = `translateX(-${(100 / extendedImages.length) * newIndex}%)`
+    setCurrentIndex(newIndex)
+
+    // Re-enable transition after a tiny delay for subsequent slides
     setTimeout(() => {
       if (sliderRef.current) {
-        sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+        sliderRef.current.style.transition = "transform 0.5s ease-in-out"
       }
-      setIsTransitioning(false);
-    }, 20);
-  };
+      setIsTransitioning(false)
+    }, 20) // Small delay to ensure transition:none applies before re-enabling
+  }, [currentIndex, extendedImages.length])
 
-  const handleNext = () => {
-    slideTo(currentIndex + 1);
-  };
+  const handleNext = useCallback(() => {
+    if (isTransitioning) return
+    slideTo(currentIndex + 1)
+  }, [isTransitioning, currentIndex, slideTo])
 
-  const handlePrev = () => {
-    slideTo(currentIndex - 1);
-  };
+  const handlePrev = useCallback(() => {
+    if (isTransitioning) return
+    slideTo(currentIndex - 1)
+  }, [isTransitioning, currentIndex, slideTo])
 
   useEffect(() => {
-    axios.get(`${API_BASE}/api/banners`)
+    axios
+      .get(`${API_BASE}/api/banners`)
       .then((res) => {
-        const banners = Array.isArray(res.data) ? res.data : res.data.banners || [];
-
-        const sliders = banners.filter((img) => img.type === "homebanner");
-        const category = banners.filter((img) => img.type === "category");
-
-        setOriginalImages(sliders);
-        setSideImages(category);
-
+        const banners = Array.isArray(res.data) ? res.data : res.data.banners || []
+        const sliders = banners.filter((img) => img.type === "main") // Assuming 'main' is for the main slider
+        const category = banners.filter((img) => img.type === "side") // Assuming 'side' is for side banners
+        setOriginalImages(sliders)
+        setSideImages(category)
         if (sliders.length > 0) {
-          const first = sliders[0];
-          const last = sliders[sliders.length - 1];
-          setSliderImages([last, ...sliders, first]);
-          setCurrentIndex(1);
+          // Set sliderImages for the actual rendering, including clones
+          const first = sliders[0]
+          const last = sliders[sliders.length - 1]
+          setSliderImages([last, ...sliders, first])
+          setCurrentIndex(1) // Start at the first real image
         }
       })
       .catch((err) => {
-        console.error("Error fetching banners:", err);
-      });
-  }, []);
+        console.error("Error fetching banners:", err)
+        // Set empty arrays on error to prevent crashes and show fallback UI
+        setOriginalImages([])
+        setSliderImages([])
+        setSideImages([])
+      })
+  }, [])
 
+  // Added searchBoxRef for the onBlur handler
+  const searchBoxRef = useRef(null)
   useEffect(() => {
-  const handler = (e) => {
-    if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
-      setSuggestions([]);
+    const handler = (e) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setSuggestions([])
+      }
     }
-  };
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
-}, []);
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
 
 
 
 
 
 
-
-
-
+  
 
   return (
     <div className="w-full h-full flex">
@@ -297,34 +310,31 @@ const Banners = () => {
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="flex transition-transform duration-500 ease-in-out"
+            className="flex h-full" // Removed transition-transform from here, it's handled in slideTo
             style={{
-              transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
-              width: `${sliderImages.length * 100}%`,
+              transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
+              width: `${extendedImages.length * 100}%`,
+              // transition property is set dynamically in slideTo and handleTransitionEnd
             }}
             onTransitionEnd={handleTransitionEnd}
           >
-            {sliderImages.map((img, i) => (
-              <div
-                key={`${img._id || i}-${i}`}
-                className="flex-shrink-0 h-full"
-                style={{
-                  width: `${100 / sliderImages.length}%`,
-                }}
-              >
-                <img
-                  src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
-                  alt={img.title || `Slide ${i + 1}`}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+            {extendedImages.map(
+              (img, i) =>
+                img && (
+                  <img
+                    key={`${img._id || i}-${i}`}
+                    src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                    alt={img.title || `Slide ${i + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover flex-shrink-0"
+                    style={{ width: `${100 / extendedImages.length}%` }}
+                  />
+                ),
+            )}
           </div>
-
           {/* Arrows */}
-          {sliderImages.length > 1 && (
+          {originalImages.length > 1 && ( // Use originalImages.length for arrow visibility
             <>
               <button
                 onClick={handlePrev}
@@ -340,24 +350,20 @@ const Banners = () => {
               </button>
             </>
           )}
-
           {/* Dot Indicators */}
           {originalImages.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-            {originalImages.map((_, i) => (
-              <div
-                key={i}
-                className={`w-3 h-3 rounded-full transition duration-300 ${
-                  i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
-                }`}
-              />
-            ))}
-          </div>
-        )}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+              {originalImages.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full transition duration-300 ${i === currentIndex - 1 ? "bg-white" : "bg-gray-400"}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
-
         <div className="absolute top-5 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
-          <img src={logo} alt="logo" className="w-[150px] h-auto object-contain"/>
+          <img src={logo || "/placeholder.svg"} alt="logo" className="w-[150px] h-auto object-contain" />
           {/* Nav Links */}
           <nav>
             <ul className="flex justify-center gap-6 font-semibold text-white text-lg">
@@ -374,12 +380,13 @@ const Banners = () => {
                   >
                     {item.list}
                   </Link>
-                  {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />}
+                  {isActive(item.path) && (
+                    <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />
+                  )}
                 </li>
               ))}
             </ul>
           </nav>
-
           {/* Icons */}
           <div className="flex items-center gap-5 text-[24px] relative">
             {user ? (
@@ -390,7 +397,6 @@ const Banners = () => {
                 >
                   {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
                 </div>
-                {/* ✅ Fixed: Only show dropdown when showDropdown is true */}
                 {showDropdown && (
                   <div className="absolute top-12 right-0 bg-white shadow-lg rounded-md z-50 w-48 py-2 border">
                     <div className="px-4 py-2 border-b">
@@ -411,7 +417,6 @@ const Banners = () => {
                 <FaRegUser className="text-black" />
               </span>
             )}
-
             {/* Cart icon */}
             <span className="relative cursor-pointer" onClick={handleCartClick}>
               <HiOutlineShoppingBag className="text-black hover:text-green-600 transition-colors" />
@@ -424,10 +429,11 @@ const Banners = () => {
           </div>
         </div>
       </div>
-      
       <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
         {/* Search */}
-        <div className="px-2">
+        <div className="px-2" ref={searchBoxRef}>
+          {" "}
+          {/* Added ref here */}
           <input
             type="text"
             value={searchTerm}
@@ -462,7 +468,6 @@ const Banners = () => {
             </ul>
           )}
         </div>
-
         {/* Scrollable Side Banners */}
         <div className="flex-1 overflow-y-auto px-2 ">
           {sideImages.map((item, i) => (
@@ -485,7 +490,7 @@ const Banners = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Banners;
+export default Banners
