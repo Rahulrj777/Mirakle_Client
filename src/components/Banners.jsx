@@ -245,21 +245,26 @@ const Banners = () => {
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE}/api/banners`).then((res) => {
-      const banners = Array.isArray(res.data) ? res.data : res.data.banners || [];
-      const main = banners.filter((img) => img.type === "main");
-      const side = banners.filter((img) => img.type === "side");
+    axios.get(`${API_BASE}/api/banners`)
+      .then((res) => {
+        const banners = Array.isArray(res.data) ? res.data : res.data.banners || [];
 
-      setOriginalImages(main);
-      setSideImages(side);
+        const sliders = banners.filter((img) => img.type === "slider");
+        const side = banners.filter((img) => img.type === "side");
 
-      if (main.length) {
-        const first = main[0];
-        const last = main[main.length - 1];
-        setSliderImages([last, ...main, first]);
-        setCurrentIndex(1);
-      }
-    });
+        setOriginalImages(sliders);
+        setSideImages(side);
+
+        if (sliders.length > 0) {
+          const first = sliders[0];
+          const last = sliders[sliders.length - 1];
+          setSliderImages([last, ...sliders, first]);
+          setCurrentIndex(1);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching banners:", err);
+      });
   }, []);
 
   useEffect(() => {
