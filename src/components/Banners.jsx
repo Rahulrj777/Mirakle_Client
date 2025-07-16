@@ -193,7 +193,7 @@ const Banners = () => {
   }, [user, navigate])
 
   const startAutoPlay = useCallback(() => {
-    stopAutoPlay(); 
+    stopAutoPlay();
     intervalRef.current = setInterval(() => {
       setCurrentIndex((prevIndex) => prevIndex + 1);
     }, 3000);
@@ -207,11 +207,8 @@ const Banners = () => {
     if (!hovered && originalImages.length > 1) {
       startAutoPlay();
     }
-
-    return () => {
-      stopAutoPlay();
-    };
-  }, [hovered, originalImages.length, startAutoPlay]);
+    return stopAutoPlay;
+  }, [hovered, originalImages.length]);
 
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
@@ -223,21 +220,28 @@ const Banners = () => {
     if (!sliderRef.current) return;
 
     if (currentIndex === sliderImages.length - 1) {
-      // Reached the cloned first slide (end) -> jump to real first (index 1)
+      // Moved to cloned first → jump to real first (index 1)
       sliderRef.current.style.transition = "none";
       setCurrentIndex(1);
 
-      // Force reflow to reset transition
-      void sliderRef.current.offsetWidth;
-      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+      // Force reflow before re-enabling transition
+      requestAnimationFrame(() => {
+        if (sliderRef.current) {
+          sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+        }
+      });
     }
 
     if (currentIndex === 0) {
-      // Unused in autoplay, but still safe
+      // If ever moved to cloned last → jump to real last
       sliderRef.current.style.transition = "none";
       setCurrentIndex(sliderImages.length - 2);
-      void sliderRef.current.offsetWidth;
-      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+
+      requestAnimationFrame(() => {
+        if (sliderRef.current) {
+          sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+        }
+      });
     }
 
     setIsTransitioning(false);
