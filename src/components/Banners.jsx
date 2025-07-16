@@ -249,7 +249,7 @@ const Banners = () => {
       .then((res) => {
         const banners = Array.isArray(res.data) ? res.data : res.data.banners || [];
 
-        const sliders = banners.filter((img) => img.type === "banner");
+        const sliders = banners.filter((img) => img.type === "homebanner");
         const category = banners.filter((img) => img.type === "category");
 
         setOriginalImages(sliders);
