@@ -463,7 +463,7 @@ const Banners = () => {
           {sideImages.map((item, i) => (
             <div
               key={item._id || i}
-              className="relative w-full h-[110px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition"
+              className="relative w-full h-[120px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition"
             >
               <img
                 src={`${API_BASE}${item.imageUrl}`}
