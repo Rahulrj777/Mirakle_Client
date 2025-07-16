@@ -23,6 +23,7 @@ const Banners = () => {
   const cartItems = useSelector((state) => state.cart.items) || []
   const currentUserId = useSelector((state) => state.cart.userId)
   const [searchTerm, setSearchTerm] = useState("")
+  const searchBoxRef = useRef(null);
   const [suggestions, setSuggestions] = useState([])
   const [user, setUser] = useState(() => {
     try {
@@ -273,14 +274,14 @@ const Banners = () => {
   }, []);
 
   useEffect(() => {
-  const handler = (e) => {
-    if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
-      setSuggestions([]);
-    }
-  };
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
-}, []);
+    const handler = (e) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setSuggestions([]);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   return (
     <div className="w-full h-full flex">
