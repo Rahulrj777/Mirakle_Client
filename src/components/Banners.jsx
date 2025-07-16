@@ -193,9 +193,9 @@ const Banners = () => {
   }, [user, navigate])
 
   const startAutoPlay = useCallback(() => {
-    stopAutoPlay();
+    stopAutoPlay(); 
     intervalRef.current = setInterval(() => {
-      setCurrentIndex(prev => prev + 1); // ✅ Updated to avoid stale closure
+      setCurrentIndex((prevIndex) => prevIndex + 1);
     }, 3000);
   }, []);
 
@@ -207,7 +207,10 @@ const Banners = () => {
     if (!hovered && originalImages.length > 1) {
       startAutoPlay();
     }
-    return stopAutoPlay;
+
+    return () => {
+      stopAutoPlay();
+    };
   }, [hovered, originalImages.length, startAutoPlay]);
 
   const slideTo = (index) => {
@@ -219,22 +222,25 @@ const Banners = () => {
   const handleTransitionEnd = () => {
     if (!sliderRef.current) return;
 
-    let newIndex = currentIndex;
-    sliderRef.current.style.transition = "none";
-
     if (currentIndex === sliderImages.length - 1) {
-      newIndex = 1; 
-    } else if (currentIndex === 0) {
-      newIndex = sliderImages.length - 2; 
+      // Reached the cloned first slide (end) -> jump to real first (index 1)
+      sliderRef.current.style.transition = "none";
+      setCurrentIndex(1);
+
+      // Force reflow to reset transition
+      void sliderRef.current.offsetWidth;
+      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
     }
 
-    setCurrentIndex(newIndex);
-    setTimeout(() => {
-      if (sliderRef.current) {
-        sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-      }
-      setIsTransitioning(false);
-    }, 20);
+    if (currentIndex === 0) {
+      // Unused in autoplay, but still safe
+      sliderRef.current.style.transition = "none";
+      setCurrentIndex(sliderImages.length - 2);
+      void sliderRef.current.offsetWidth;
+      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+    }
+
+    setIsTransitioning(false);
   };
 
   const handleNext = () => {
