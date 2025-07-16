@@ -211,42 +211,37 @@ const Banners = () => {
 
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current) return;
-
     setIsTransitioning(true);
-    requestAnimationFrame(() => {
-      sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-      setCurrentIndex(index);
-    });
+    setCurrentIndex(index);
   };
 
   const handleTransitionEnd = () => {
     if (!sliderRef.current) return;
 
     let newIndex = currentIndex;
+    sliderRef.current.style.transition = "none";
 
     if (currentIndex === sliderImages.length - 1) {
-      newIndex = 1;
+      newIndex = 1; 
     } else if (currentIndex === 0) {
-      newIndex = sliderImages.length - 2;
+      newIndex = sliderImages.length - 2; 
     }
 
-    setIsTransitioning(false);
-
-    requestAnimationFrame(() => {
-      if (!sliderRef.current) return;
-      sliderRef.current.style.transition = "none";
-      setCurrentIndex(newIndex);
-    });
-  };
-
-  const handlePrev = () => {
-    if (currentIndex <= 0) return;
-    slideTo(currentIndex - 1);
+    setCurrentIndex(newIndex);
+    setTimeout(() => {
+      if (sliderRef.current) {
+        sliderRef.current.style.transition = "transform 0.5s ease-in-out";
+      }
+      setIsTransitioning(false);
+    }, 20);
   };
 
   const handleNext = () => {
-    if (currentIndex >= sliderImages.length - 1) return;
     slideTo(currentIndex + 1);
+  };
+
+  const handlePrev = () => {
+    slideTo(currentIndex - 1);
   };
 
   useEffect(() => {
@@ -302,9 +297,9 @@ const Banners = () => {
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="flex h-full"
+            className="w-full h-full object-cover flex-shrink-0"
             style={{
-              width: `${sliderImages.length * 100}%`,
+              width: `${100 / sliderImages.length}%`, flexShrink: 0,
               transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
               transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
             }}
