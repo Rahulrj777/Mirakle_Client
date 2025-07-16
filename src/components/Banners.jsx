@@ -252,6 +252,11 @@ const Banners = () => {
         const sliders = banners.filter((img) => img.type === "homebanner");
         const category = banners.filter((img) => img.type === "category");
 
+        // 🔍 Log each image URL
+        sliders.forEach((img) => {
+          console.log("SLIDER URL:", `${API_BASE}${img.imageUrl}?v=${img._id}`);
+        });
+
         setOriginalImages(sliders);
         setSideImages(category);
 
@@ -276,15 +281,6 @@ const Banners = () => {
   document.addEventListener("mousedown", handler);
   return () => document.removeEventListener("mousedown", handler);
 }, []);
-
-
-
-
-
-
-
-
-
 
   return (
     <div className="w-full h-full flex">
