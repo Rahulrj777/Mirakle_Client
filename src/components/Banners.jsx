@@ -297,7 +297,7 @@ const Banners = () => {
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="w-full h-full object-cover flex-shrink-0"
+            className="flex h-full"
             style={{
               width: `${sliderImages.length * 100}%`,
               transform: `translateX(-${(100 / sliderImages.length) * currentIndex}%)`,
