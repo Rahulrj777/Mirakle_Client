@@ -4,6 +4,7 @@ import ShopingPage from '../pages/ShopingPage';
 import AboutUs from '../pages/AboutUs';
 import ContectUs from '../pages/ContectUs';
 import Footer from '../components/Footer';
+import Header from '../components/Header';
 import AddToCart from '../pages/AddToCart';
 import ProductDetail from '../pages/ProductDetail';
 import LoginSignUp from '../pages/LoginSignUp';
@@ -16,6 +17,7 @@ const Routing = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      {/* <Header /> */}
       <Routes>
         <Route path="/" element={<Mirakle_Home_page />} />
 
