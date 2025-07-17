@@ -35,26 +35,26 @@ const OfferPage = () => {
       </div>
 
       {/* <!-- Right Banner --> */}
-      <div class="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
-        {/* <!-- Special Offer Badge --> */}
-        <div class="absolute top-4 left-4 w-[100px] h-[60px] rounded object-cover">
-          <img src={specialoffer} alt="" />
+      <div className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
+        {/* Special Offer Badge */}
+        <div className="absolute top-4 left-4 w-[80px] h-[40px]">
+          <img src={specialoffer} alt="Special Offer" className="w-full h-full object-contain" />
         </div>
 
-        {/* <!-- Product Info --> */}
-        <div class="mt-20">
-          <h2 class="text-xl font-semibold text-gray-800 mb-2">Oil Products</h2>
-          <button class="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
+        {/* Product Info */}
+        <div className="mt-20">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Oil Products</h2>
+          <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
             Shop Now
           </button>
         </div>
 
-        {/* <!-- Image --> */}
-        <div class="absolute bottom-0 right-2 h-32 md:h-40 lg:h-48 flex items-end">
+        {/* Product Image */}
+        <div className="absolute bottom-0 right-2 h-32 md:h-40 lg:h-48 flex items-end">
           <img
             src="https://cdn.pixabay.com/photo/2014/10/23/18/05/olive-oil-500508_960_720.png"
             alt="Oil Products"
-            class="h-full object-contain"
+            className="h-full object-contain"
           />
         </div>
       </div>
