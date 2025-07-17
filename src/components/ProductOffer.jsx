@@ -35,11 +35,7 @@ const OfferPage = () => {
           </div>
 
           <div className="absolute bottom-4 right-4 h-28 md:h-36 lg:h-44">
-            <img
-              src={`${API_BASE}/${offers[0].imageUrl}`}
-              alt={offers[0].title}
-              className="h-full object-contain"
-            />
+            <img src={`${API_BASE}${offers[0].imageUrl}`} alt={offers[0].title} className="h-full object-contain" />
           </div>
         </div>
       )}
@@ -65,11 +61,7 @@ const OfferPage = () => {
           </div>
 
           <div className="absolute bottom-0 right-2 h-32 md:h-40 lg:h-48 flex items-end z-10">
-            <img
-              src={`${API_BASE}/${offers[1].imageUrl}`}
-              alt={offers[1].title}
-              className="h-full object-contain"
-            />
+            <img src={`${API_BASE}${offers[1].imageUrl}`} alt={offers[1].title} className="h-full object-contain" />
           </div>
         </div>
       )}
