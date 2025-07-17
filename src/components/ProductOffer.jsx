@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { useNavigate } from "react-router-dom"
 import { API_BASE } from "../utils/api"
 import specialoffer from "../assets/specialoffer.png"
 import discount50 from "../assets/discount50.png"
@@ -16,31 +15,33 @@ const OfferPage = () => {
 
   return (
     <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-18 mt-5">
-      {/* Left Card - Static (like old code) */}
-      <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
-        <div className="absolute -top-14 -left-8 z-20 w-[120px]">
-          <img src={discount50} alt="50% Off" className="w-full object-contain drop-shadow-md" />
-        </div>
+      {/* Left Card - Dynamic but same design */}
+      {offers[0] && (
+        <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
+          <div className="absolute -top-14 -left-8 z-20 w-[120px]">
+            <img src={discount50} alt="50% Off" className="w-full object-contain drop-shadow-md" />
+          </div>
 
-        <div className="mt-20">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Olive oil up to 50% offer
-          </h2>
-          <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
-            Shop Now
-          </button>
-        </div>
+          <div className="mt-20">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              {offers[0].title}
+            </h2>
+            <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
+              Shop Now
+            </button>
+          </div>
 
-        <div className="absolute bottom-4 right-4 h-28 md:h-36 lg:h-44">
-          <img
-            src="https://cdn.pixabay.com/photo/2014/04/02/10/56/olive-oil-307213_960_720.png"
-            alt="Olive Oil"
-            className="h-full object-contain"
-          />
+          <div className="absolute bottom-4 right-4 h-28 md:h-36 lg:h-44">
+            <img
+              src={`${API_BASE}/${offers[0].imageUrl}`}
+              alt={offers[0].title}
+              className="h-full object-contain"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Right Card - Dynamic title and image from API */}
+      {/* Right Card - Dynamic but same design */}
       {offers[1] && (
         <div className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
           <div className="absolute -top-12 -left-20 z-20 w-[230px]">
