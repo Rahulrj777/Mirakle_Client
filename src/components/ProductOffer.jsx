@@ -13,7 +13,7 @@ const OfferPage = () => {
         <div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded">
           SPECIAL OFFER
         </div>
-        <div class="absolute top-10 left-4 bg-yellow-400 text-black font-bold text-lg px-4 py-2 rounded shadow">
+        <div class="absolute top-10 left-4 bg-yellow-500 text-black font-bold text-lg px-4 py-2 rounded shadow">
           50% OFF
         </div>
 
