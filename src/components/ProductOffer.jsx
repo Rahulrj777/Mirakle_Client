@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import { API_BASE } from "../utils/api"
-import specialoffer from "../assets/specialoffer.jpg"
+import specialoffer from "../assets/specialoffer.png"
 
 const OfferPage = () => {
 
