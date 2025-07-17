@@ -16,13 +16,6 @@ const OfferPage = () => {
       .catch(err => console.error("Failed to load offer banners:", err))
   }, [])
 
-  useEffect(() => {
-  // This will log whenever offers changes and offers[0] exists
-  if (offers[0]) {
-    console.log("Offer imageUrl:", offers[0].imageUrl);
-  }
-}, [offers]);
-
   return (
     <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-18 mt-5">
       {/* Left Card - Dynamic but same design */}
@@ -43,7 +36,7 @@ const OfferPage = () => {
 
           <div className="absolute bottom-4 right-4 h-28 md:h-36 lg:h-44">
             <img
-              src={`${API_BASE}/${offers[0].imageUrl}`}
+              src={`${API_BASE}${offers[0].imageUrl}`}
               alt={offers[0].title}
               className="h-full object-contain"
             />
@@ -73,7 +66,7 @@ const OfferPage = () => {
 
           <div className="absolute bottom-0 right-2 h-32 md:h-40 lg:h-48 flex items-end z-10">
             <img
-              src={`${API_BASE}/${offers[1].imageUrl}`}
+              src={`${API_BASE}${offers[1].imageUrl}`}
               alt={offers[1].title}
               className="h-full object-contain"
             />
