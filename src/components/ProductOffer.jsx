@@ -4,41 +4,61 @@ import { useNavigate } from "react-router-dom"
 import { API_BASE } from "../utils/api"
 
 const OfferPage = () => {
-  const [offers, setOffers] = useState([])
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/api/offer-banners`)
-        setOffers(res.data)
-      } catch (err) {
-        console.error("Failed to load offers", err)
-      }
-    }
-    fetchOffers()
-  }, [])
 
   return (
-    <div className="w-[90%] mx-auto py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {offers.map((offer) => (
-        <div
-          key={offer._id}
-          className="cursor-pointer shadow-lg rounded-xl overflow-hidden hover:shadow-xl transition"
-          onClick={() => navigate(offer.route)}
-        >
-          <img
-            src={`${API_BASE}${offer.imageUrl}`}
-            alt="Offer"
-            className="w-full h-[250px] object-cover hover:scale-105 transition-transform duration-300"
-          />
-          {offer.text && (
-            <div className="p-4 bg-white text-center">
-              <p className="text-sm text-gray-700">{offer.text}</p>
-            </div>
-          )}
+    <div class="w-[90%] mx-auto py-10 flex flex-col lg:flex-row gap-6">
+      {/* <!-- Left Banner --> */}
+      <div class="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
+        {/* <!-- Discount Badge --> */}
+        <div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded">
+          SPECIAL OFFER
         </div>
-      ))}
+        <div class="absolute top-10 left-4 bg-yellow-400 text-black font-bold text-lg px-4 py-2 rounded shadow">
+          50% OFF
+        </div>
+
+        {/* <!-- Product Info --> */}
+        <div class="mt-20">
+          <h2 class="text-xl font-semibold text-gray-800 mb-2">Olive oil up to 50% offer</h2>
+          <button class="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
+            Shop Now
+          </button>
+        </div>
+
+        {/* <!-- Image --> */}
+        <div class="absolute bottom-0 right-4 h-32 md:h-40 lg:h-48">
+          <img
+            src="https://cdn.pixabay.com/photo/2014/04/02/10/56/olive-oil-307213_960_720.png"
+            alt="Olive Oil"
+            class="h-full object-contain"
+          />
+        </div>
+      </div>
+
+      {/* <!-- Right Banner --> */}
+      <div class="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
+        {/* <!-- Special Offer Badge --> */}
+        <div class="absolute top-4 left-4 bg-yellow-400 text-red-700 text-xs font-bold px-3 py-1 rounded">
+          SPECIAL OFFER
+        </div>
+
+        {/* <!-- Product Info --> */}
+        <div class="mt-20">
+          <h2 class="text-xl font-semibold text-gray-800 mb-2">Oil Products</h2>
+          <button class="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
+            Shop Now
+          </button>
+        </div>
+
+        {/* <!-- Image --> */}
+        <div class="absolute bottom-0 right-2 h-32 md:h-40 lg:h-48 flex items-end">
+          <img
+            src="https://cdn.pixabay.com/photo/2014/10/23/18/05/olive-oil-500508_960_720.png"
+            alt="Oil Products"
+            class="h-full object-contain"
+          />
+        </div>
+      </div>
     </div>
   )
 }
