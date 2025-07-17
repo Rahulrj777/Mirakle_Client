@@ -10,8 +10,8 @@ const OfferPage = () => {
   return (
     <div class="w-[90%] mx-auto py-10 flex flex-col lg:flex-row gap-6">
       <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
-        {/* Discount Badge Overlay */}
-        <div className="absolute -top-10 -left-20 w-20 h-20 md:w-24 md:h-24">
+        {/* Discount Badge - Positioned inside top left */}
+        <div className="absolute -top-10 -left-20 w-16 h-16 md:w-20 md:h-20">
           <img src={discount50} alt="50% Off" className="w-full h-full object-contain" />
         </div>
 
@@ -25,8 +25,8 @@ const OfferPage = () => {
           </button>
         </div>
 
-        {/* Olive Oil Image */}
-        <div className="absolute bottom-0 right-4 h-32 md:h-40 lg:h-48">
+        {/* Olive Oil Image - Positioned inside bottom right */}
+        <div className="absolute bottom-4 right-4 h-28 md:h-36 lg:h-44">
           <img
             src="https://cdn.pixabay.com/photo/2014/04/02/10/56/olive-oil-307213_960_720.png"
             alt="Olive Oil"
