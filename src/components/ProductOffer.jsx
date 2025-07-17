@@ -9,7 +9,10 @@ const OfferPage = () => {
 
   useEffect(() => {
     axios.get(`${API_BASE}/api/offer-banners`)
-      .then(res => setOffers(res.data))
+      .then(res => {
+        console.log("Offers Response:", res.data)   // Debug line
+        setOffers(res.data)
+      })
       .catch(err => console.error("Failed to load offer banners:", err))
   }, [])
 
