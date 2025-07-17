@@ -11,7 +11,7 @@ const OfferPage = () => {
     <div class="w-[90%] mx-auto py-10 flex flex-col lg:flex-row gap-6">
       <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
         {/* Discount Badge Overlay */}
-        <div className="absolute -top-10 -left-4 w-20 h-20 md:w-24 md:h-24">
+        <div className="absolute -top-10 -left-20 w-20 h-20 md:w-24 md:h-24">
           <img src={discount50} alt="50% Off" className="w-full h-full object-contain" />
         </div>
 
@@ -38,7 +38,7 @@ const OfferPage = () => {
       {/* <!-- Right Banner --> */}
       <div className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
         {/* Special Offer Badge - floating outside */}
-        <div className="absolute -top-10 -left-8 z-20 w-[230px]">
+        <div className="absolute -top-10 -left-20 z-20 w-[230px]">
           <img
             src={specialoffer}
             alt="Special Offer"
