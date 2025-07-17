@@ -23,7 +23,7 @@ const ProductOffer = () => {
     <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-10 mt-5">
       
       {leftBanner && (
-        <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-hidden">
+        <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible">
           
           <div className="absolute -top-14 -left-8 z-20 w-[120px]">
             <img src={discount50} alt="50% Off" className="w-full object-contain drop-shadow-md" />
@@ -51,7 +51,7 @@ const ProductOffer = () => {
       )}
 
       {rightBanner && (
-        <div className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-row items-center relative overflow-hidden">
+        <div className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible">
           
           <div className="absolute -top-12 -left-20 z-20 w-[230px]">
             <img src={specialoffer} alt="Special Offer" className="w-full object-contain drop-shadow-md" />
