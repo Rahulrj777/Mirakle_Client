@@ -16,6 +16,13 @@ const OfferPage = () => {
       .catch(err => console.error("Failed to load offer banners:", err))
   }, [])
 
+  useEffect(() => {
+  // This will log whenever offers changes and offers[0] exists
+  if (offers[0]) {
+    console.log("Offer imageUrl:", offers[0].imageUrl);
+  }
+}, [offers]);
+
   return (
     <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-18 mt-5">
       {/* Left Card - Dynamic but same design */}
