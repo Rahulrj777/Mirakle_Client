@@ -1,68 +1,50 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { useNavigate } from "react-router-dom"
 import { API_BASE } from "../utils/api"
-import specialoffer from "../assets/specialoffer.png"
-import discount50 from "../assets/discount50.png"
 
 const OfferPage = () => {
+  const [offers, setOffers] = useState([])
+
+  useEffect(() => {
+    axios.get(`${API_BASE}/api/offer-banners`)
+      .then(res => setOffers(res.data))
+      .catch(err => console.error("Failed to load offer banners:", err))
+  }, [])
 
   return (
-    <div class="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-18 mt-5">
-      <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
-        {/* Discount Badge - Positioned outside like right card */}
-        <div className="absolute -top-14 -left-8 z-20 w-[120px]">
-          <img src={discount50} alt="50% Off" className="w-full object-contain drop-shadow-md" />
-        </div>
+    <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-18 mt-5">
+      {offers.slice(0, 2).map((offer, idx) => (
+        <div
+          key={offer._id}
+          className={`flex-1 ${idx % 2 === 0 ? "bg-yellow-100" : "bg-gray-100"} rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible`}
+        >
+          {/* Percentage Badge */}
+          {offer.percentage && (
+            <div className={`absolute -top-14 -left-8 z-20`}>
+              <div className="bg-red-600 text-white px-4 py-2 rounded-full shadow-lg text-sm font-bold">
+                {offer.percentage}
+              </div>
+            </div>
+          )}
 
-        {/* Product Info */}
-        <div className="mt-20">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Olive oil up to 50% offer
-          </h2>
-          <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
-            Shop Now
-          </button>
-        </div>
+          {/* Title and Button */}
+          <div className="mt-20">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">{offer.title}</h2>
+            <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
+              Shop Now
+            </button>
+          </div>
 
-        {/* Olive Oil Image - Positioned inside bottom right */}
-        <div className="absolute bottom-4 right-4 h-28 md:h-36 lg:h-44">
-          <img
-            src="https://cdn.pixabay.com/photo/2014/04/02/10/56/olive-oil-307213_960_720.png"
-            alt="Olive Oil"
-            className="h-full object-contain"
-          />
+          {/* Image */}
+          <div className="absolute bottom-4 right-4 h-28 md:h-36 lg:h-44">
+            <img
+              src={`${API_BASE}/${offer.imageUrl}`}
+              alt={offer.title}
+              className="h-full object-contain"
+            />
+          </div>
         </div>
-      </div>
-
-      {/* <!-- Right Banner --> */}
-      <div className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
-        {/* Special Offer Badge - floating outside */}
-        <div className="absolute -top-12 -left-20 z-20 w-[230px]">
-          <img
-            src={specialoffer}
-            alt="Special Offer"
-            className="w-full object-contain drop-shadow-md"
-          />
-        </div>
-
-        {/* Product Info */}
-        <div className="mt-16">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Oil Products</h2>
-          <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
-            Shop Now
-          </button>
-        </div>
-
-        {/* Product Image */}
-        <div className="absolute bottom-0 right-2 h-32 md:h-40 lg:h-48 flex items-end z-10">
-          <img
-            src="https://cdn.pixabay.com/photo/2014/10/23/18/05/olive-oil-500508_960_720.png"
-            alt="Oil Products"
-            className="h-full object-contain"
-          />
-        </div>
-      </div>
+      ))}
     </div>
   )
 }
