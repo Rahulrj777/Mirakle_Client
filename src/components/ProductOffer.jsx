@@ -11,7 +11,7 @@ const OfferPage = () => {
     <div class="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-18 mt-5">
       <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
         {/* Discount Badge - Positioned outside like right card */}
-        <div className="absolute -top-12 -left-8 z-20 w-[120px]">
+        <div className="absolute -top-14 -left-8 z-20 w-[120px]">
           <img src={discount50} alt="50% Off" className="w-full object-contain drop-shadow-md" />
         </div>
 
