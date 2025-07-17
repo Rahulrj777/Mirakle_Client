@@ -9,10 +9,10 @@ const OfferPage = () => {
 
   return (
     <div class="w-[90%] mx-auto py-10 flex flex-col lg:flex-row gap-6">
-      <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
-        {/* Discount Badge - Positioned inside top left */}
-        <div className="absolute -top-10 -left-20 w-16 h-16 md:w-20 md:h-20">
-          <img src={discount50} alt="50% Off" className="w-full h-full object-contain" />
+      <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
+        {/* Discount Badge - Positioned outside like right card */}
+        <div className="absolute -top-10 -left-20 z-20 w-[230px]">
+          <img src={discount50} alt="50% Off" className="w-full object-contain drop-shadow-md" />
         </div>
 
         {/* Product Info */}
