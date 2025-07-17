@@ -8,7 +8,7 @@ import discount50 from "../assets/discount50.png"
 const OfferPage = () => {
 
   return (
-    <div class="w-[90%] mx-auto py-10 flex flex-col lg:flex-row gap-6">
+    <div class="w-[80%] mx-auto py-10 flex flex-col lg:flex-row gap-6">
       <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-visible">
         {/* Discount Badge - Positioned outside like right card */}
         <div className="absolute -top-12 -left-8 z-20 w-[120px]">
