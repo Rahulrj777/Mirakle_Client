@@ -37,7 +37,7 @@ const OfferPage = () => {
       {/* <!-- Right Banner --> */}
       <div class="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
         {/* <!-- Special Offer Badge --> */}
-        <div class="absolute ">
+        <div class="absolute top-4 left-4 w-[30px] h-[30px] rounded">
           <img src={specialoffer} alt="" />
         </div>
 
