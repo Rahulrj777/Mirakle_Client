@@ -1,119 +1,169 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { FiSearch } from 'react-icons/fi';
-import { API_BASE } from "../utils/api";
+"use client"
+
+import { useEffect, useState, useCallback } from "react"
+import axios from "axios"
+import { useLocation, useNavigate, Link } from "react-router-dom"
+import { FiSearch } from "react-icons/fi"
+import { API_BASE } from "../utils/api"
 
 const ShopingPage = () => {
-  const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [filterType, setFilterType] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
+  const [products, setProducts] = useState([]) // Stores products fetched based on URL params (category/search)
+  const [displayedProducts, setDisplayedProducts] = useState([]) // Products after local filters (offer, local search)
+  const [filterType, setFilterType] = useState("all") // 'all' or 'offer'
+  const [searchTerm, setSearchTerm] = useState("") // Local search input
+  const [suggestions, setSuggestions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location = useLocation()
+  const navigate = useNavigate()
 
-  // On mount & search param update
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const query = params.get("search");
+  // Function to fetch products based on URL parameters (category or search)
+  const fetchProductsBasedOnUrl = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    const params = new URLSearchParams(location.search)
+    const category = params.get("category")
+    const urlSearch = params.get("search") // This is the search from URL
 
-    if (query) {
-      setSearchTerm(query);
+    let apiUrl = `${API_BASE}/api/products/all-products`
 
-      // Clean up URL after 2s
-      setTimeout(() => {
-        params.delete("search");
-        navigate(`${location.pathname}`, { replace: true });
-      }, 2000);
+    if (category) {
+      apiUrl += `?productType=${encodeURIComponent(category)}`
+      console.log(`Fetching products for category: ${category}`)
+    } else if (urlSearch) {
+      apiUrl = `${API_BASE}/api/products/search?query=${encodeURIComponent(urlSearch)}`
+      console.log(`Searching products for term from URL: ${urlSearch}`)
+      setSearchTerm(urlSearch) // Set local search term from URL search
+    } else {
+      console.log("Fetching all products (no specific URL filter)")
+      setSearchTerm("") // Clear local search term if no URL search
     }
-  }, [location.search]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  useEffect(() => {
-    setFilterType(location.pathname === '/shop/offerproduct' ? 'offer' : 'all');
-  }, [location.pathname]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [products, filterType, searchTerm]);
-
-  const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/api/products/all-products`);
-      setProducts(res.data);
+      const res = await axios.get(apiUrl)
+      setProducts(res.data) // Set the base products based on URL filter
     } catch (err) {
-      console.error("Failed to fetch products:", err);
+      console.error("Failed to fetch products:", err)
+      setError(err.response?.data?.message || err.message || "Failed to fetch products")
+      setProducts([])
+    } finally {
+      setLoading(false)
     }
-  };
-  
- const applyFilters = () => {
-  let result = [...products];
+  }, [location.search])
 
-  // Apply offer filter
-  if (filterType === 'offer') {
-    result = result.filter((p) =>
-      p.discountPercent > 0 || p.variants?.some((v) => v.discountPercent > 0)
-    );
-  }
+  // Effect to fetch products when URL search params change
+  useEffect(() => {
+    fetchProductsBasedOnUrl()
 
-  // Apply search filter with keyword + description + title match
-  if (searchTerm.trim()) {
-    const lower = searchTerm.toLowerCase();
+    // Clean up URL after 2s if it was a search param
+    const params = new URLSearchParams(location.search)
+    const query = params.get("search")
+    if (query) {
+      setTimeout(() => {
+        params.delete("search")
+        navigate(`${location.pathname}`, { replace: true })
+      }, 2000)
+    }
+  }, [location.search, fetchProductsBasedOnUrl, navigate])
 
-    const matched = result.filter((p) =>
-      p.title.toLowerCase().includes(lower) ||
-      (p.keywords || []).some((k) => k.toLowerCase().includes(lower)) ||
-      (p.description || "").toLowerCase().includes(lower)
-    );
+  // Effect to set filterType based on path (for offer products)
+  useEffect(() => {
+    setFilterType(location.pathname === "/shop/offerproduct" ? "offer" : "all")
+  }, [location.pathname])
 
-    const matchedIds = new Set(matched.map((p) => p._id));
+  // Function to apply local filters (offer, local search)
+  const applyLocalFilters = useCallback(() => {
+    let result = [...products] // Start with products fetched based on URL
 
-    const remaining = result.filter((p) => !matchedIds.has(p._id));
+    // Apply offer filter
+    if (filterType === "offer") {
+      result = result.filter((p) => p.discountPercent > 0 || p.variants?.some((v) => v.discountPercent > 0))
+    }
 
-    const merged = [...matched, ...remaining];
-    setFilteredProducts(merged);
-  } else {
-    setFilteredProducts(result);
-  }
-};
+    // Apply local search filter (if different from URL search)
+    // This handles cases where user types in the search box *after* initial load
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase()
+      result = result.filter(
+        (p) =>
+          p.title.toLowerCase().includes(lower) ||
+          (p.keywords || []).some((k) => k.toLowerCase().includes(lower)) ||
+          (p.description || "").toLowerCase().includes(lower),
+      )
+    }
 
-  const handleSearchChange = async (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
+    setDisplayedProducts(result)
+  }, [products, filterType, searchTerm])
 
+  // Effect to apply local filters whenever base products, filterType, or local searchTerm changes
+  useEffect(() => {
+    applyLocalFilters()
+  }, [products, filterType, searchTerm, applyLocalFilters])
+
+  const handleSearchChange = useCallback(async (e) => {
+    const value = e.target.value
+    setSearchTerm(value)
     if (!value.trim()) {
-      setSuggestions([]);
-      return;
+      setSuggestions([])
+      return
     }
-
     try {
-      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
-      setSuggestions(res.data);
+      // Always use the search API for suggestions
+      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
+      setSuggestions(res.data)
     } catch (error) {
-      console.error("Error fetching suggestions:", error);
+      console.error("Error fetching suggestions:", error)
     }
-  };
+  }, [])
 
-  const handleSuggestionClick = (id) => {
-    navigate(`/product/${id}`);
-  };
+  const handleSuggestionClick = useCallback(
+    (id) => {
+      navigate(`/product/${id}`)
+      setSearchTerm("") // Clear search term after navigating
+      setSuggestions([])
+    },
+    [navigate],
+  )
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && searchTerm.trim()) {
-      applyFilters();
-      setSuggestions([]);
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter" && searchTerm.trim()) {
+        // When user presses Enter in search, apply local filter
+        applyLocalFilters()
+        setSuggestions([])
+      }
+    },
+    [searchTerm, applyLocalFilters],
+  )
+
+  // Determine the current title based on URL params
+  const getPageTitle = () => {
+    const params = new URLSearchParams(location.search)
+    const category = params.get("category")
+    const urlSearch = params.get("search")
+
+    if (category) {
+      return `Products in ${category}`
+    } else if (urlSearch) {
+      return `Search Results for "${urlSearch}"`
+    } else if (filterType === "offer") {
+      return "Offer Products"
     }
-  };
+    return "All Products"
+  }
+
+  if (loading) {
+    return <div className="text-center py-10">Loading products...</div>
+  }
+
+  if (error) {
+    return <div className="text-center py-10 text-red-500">Error: {error}</div>
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-3 text-center">Shop Products</h1>
-
+      <h1 className="text-3xl font-bold mb-3 text-center">{getPageTitle()}</h1>
       {/* Filter Controls */}
       <div className="flex justify-between items-center my-8 flex-wrap gap-4 w-full">
         <select
@@ -124,7 +174,6 @@ const ShopingPage = () => {
           <option value="all">All Products</option>
           <option value="offer">Offer Products</option>
         </select>
-
         <div className="relative w-full md:w-1/2">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
             <FiSearch />
@@ -152,31 +201,28 @@ const ShopingPage = () => {
           )}
         </div>
       </div>
-
       {searchTerm && (
         <p className="text-sm text-gray-500 mb-2">
           Showing results for "<strong>{searchTerm}</strong>" and other products.
         </p>
       )}
-
       {/* Product Grid */}
-      {filteredProducts.length === 0 ? (
+      {displayedProducts.length === 0 ? (
         <p className="text-center text-gray-500 mt-10">No products found.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {filteredProducts.map((product) => {
-            const frontImage = product.images?.others?.[0] || '';
-            const isOut = product.isOutOfStock;
-            const variant = product.variants?.[0];
-            const discount = variant?.discountPercent || 0;
-            const originalPrice = variant?.price || 0;
-            const finalPrice = originalPrice - (originalPrice * discount) / 100;
-
+          {displayedProducts.map((product) => {
+            const frontImage = product.images?.others?.[0] || ""
+            const isOut = product.isOutOfStock
+            const variant = product.variants?.[0]
+            const discount = variant?.discountPercent || 0
+            const originalPrice = variant?.price || 0
+            const finalPrice = originalPrice - (originalPrice * discount) / 100
             return (
               <Link to={`/product/${product._id}`} key={product._id} className="block">
                 <div
                   className={`relative border rounded-lg shadow transition overflow-hidden cursor-pointer ${
-                    isOut ? 'opacity-60' : 'hover:shadow-lg'
+                    isOut ? "opacity-60" : "hover:shadow-lg"
                   }`}
                 >
                   {discount > 0 && !isOut && (
@@ -193,30 +239,29 @@ const ShopingPage = () => {
                     <h2 className="text-base font-semibold truncate" title={product.title}>
                       {product.title}
                     </h2>
+                    {product.productType && ( // Display product type
+                      <p className="text-xs text-gray-500 mt-1">Type: {product.productType}</p>
+                    )}
                     {variant && (
                       <>
                         <p className="text-sm text-gray-500 mt-1">{variant.size}</p>
                         <div className="mt-2 flex gap-2 items-center">
                           {discount > 0 && (
-                            <span className="text-gray-400 line-through text-sm">
-                              ₹{originalPrice.toFixed(2)}
-                            </span>
+                            <span className="text-gray-400 line-through text-sm">₹{originalPrice.toFixed(2)}</span>
                           )}
-                          <span className="text-green-600 font-bold text-base">
-                            ₹{finalPrice.toFixed(2)}
-                          </span>
+                          <span className="text-green-600 font-bold text-base">₹{finalPrice.toFixed(2)}</span>
                         </div>
                       </>
                     )}
                   </div>
                 </div>
               </Link>
-            );
+            )
           })}
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ShopingPage;
+export default ShopingPage

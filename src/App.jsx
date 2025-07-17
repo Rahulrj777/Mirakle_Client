@@ -34,7 +34,6 @@ const App = () => {
       console.error("Error loading user data:", error)
       dispatch(setCartItem([])) // Ensure empty array on error
     }
-
     dispatch(setCartReady(true))
   }, [dispatch])
 
