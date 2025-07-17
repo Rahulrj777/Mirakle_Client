@@ -2,14 +2,13 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import { API_BASE } from "../utils/api"
+import specialoffer from "../assets/specialoffer.jpg"
 
 const OfferPage = () => {
 
   return (
     <div class="w-[90%] mx-auto py-10 flex flex-col lg:flex-row gap-6">
-      {/* <!-- Left Banner --> */}
       <div class="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
-        {/* <!-- Discount Badge --> */}
         <div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded">
           SPECIAL OFFER
         </div>
@@ -38,8 +37,8 @@ const OfferPage = () => {
       {/* <!-- Right Banner --> */}
       <div class="flex-1 bg-gray-100 rounded-xl p-6 flex flex-col justify-between items-start relative overflow-hidden">
         {/* <!-- Special Offer Badge --> */}
-        <div class="absolute top-4 left-4 bg-yellow-400 text-red-700 text-xs font-bold px-3 py-1 rounded">
-          SPECIAL OFFER
+        <div class="absolute ">
+          <img src={specialoffer} alt="" />
         </div>
 
         {/* <!-- Product Info --> */}
