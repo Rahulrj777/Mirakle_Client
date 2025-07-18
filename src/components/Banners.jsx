@@ -155,7 +155,7 @@ const Banners = () => {
   const handleSelectSuggestion = useCallback(
     (id) => {
       navigate(`/product/${id}`)
-      setSearchTerm("")
+      setSearchTerm("") // Clear search term after navigating
       setSuggestions([])
     },
     [navigate],
@@ -442,6 +442,8 @@ const Banners = () => {
               {suggestions.map((item) => (
                 <li
                   key={item._id}
+                  // ✅ ADDED: onMouseDown to prevent onBlur from firing prematurely
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelectSuggestion(item._id)}
                   className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >
@@ -460,6 +462,12 @@ const Banners = () => {
                 </li>
               ))}
             </ul>
+          )}
+          {/* ✅ ADDED: Message for no search results */}
+          {searchTerm.trim() && suggestions.length === 0 && (
+            <div className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow w-full p-3 text-sm text-gray-500">
+              No products found for "{searchTerm}".
+            </div>
           )}
         </div>
         {/* Scrollable Side Banners */}
