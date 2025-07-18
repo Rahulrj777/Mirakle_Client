@@ -113,7 +113,6 @@ const ShopingPage = () => {
                     <h2 className="text-base font-semibold truncate" title={product.title}>
                       {product.title}
                     </h2>
-                    {product.productType && <p className="text-xs text-gray-500 mt-1">Type: {product.productType}</p>}
                     {variant && (
                       <>
                         <p className="text-sm text-gray-500 mt-1">{variant.size}</p>
