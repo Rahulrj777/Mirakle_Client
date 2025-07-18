@@ -16,6 +16,7 @@ const ProductOffer = () => {
       setLoading(true)
       setError(null)
       try {
+        // ✅ MODIFIED: Fetch directly from offer-banners endpoint
         const res = await axios.get(`${API_BASE}/api/offer-banners`)
         console.log("Offers Response:", res.data)
         setOffers(res.data)
@@ -76,7 +77,7 @@ const ProductOffer = () => {
           {/* Image Section - 50% */}
           <div className="w-1/2 flex justify-end items-center">
             <img
-              src={leftBanner.imageUrl || "/placeholder.svg"} // Use direct Cloudinary URL
+              src={leftBanner.imageUrl || "/placeholder.svg"}
               alt={leftBanner.title}
               className="h-32 md:h-40 lg:h-48 object-contain"
             />
@@ -105,7 +106,7 @@ const ProductOffer = () => {
           {/* Image Section - Special Offer */}
           <div className="w-1/2 flex justify-end items-center">
             <img
-              src={rightBanner.imageUrl || "/placeholder.svg"} // Use direct Cloudinary URL
+              src={rightBanner.imageUrl || "/placeholder.svg"}
               alt={rightBanner.title}
               className="h-32 md:h-40 lg:h-48 object-contain"
             />
