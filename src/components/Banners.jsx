@@ -8,8 +8,8 @@ import { HiOutlineShoppingBag } from "react-icons/hi2"
 import { FaRegUser } from "react-icons/fa"
 import { useSelector, useDispatch } from "react-redux"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice"
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
+import { clearUser, setUserId, setCartItem } from "../store/cartSlice" // ✅ NEW: Import actions
 
 const Banners = () => {
   const [hovered, setHovered] = useState(false)
@@ -24,7 +24,7 @@ const Banners = () => {
   const cartItems = useSelector((state) => state.cart.items) || []
   const currentUserId = useSelector((state) => state.cart.userId)
   const [searchTerm, setSearchTerm] = useState("")
-  const searchBoxRef = useRef(null)
+  const searchContainerRef = useRef(null) // ✅ NEW: Ref for the entire search container
   const [suggestions, setSuggestions] = useState([])
   const [user, setUser] = useState(() => {
     try {
@@ -171,6 +171,17 @@ const Banners = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  // ✅ NEW: Handle clicks outside the search input and suggestions
+  useEffect(() => {
+    function handleClickOutsideSearch(event) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setSuggestions([])
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutsideSearch)
+    return () => document.removeEventListener("mousedown", handleClickOutsideSearch)
+  }, [])
+
   const handleCartClick = useCallback(() => {
     if (!user) {
       alert("Please login to view your cart")
@@ -268,17 +279,7 @@ const Banners = () => {
       })
   }, [])
 
-  useEffect(() => {
-    const handler = (e) => {
-      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
-        setSuggestions([])
-      }
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
-
-  // ✅ New: Handle click on side (category) banners
+  // ✅ NEW: Handle click on side (category) banners
   const handleSideBannerClick = useCallback(
     (banner) => {
       if (banner.type === "category" && banner.title) {
@@ -427,13 +428,15 @@ const Banners = () => {
       </div>
       <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
         {/* Search */}
-        <div className="px-2" ref={searchBoxRef}>
+        <div className="px-2 relative" ref={searchContainerRef}>
+          {" "}
+          {/* ✅ UPDATED: Apply ref here */}
           <input
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+            // ✅ REMOVED: onBlur from here, handled by useEffect
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
           />
@@ -442,8 +445,7 @@ const Banners = () => {
               {suggestions.map((item) => (
                 <li
                   key={item._id}
-                  // ✅ ADDED: onMouseDown to prevent onBlur from firing prematurely
-                  onMouseDown={(e) => e.preventDefault()}
+                  // ✅ REMOVED: onMouseDown e.preventDefault() no longer needed with new blur handling
                   onClick={() => handleSelectSuggestion(item._id)}
                   className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >

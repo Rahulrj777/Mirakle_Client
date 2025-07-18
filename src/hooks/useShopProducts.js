@@ -93,16 +93,29 @@ export const useShopProducts = () => {
       )
     }
 
-    // Apply local search filter (if different from URL search)
-    // This handles cases where user types in the search box *after* initial load
+    // ✅ NEW: Apply local search filter and reorder
     if (searchTerm.trim()) {
-      const lower = searchTerm.toLowerCase()
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(lower) ||
-          (p.keywords || []).some((k) => k.toLowerCase().includes(lower)) ||
-          (p.description || "").toLowerCase().includes(lower),
-      )
+      const lowerSearchTerm = searchTerm.toLowerCase()
+      const strongMatches = []
+      const otherProducts = []
+
+      result.forEach((p) => {
+        const titleMatch = p.title.toLowerCase().includes(lowerSearchTerm)
+        const keywordsMatch = (p.keywords || []).some((k) => k.toLowerCase().includes(lowerSearchTerm))
+        const descriptionMatch = (p.description || "").toLowerCase().includes(lowerSearchTerm)
+
+        if (titleMatch || keywordsMatch) {
+          strongMatches.push(p)
+        } else if (descriptionMatch) {
+          otherProducts.push(p) // Products matching only description go after strong matches
+        } else {
+          otherProducts.push(p) // All other products
+        }
+      })
+
+      // Combine strong matches first, then others. Remove duplicates if any.
+      const combined = [...new Set([...strongMatches, ...otherProducts])]
+      result = combined
     }
 
     setDisplayedProducts(result)

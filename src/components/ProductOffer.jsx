@@ -128,7 +128,10 @@ const ProductOffer = () => {
             {rightBanner.percentage > 0 && (
               <p className="text-lg font-bold text-red-600 mb-2">{rightBanner.percentage}% OFF</p>
             )}
-            <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
+            <button
+              // ✅ REMOVED: onClick from here, parent div handles navigation
+              className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition"
+            >
               Shop Now
             </button>
           </div>
