@@ -36,7 +36,10 @@ const ProductOffer = () => {
   const rightBanner = offers.find((b) => b.slot === "right")
 
   // ✅ NEW: Handle click for offer banners
-  const handleOfferBannerClick = (banner) => {
+  const handleOfferBannerClick = (banner, e) => {
+    // Add event object
+    e.stopPropagation() // Prevent event from bubbling up
+    console.log("Offer banner clicked, navigating...")
     let path = "/shop/allproduct"
     const params = new URLSearchParams()
 
@@ -81,7 +84,7 @@ const ProductOffer = () => {
       {leftBanner && (
         <div
           className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
-          onClick={() => handleOfferBannerClick(leftBanner)} // Attach click handler
+          onClick={(e) => handleOfferBannerClick(leftBanner, e)} // Attach click handler and pass event
         >
           <div className="absolute -top-14 -left-8 z-20 w-[120px]">
             <img
@@ -113,7 +116,7 @@ const ProductOffer = () => {
       {rightBanner && (
         <div
           className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
-          onClick={() => handleOfferBannerClick(rightBanner)} // Attach click handler
+          onClick={(e) => handleOfferBannerClick(rightBanner, e)} // Attach click handler and pass event
         >
           <div className="absolute -top-12 -left-20 z-20 w-[230px]">
             <img

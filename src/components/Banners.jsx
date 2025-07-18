@@ -9,7 +9,7 @@ import { FaRegUser } from "react-icons/fa"
 import { useSelector, useDispatch } from "react-redux"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
-import { clearUser, setUserId, setCartItem } from "../store/cartSlice" // ✅ NEW: Import actions
+import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice" // Correct import path
 
 const Banners = () => {
   const [hovered, setHovered] = useState(false)
@@ -279,7 +279,7 @@ const Banners = () => {
       })
   }, [])
 
-  // ✅ NEW: Handle click on side (category) banners
+  // ✅ New: Handle click on side (category) banners
   const handleSideBannerClick = useCallback(
     (banner) => {
       if (banner.type === "category" && banner.title) {

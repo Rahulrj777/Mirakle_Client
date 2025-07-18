@@ -96,7 +96,9 @@ export const useShopProducts = () => {
     // ✅ NEW: Apply local search filter and reorder
     if (searchTerm.trim()) {
       const lowerSearchTerm = searchTerm.toLowerCase()
-      const strongMatches = []
+      const titleMatches = []
+      const keywordMatches = []
+      const descriptionMatches = []
       const otherProducts = []
 
       result.forEach((p) => {
@@ -104,18 +106,29 @@ export const useShopProducts = () => {
         const keywordsMatch = (p.keywords || []).some((k) => k.toLowerCase().includes(lowerSearchTerm))
         const descriptionMatch = (p.description || "").toLowerCase().includes(lowerSearchTerm)
 
-        if (titleMatch || keywordsMatch) {
-          strongMatches.push(p)
+        if (titleMatch) {
+          titleMatches.push(p)
+        } else if (keywordsMatch) {
+          keywordMatches.push(p)
         } else if (descriptionMatch) {
-          otherProducts.push(p) // Products matching only description go after strong matches
+          descriptionMatches.push(p)
         } else {
-          otherProducts.push(p) // All other products
+          otherProducts.push(p)
         }
       })
 
-      // Combine strong matches first, then others. Remove duplicates if any.
-      const combined = [...new Set([...strongMatches, ...otherProducts])]
-      result = combined
+      // Combine and ensure uniqueness while maintaining order
+      const finalResult = [
+        ...new Set(titleMatches), // Products matching title first
+        ...new Set(keywordMatches.filter((p) => !titleMatches.includes(p))), // Then products matching keywords (not already in title matches)
+        ...new Set(descriptionMatches.filter((p) => !titleMatches.includes(p) && !keywordMatches.includes(p))), // Then products matching description (not already in title/keyword matches)
+        ...new Set(
+          otherProducts.filter(
+            (p) => !titleMatches.includes(p) && !keywordMatches.includes(p) && !descriptionMatches.includes(p),
+          ),
+        ), // Finally, all other products
+      ]
+      result = finalResult
     }
 
     setDisplayedProducts(result)
