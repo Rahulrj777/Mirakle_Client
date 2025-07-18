@@ -1,3 +1,5 @@
+"use client"
+
 import logo from "../assets/logo.png"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
@@ -317,7 +319,7 @@ const Banners = () => {
                 img && (
                   <img
                     key={`${img._id || i}-${i}`}
-                    src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
+                    src={img.imageUrl || "/placeholder.svg"} // ✅ Use direct imageUrl (Cloudinary URL)
                     alt={img.title || `Slide ${i + 1}`}
                     loading="lazy"
                     decoding="async"
@@ -469,7 +471,7 @@ const Banners = () => {
               onClick={() => handleSideBannerClick(item)}
             >
               <img
-                src={`${API_BASE}${item.imageUrl}`}
+                src={item.imageUrl || "/placeholder.svg"} // ✅ Use direct imageUrl (Cloudinary URL)
                 alt={item.title || `Banner ${i + 1}`}
                 className="w-full h-full object-cover"
               />
