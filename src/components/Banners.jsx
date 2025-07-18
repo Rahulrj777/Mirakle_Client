@@ -13,8 +13,8 @@ const Banners = () => {
   const [hovered, setHovered] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const intervalRef = useRef(null)
-  const [originalImages, setOriginalImages] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(1)
+  const [originalImages, setOriginalImages] = useState([]) // Stores the actual banners
+  const [currentIndex, setCurrentIndex] = useState(1) // Start at 1 for the first real image
   const sliderRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
@@ -33,9 +33,10 @@ const Banners = () => {
   })
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef(null)
-  const [sideImages, setSideImages] = useState([])
+  const [sideImages, setSideImages] = useState([]) // These are your category banners
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
 
+  // This useMemo creates the extended array for infinite looping: [last, ...original, first]
   const extendedImages = useMemo(() => {
     if (originalImages.length < 1) return []
     const first = originalImages[0]
@@ -249,26 +250,20 @@ const Banners = () => {
   }, [isTransitioning, currentIndex, slideTo])
 
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const [homeRes, categoryRes] = await Promise.all([
-          axios.get(`${API_BASE}/api/home-banners`),
-          axios.get(`${API_BASE}/api/category-banners`),
-        ])
-
-        const homeBanners = Array.isArray(homeRes.data) ? homeRes.data : []
-        const categoryBanners = Array.isArray(categoryRes.data) ? categoryRes.data : []
-
-        setOriginalImages(homeBanners)
-        setSideImages(categoryBanners)
-      } catch (err) {
+    axios
+      .get(`${API_BASE}/api/banners`)
+      .then((res) => {
+        const banners = Array.isArray(res.data) ? res.data : res.data.banners || []
+        const sliders = banners.filter((img) => img.type === "homebanner")
+        const category = banners.filter((img) => img.type === "category")
+        setOriginalImages(sliders)
+        setSideImages(category)
+      })
+      .catch((err) => {
         console.error("Error fetching banners:", err)
         setOriginalImages([])
         setSideImages([])
-      }
-    }
-
-    fetchBanners()
+      })
   }, [])
 
   useEffect(() => {
@@ -281,14 +276,18 @@ const Banners = () => {
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
+  // ✅ New: Handle click on side (category) banners
   const handleSideBannerClick = useCallback(
     (banner) => {
       if (banner.type === "category" && banner.title) {
+        // Navigate to all products page, filtering by the banner's title (which is the category)
         navigate(`/shop/allproduct?category=${encodeURIComponent(banner.title)}`)
       } else if (banner.productId) {
+        // Existing logic for product-linked banners
         const productId = typeof banner.productId === "object" ? banner.productId._id : banner.productId
         navigate(`/product/${productId}`)
       } else {
+        // Fallback for other types or if no specific link
         navigate("/shop/allproduct")
       }
     },
@@ -318,7 +317,7 @@ const Banners = () => {
                 img && (
                   <img
                     key={`${img._id || i}-${i}`}
-                    src={img.imageUrl} // ✅ remove API_BASE
+                    src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
                     alt={img.title || `Slide ${i + 1}`}
                     loading="lazy"
                     decoding="async"
@@ -461,7 +460,7 @@ const Banners = () => {
             </ul>
           )}
         </div>
-
+        {/* Scrollable Side Banners */}
         <div className="flex-1 overflow-y-auto px-2 ">
           {sideImages.map((item, i) => (
             <div
@@ -470,7 +469,7 @@ const Banners = () => {
               onClick={() => handleSideBannerClick(item)}
             >
               <img
-                src={item.imageUrl} // ✅ remove API_BASE
+                src={`${API_BASE}${item.imageUrl}`}
                 alt={item.title || `Banner ${i + 1}`}
                 className="w-full h-full object-cover"
               />
