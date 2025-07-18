@@ -42,7 +42,7 @@ const ProductOffer = () => {
           {/* Image Section - 50% */}
           <div className="w-1/2 flex justify-end items-center">
             <img
-              src={`${API_BASE}${leftBanner.imageUrl}`}
+              src={`${API_BASE}/${leftBanner.imageUrl.replace(/^\/+/, "")}`}
               alt={leftBanner.title}
               className="h-32 md:h-40 lg:h-48 object-contain"
             />
@@ -70,7 +70,7 @@ const ProductOffer = () => {
           {/* Image Section - 50% */}
           <div className="w-1/2 flex justify-end items-center">
             <img
-              src={`${API_BASE}${rightBanner.imageUrl}`}
+              src={`${API_BASE}/${rightBanner.imageUrl.replace(/^\/+/, "")}`}
               alt={rightBanner.title}
               className="h-32 md:h-40 lg:h-48 object-contain"
             />
