@@ -5,18 +5,19 @@ import axios from "axios"
 import { API_BASE } from "../utils/api"
 import specialoffer from "../assets/specialoffer.png"
 import discount50 from "../assets/discount50.png"
+import { useNavigate } from "react-router-dom" // Import useNavigate
 
 const ProductOffer = () => {
   const [offers, setOffers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const navigate = useNavigate() // Initialize useNavigate
 
   useEffect(() => {
     const fetchOffers = async () => {
       setLoading(true)
       setError(null)
       try {
-        // ✅ MODIFIED: Fetch directly from offer-banners endpoint
         const res = await axios.get(`${API_BASE}/api/offer-banners`)
         console.log("Offers Response:", res.data)
         setOffers(res.data)
@@ -33,6 +34,28 @@ const ProductOffer = () => {
 
   const leftBanner = offers.find((b) => b.slot === "left")
   const rightBanner = offers.find((b) => b.slot === "right")
+
+  // ✅ NEW: Handle click for offer banners
+  const handleOfferBannerClick = (banner) => {
+    let path = "/shop/allproduct"
+    const params = new URLSearchParams()
+
+    if (banner.linkedProductId) {
+      navigate(`/product/${banner.linkedProductId}`)
+      return // Navigate directly to product detail page
+    } else if (banner.linkedCategory) {
+      params.append("category", banner.linkedCategory)
+    }
+
+    if (banner.linkedDiscountUpTo > 0) {
+      params.append("discountUpTo", banner.linkedDiscountUpTo)
+    }
+
+    if (params.toString()) {
+      path += `?${params.toString()}`
+    }
+    navigate(path)
+  }
 
   if (loading) {
     return (
@@ -56,7 +79,10 @@ const ProductOffer = () => {
   return (
     <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-10 mt-5">
       {leftBanner && (
-        <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible">
+        <div
+          className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
+          onClick={() => handleOfferBannerClick(leftBanner)} // Attach click handler
+        >
           <div className="absolute -top-14 -left-8 z-20 w-[120px]">
             <img
               src={discount50 || "/placeholder.svg"}
@@ -85,7 +111,10 @@ const ProductOffer = () => {
         </div>
       )}
       {rightBanner && (
-        <div className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible">
+        <div
+          className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
+          onClick={() => handleOfferBannerClick(rightBanner)} // Attach click handler
+        >
           <div className="absolute -top-12 -left-20 z-20 w-[230px]">
             <img
               src={specialoffer || "/placeholder.svg"}
