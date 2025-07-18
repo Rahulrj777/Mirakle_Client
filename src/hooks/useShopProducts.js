@@ -17,31 +17,35 @@ export const useShopProducts = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
-  // Function to fetch products based on URL parameters (category or search)
+  // Update fetchProductsBasedOnUrl to always fetch all products or products by category,
+  // and then apply URL search term filtering locally.
+  // Replace the existing fetchProductsBasedOnUrl function with this:
+
   const fetchProductsBasedOnUrl = useCallback(async () => {
     setLoading(true)
     setError(null)
     const params = new URLSearchParams(location.search)
     const category = params.get("category")
-    const urlSearch = params.get("search") // This is the search from URL
+    const urlSearch = params.get("search")
 
-    let apiUrl = `${API_BASE}/api/products/all-products`
+    let apiUrl = `${API_BASE}/api/products/all-products` // Always fetch all initially
 
+    // If a category is selected, filter by it.
     if (category) {
       apiUrl += `?productType=${encodeURIComponent(category)}`
       console.log(`Fetching products for category: ${category}`)
-    } else if (urlSearch) {
-      apiUrl = `${API_BASE}/api/products/search?query=${encodeURIComponent(urlSearch)}`
-      console.log(`Searching products for term from URL: ${urlSearch}`)
-      setSearchTerm(urlSearch) // Set local search term from URL search
     } else {
-      console.log("Fetching all products (no specific URL filter)")
-      setSearchTerm("") // Clear local search term if no URL search
+      console.log("Fetching all products (no specific URL category filter)")
     }
 
     try {
       const res = await axios.get(apiUrl)
-      setProducts(res.data) // Set the base products based on URL filter
+      setProducts(res.data) // Set the base products based on URL category filter
+      if (urlSearch) {
+        setSearchTerm(urlSearch) // Set local search term from URL search
+      } else {
+        setSearchTerm("") // Clear local search term if no URL search
+      }
     } catch (err) {
       console.error("Failed to fetch products:", err)
       setError(err.response?.data?.message || err.message || "Failed to fetch products")
@@ -51,22 +55,14 @@ export const useShopProducts = () => {
     }
   }, [location.search])
 
-  // Effect to fetch products when URL search params change
+  // Remove the setTimeout block in the `useEffect` related to location.search.
+  // Replace the entire `useEffect` block that handles cleaning up URL search params with the following:
+
   useEffect(() => {
     fetchProductsBasedOnUrl()
-
-    // Clean up URL after 2s if it was a search param
-    const params = new URLSearchParams(location.search)
-    const query = params.get("search")
-    const discountUpTo = params.get("discountUpTo") // Also clear discountUpTo
-    if (query || discountUpTo) {
-      setTimeout(() => {
-        params.delete("search")
-        params.delete("discountUpTo") // Clear discountUpTo
-        navigate(`${location.pathname}?${params.toString()}`, { replace: true })
-      }, 2000)
-    }
-  }, [location.search, fetchProductsBasedOnUrl, navigate])
+    // Removed setTimeout for clearing URL params to prevent potential double-navigation issues.
+    // Navigation params are now handled dynamically by fetchProductsBasedOnUrl and applyLocalFilters.
+  }, [location.search, fetchProductsBasedOnUrl])
 
   // Effect to set filterType based on path (for offer products)
   useEffect(() => {
