@@ -283,14 +283,11 @@ const Banners = () => {
   const handleSideBannerClick = useCallback(
     (banner) => {
       if (banner.type === "category" && banner.title) {
-        // Navigate to all products page, filtering by the banner's title (which is the category)
         navigate(`/shop/allproduct?category=${encodeURIComponent(banner.title)}`)
       } else if (banner.productId) {
-        // Existing logic for product-linked banners
         const productId = typeof banner.productId === "object" ? banner.productId._id : banner.productId
         navigate(`/product/${productId}`)
       } else {
-        // Fallback for other types or if no specific link
         navigate("/shop/allproduct")
       }
     },
@@ -481,7 +478,7 @@ const Banners = () => {
               onClick={() => handleSideBannerClick(item)}
             >
               <img
-                src={item.imageUrl || "/placeholder.svg"} // ✅ Use direct imageUrl (Cloudinary URL)
+                src={item.imageUrl || "/placeholder.svg"}
                 alt={item.title || `Banner ${i + 1}`}
                 className="w-full h-full object-cover"
               />

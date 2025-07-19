@@ -1,4 +1,3 @@
-"use client"
 import { useEffect, useRef, useState } from "react"
 import axios from "axios"
 import { Swiper, SwiperSlide } from "swiper/react"
