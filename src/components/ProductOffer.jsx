@@ -82,10 +82,7 @@ const ProductOffer = () => {
   return (
     <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-10 mt-5">
       {leftBanner && (
-        <div
-          className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
-          onClick={(e) => handleOfferBannerClick(leftBanner, e)} // Attach click handler and pass event
-        >
+        <div className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible">
           <div className="absolute -top-14 -left-8 z-20 w-[120px]">
             <img
               src={discount50 || "/placeholder.svg"}
@@ -99,7 +96,10 @@ const ProductOffer = () => {
             {leftBanner.percentage > 0 && (
               <p className="text-lg font-bold text-red-600 mb-2">{leftBanner.percentage}% OFF</p>
             )}
-            <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
+            <button 
+              className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition cursor-pointer"
+              onClick={(e) => handleOfferBannerClick(leftBanner, e)}
+            >
               Shop Now
             </button>
           </div>
@@ -116,7 +116,7 @@ const ProductOffer = () => {
       {rightBanner && (
         <div
           className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
-          onClick={(e) => handleOfferBannerClick(rightBanner, e)} // Attach click handler and pass event
+           // Attach click handler and pass event
         >
           <div className="absolute -top-12 -left-20 z-20 w-[230px]">
             <img
@@ -132,8 +132,8 @@ const ProductOffer = () => {
               <p className="text-lg font-bold text-red-600 mb-2">{rightBanner.percentage}% OFF</p>
             )}
             <button
-              // ✅ REMOVED: onClick from here, parent div handles navigation
-              className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition"
+              className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition cursor-pointer"
+              onClick={(e) => handleOfferBannerClick(rightBanner, e)}
             >
               Shop Now
             </button>
