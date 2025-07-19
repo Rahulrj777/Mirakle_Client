@@ -16,6 +16,7 @@ const ProductDetail = () => {
   const [selectedVariant, setSelectedVariant] = useState(null)
   const [mainImage, setMainImage] = useState("")
   const [relatedProducts, setRelatedProducts] = useState([])
+  const [selectedImage, setSelectedImage] = useState("")
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewComment, setReviewComment] = useState("")
   const [reviewImages, setReviewImages] = useState([])
@@ -51,6 +52,7 @@ const ProductDetail = () => {
       if (res.data.variants && res.data.variants.length > 0) {
         setSelectedVariant(res.data.variants[0])
       }
+      // Set the first image from Cloudinary as the main image
       if (res.data.images?.others?.[0]?.url) {
         setMainImage(res.data.images.others[0].url)
       } else {
@@ -100,11 +102,13 @@ const ProductDetail = () => {
 
   const handleThumbnailClick = useCallback((imageUrl) => {
     setMainImage(imageUrl)
+    setSelectedImage(imageUrl)
   }, [])
 
   const handleRelatedProductClick = useCallback(
     (relatedProductId) => {
       navigate(`/product/${relatedProductId}`)
+      // Reset state for new product detail page
       setProduct(null)
       setLoading(true)
       setError(null)
@@ -335,7 +339,7 @@ const ProductDetail = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="1.5"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-.38 1.81.588 1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
             />
           </svg>
         ))}

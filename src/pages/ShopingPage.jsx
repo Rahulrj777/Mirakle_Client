@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import axios from "axios"
-import { FiSearch } from "react-icons/fi" // Assuming you use react-icons
 import { API_BASE } from "../utils/api"
-import useShopProducts from "../hooks/useShopProducts" // Assuming this hook exists and is client-side
-import { calculateDiscountedPrice, getShopPageTitle } from "../utils/shopPageUtils" // Import the new utility
+import useShopProducts from "../hooks/useShopProducts"
+import { calculateDiscountedPrice } from "../utils/shopPageUtils"
 
 export default function ShopingPage() {
   const navigate = useNavigate()
@@ -17,16 +16,7 @@ export default function ShopingPage() {
   const [selectedProductType, setSelectedProductType] = useState(initialProductType)
   const [availableProductTypes, setAvailableProductTypes] = useState([])
 
-  // Assuming useShopProducts fetches and filters products based on searchTerm and selectedProductType
-  const {
-    products,
-    loading,
-    error,
-    suggestions,
-    handleSearchChange: hookHandleSearchChange,
-    handleSuggestionClick,
-    handleKeyDown,
-  } = useShopProducts(searchTerm, selectedProductType)
+  const { products, loading, error } = useShopProducts(searchTerm, selectedProductType)
 
   useEffect(() => {
     const fetchProductTypes = async () => {
@@ -46,7 +36,6 @@ export default function ShopingPage() {
     setSelectedProductType(initialProductType)
   }, [initialSearchTerm, initialProductType])
 
-  // Override hook's handleSearchChange to also update URL
   const handleSearchChange = useCallback(
     (e) => {
       setSearchTerm(e.target.value)
@@ -57,9 +46,8 @@ export default function ShopingPage() {
         newParams.delete("search")
       }
       navigate(`?${newParams.toString()}`, { replace: true })
-      hookHandleSearchChange(e) // Call the original hook's handler
     },
-    [location.search, navigate, hookHandleSearchChange],
+    [location.search, navigate],
   )
 
   const handleProductTypeChange = useCallback(
@@ -88,35 +76,16 @@ export default function ShopingPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-8">{getShopPageTitle(location, selectedProductType)}</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">Our Products</h1>
 
       <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-grow">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-            <FiSearch />
-          </span>
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            onKeyDown={handleKeyDown}
-            className="p-2 border border-gray-300 rounded-md w-full pl-10"
-          />
-          {searchTerm.trim() !== "" && suggestions.length > 0 && (
-            <ul className="absolute z-10 w-full bg-white shadow-md mt-1 rounded max-h-60 overflow-y-auto border">
-              {suggestions.map((product) => (
-                <li
-                  key={product._id}
-                  onClick={() => handleSuggestionClick(product._id)}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                >
-                  {product.title}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="p-2 border border-gray-300 rounded-md flex-grow"
+        />
         <select
           value={selectedProductType}
           onChange={handleProductTypeChange}
