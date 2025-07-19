@@ -40,9 +40,7 @@ const useShopProducts = (initialSearchTerm = "", initialProductType = "") => {
       // Apply product type filter
       if (filterType && filterType !== "all") {
         if (filterType === "offer") {
-          filtered = filtered.filter(
-            (product) => product.variants && product.variants.some((variant) => variant.discountPercent > 0),
-          )
+          filtered = filtered.filter((product) => product.variants?.some((v) => v.discountPercent > 0))
         } else {
           filtered = filtered.filter((product) => product.productType === filterType)
         }

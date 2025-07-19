@@ -1,27 +1,24 @@
-export const calculateDiscountedPrice = (originalPrice, discountPercent) => {
-  if (originalPrice === undefined || originalPrice === null) {
-    return "N/A"
+export function calculateDiscountedPrice(originalPrice, discountPercent) {
+  if (typeof originalPrice !== "number" || originalPrice < 0) {
+    return "0.00"
   }
-  if (discountPercent > 0) {
-    const discountedPrice = originalPrice * (1 - discountPercent / 100)
-    return discountedPrice.toFixed(2)
-  }
-  return originalPrice.toFixed(2)
+  const discount =
+    typeof discountPercent === "number" && discountPercent >= 0 && discountPercent <= 100 ? discountPercent : 0
+  const finalPrice = originalPrice - (originalPrice * discount) / 100
+  return finalPrice.toFixed(2)
 }
 
-export const getShopPageTitle = (location, selectedProductType) => {
-  const params = new URLSearchParams(location.search)
-  const searchTerm = params.get("search")
-  const discountUpTo = params.get("discountUpTo")
+export function getShopPageTitle(location, filterType) {
+  const queryParams = new URLSearchParams(location.search)
+  const productTypeParam = queryParams.get("productType")
+  const searchTermParam = queryParams.get("search")
 
-  if (searchTerm) {
-    return `Search Results for "${searchTerm}"`
-  } else if (location.pathname === "/shop/offerproduct") {
-    return "Special Offers"
-  } else if (discountUpTo) {
-    return `Products with up to ${discountUpTo}% Discount`
-  } else if (selectedProductType && selectedProductType !== "all") {
-    return `${selectedProductType} Products`
+  if (searchTermParam) {
+    return `Search Results for "${searchTermParam}"`
+  } else if (productTypeParam) {
+    return `${productTypeParam} Products`
+  } else if (filterType === "offer") {
+    return "Offer Products"
   } else {
     return "All Products"
   }
