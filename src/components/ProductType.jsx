@@ -16,7 +16,6 @@ const ProductType = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch banners of type "product-type"
         const res = await axios.get(`${API_BASE}/api/banners?type=product-type`)
         setProductTypes(res.data)
       } catch (err) {

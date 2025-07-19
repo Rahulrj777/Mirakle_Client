@@ -1,4 +1,3 @@
-"use client"
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -11,7 +10,6 @@ const ProductDetail = () => {
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
-  // ✅ MODIFIED: selectedImage now stores the full URL
   const [selectedImage, setSelectedImage] = useState("")
   const [error, setError] = useState("")
   const [relatedProducts, setRelatedProducts] = useState([])

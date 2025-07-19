@@ -1,13 +1,11 @@
-"use client" // This file still needs 'use client' because it uses React Hooks (useLocation, useNavigate)
-import { useLocation, useNavigate, Link } from "react-router-dom"
+import { useLocation, Link } from "react-router-dom"
 import { FiSearch } from "react-icons/fi"
-import { useShopProducts } from "../hooks/useShopProducts" // Import the new hook
-import { getShopPageTitle } from "../utils/shopPageUtils" // Import the new utility
+import { useShopProducts } from "../hooks/useShopProducts"
+import { getShopPageTitle } from "../utils/shopPageUtils"
 
 const ShopingPage = () => {
   const location = useLocation()
-  const navigate = useNavigate()
-  // Use the custom hook to get all necessary state and functions
+
   const {
     displayedProducts,
     filterType,
@@ -19,9 +17,8 @@ const ShopingPage = () => {
     handleSearchChange,
     handleSuggestionClick,
     handleKeyDown,
-  } = useShopProducts() // The hook now manages location and navigate internally
+  } = useShopProducts() 
 
-  // Get the page title using the utility function
   const pageTitle = getShopPageTitle(location, filterType)
 
   if (loading) {
