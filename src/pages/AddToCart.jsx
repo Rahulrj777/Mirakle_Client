@@ -61,7 +61,7 @@ const AddToCart = () => {
                 className="bg-white p-4 rounded shadow flex flex-col md:flex-row gap-4 items-center"
               >
                 <img
-                  src={`${API_BASE}${item.images?.others?.[0]}`}
+                  src={item.images?.others?.[0]?.url || "/placeholder.svg"}
                   alt={item.title}
                   className="w-28 h-28 object-cover rounded border"
                 />

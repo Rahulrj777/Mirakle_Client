@@ -738,7 +738,6 @@ const ProductDetail = () => {
                   className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
                 >
                   <img
-                    // ✅ MODIFIED: Use mainImage directly (it's already a full URL)
                     src={mainImage || "/placeholder.svg"}
                     alt={p.title}
                     className="w-full h-48 object-cover rounded mb-2 hover:scale-105 transition-transform duration-200"
