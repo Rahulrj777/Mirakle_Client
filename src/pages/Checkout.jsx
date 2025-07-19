@@ -49,7 +49,7 @@ const Checkout = () => {
       {product && (
         <div className="flex gap-4">
           <img
-            src={`${API_BASE}${product.images?.others?.[0] || ""}`}
+            src={product.images?.others?.[0]?.url || "/placeholder.svg"}
             alt={product.title}
             className="w-40 h-40 object-cover rounded"
           />
