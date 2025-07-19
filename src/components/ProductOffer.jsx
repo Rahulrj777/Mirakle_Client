@@ -1,17 +1,15 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
 import specialoffer from "../assets/specialoffer.png"
 import discount50 from "../assets/discount50.png"
-import { useNavigate } from "react-router-dom" // Import useNavigate
+import { useNavigate } from "react-router-dom"
 
 const ProductOffer = () => {
   const [offers, setOffers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const navigate = useNavigate() // Initialize useNavigate
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchOffers = async () => {
