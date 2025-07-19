@@ -1,15 +1,12 @@
 "use client" // This file still needs 'use client' because it uses React Hooks (useLocation, useNavigate)
-
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { FiSearch } from "react-icons/fi"
-import { API_BASE } from "../utils/api"
 import { useShopProducts } from "../hooks/useShopProducts" // Import the new hook
 import { getShopPageTitle } from "../utils/shopPageUtils" // Import the new utility
 
 const ShopingPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
-
   // Use the custom hook to get all necessary state and functions
   const {
     displayedProducts,
@@ -86,7 +83,8 @@ const ShopingPage = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {displayedProducts.map((product) => {
-            const frontImage = product.images?.others?.[0] || ""
+            // ✅ MODIFIED: Access image URL from the object
+            const frontImage = product.images?.others?.[0]?.url || ""
             const isOut = product.isOutOfStock
             const variant = product.variants?.[0]
             const discount = variant?.discountPercent || 0
@@ -105,7 +103,8 @@ const ShopingPage = () => {
                     </div>
                   )}
                   <img
-                    src={`${API_BASE}${frontImage}`}
+                    // ✅ MODIFIED: Use frontImage directly (it's already a full URL)
+                    src={frontImage || "/placeholder.svg?height=150&width=150"}
                     alt={product.title}
                     className="w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t"
                   />
