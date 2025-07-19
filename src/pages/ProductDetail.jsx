@@ -1,3 +1,4 @@
+"use client"
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -14,7 +15,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
-  const [mainImage, setMainImage] = useState("")
+  const [selectedImage, setSelectedImage] = useState("")
   const [relatedProducts, setRelatedProducts] = useState([])
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewComment, setReviewComment] = useState("")
@@ -51,10 +52,13 @@ const ProductDetail = () => {
       if (res.data.variants && res.data.variants.length > 0) {
         setSelectedVariant(res.data.variants[0])
       }
-      if (res.data.images?.others?.[0]?.url) {
-        setMainImage(res.data.images.others[0].url)
+      // Set initial image to thumbnail or first other image
+      if (res.data.images?.thumbnail?.url) {
+        setSelectedImage(res.data.images.thumbnail.url)
+      } else if (res.data.images?.others?.[0]?.url) {
+        setSelectedImage(res.data.images.others[0].url)
       } else {
-        setMainImage("/placeholder.svg?height=400&width=400&text=No Image")
+        setSelectedImage("/placeholder.svg?height=500&width=500&text=No Image")
       }
       fetchRelatedProducts(id)
     } catch (err) {
@@ -98,8 +102,17 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
-  const handleThumbnailClick = useCallback((imageUrl) => {
-    setMainImage(imageUrl)
+  const handleVariantChange = useCallback(
+    (e) => {
+      const selectedSku = e.target.value
+      const variant = product.variants.find((v) => v.sku === selectedSku)
+      setSelectedVariant(variant)
+    },
+    [product],
+  )
+
+  const handleImageClick = useCallback((imageUrl) => {
+    setSelectedImage(imageUrl)
   }, [])
 
   const handleRelatedProductClick = useCallback(
@@ -109,7 +122,7 @@ const ProductDetail = () => {
       setLoading(true)
       setError(null)
       setSelectedVariant(null)
-      setMainImage("")
+      setSelectedImage("")
       setRelatedProducts([])
     },
     [navigate],
@@ -347,95 +360,121 @@ const ProductDetail = () => {
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>
   if (!product) return <div className="text-center py-8">Product not found.</div>
 
+  const allImages = []
+  if (product.images?.thumbnail?.url) {
+    allImages.push(product.images.thumbnail.url)
+  }
+  if (product.images?.others && product.images.others.length > 0) {
+    allImages.push(...product.images.others.map((img) => img.url))
+  }
+
+  const displayPrice = selectedVariant
+    ? calculateDiscountedPrice(selectedVariant.price, selectedVariant.discountPercent)
+    : "N/A"
+  const originalPrice = selectedVariant?.price
+  const discountPercent = selectedVariant?.discountPercent
+
   return (
     <div className="container mx-auto p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Product Image Gallery */}
         <div className="flex flex-col items-center">
-          <div className="w-full max-w-md h-96 bg-gray-200 flex items-center justify-center overflow-hidden rounded-lg shadow-md">
-            <img src={mainImage || "/placeholder.svg"} alt={product.title} className="w-full h-full object-contain" />
+          <div className="w-full max-w-md h-96 bg-gray-200 flex items-center justify-center overflow-hidden rounded-lg shadow-md mb-4">
+            <img
+              src={selectedImage || "/placeholder.svg"}
+              alt={product.title}
+              className="w-full h-full object-contain"
+            />
           </div>
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-            {product.images?.others?.map((img, index) => (
-              <div
-                key={index}
-                className={`w-20 h-20 flex-shrink-0 cursor-pointer border-2 rounded-md overflow-hidden ${
-                  mainImage === img.url ? "border-blue-500" : "border-transparent"
-                }`}
-                onClick={() => handleThumbnailClick(img.url)}
-              >
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {allImages.length > 0 ? (
+              allImages.map((imgUrl, index) => (
                 <img
-                  src={img.url || "/placeholder.svg"}
-                  alt={`${product.title} thumbnail ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  key={index}
+                  src={imgUrl || "/placeholder.svg"}
+                  alt={`Product thumbnail ${index}`}
+                  className={`w-20 h-20 object-cover border rounded-md cursor-pointer ${selectedImage === imgUrl ? "border-blue-500 ring-2 ring-blue-500" : "border-gray-300"}`}
+                  onClick={() => handleImageClick(imgUrl)}
                 />
-              </div>
-            ))}
+              ))
+            ) : (
+              <img
+                src="/placeholder.svg?height=80&width=80&text=No Image"
+                alt="No Image thumbnail"
+                className="w-20 h-20 object-cover border rounded-md"
+              />
+            )}
           </div>
         </div>
 
         {/* Product Details */}
         <div>
           <h1 className="text-4xl font-bold mb-2">{product.title}</h1>
-          {product.productType && <p className="text-lg text-gray-600 mb-4">{product.productType}</p>}
+          {product.brand && <p className="text-lg text-gray-600 mb-2">Brand: {product.brand}</p>}
+          {product.productType && <p className="text-md text-gray-500 mb-4">Category: {product.productType}</p>}
 
-          {selectedVariant && (
-            <div className="mb-4">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-bold text-green-600">
-                  ₹{calculateDiscountedPrice(selectedVariant.price, selectedVariant.discountPercent)}
-                </span>
-                {selectedVariant.discountPercent > 0 && (
-                  <span className="text-lg text-gray-500 line-through">₹{selectedVariant.price.toFixed(2)}</span>
-                )}
-                {selectedVariant.discountPercent > 0 && (
-                  <span className="text-lg text-red-500">({selectedVariant.discountPercent}% off)</span>
-                )}
-              </div>
-              <p className="text-xl text-gray-700">Size: {selectedVariant.size}</p>
-              <p className="text-xl text-gray-700">Stock: {selectedVariant.stock}</p>
-              {product.isOutOfStock && (
-                <span className="text-red-500 font-semibold mt-2 block text-xl">Out of Stock</span>
-              )}
-            </div>
-          )}
+          <p className="text-gray-700 mb-6">{product.description}</p>
 
-          {product.variants && product.variants.length > 1 && (
-            <div className="mb-4">
-              <h3 className="text-xl font-semibold mb-2">Available Variants:</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((variant, index) => (
-                  <button
-                    key={index}
-                    className={`px-4 py-2 border rounded-md ${
-                      selectedVariant?._id === variant._id
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedVariant(variant)}
-                  >
-                    {variant.size}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <h3 className="text-2xl font-semibold mt-6 mb-2">Description</h3>
-          <p className="text-gray-700 leading-relaxed">{product.description || "No description available."}</p>
-
-          {Object.keys(product.details).length > 0 && (
+          {product.variants && product.variants.length > 0 ? (
             <>
-              <h3 className="text-2xl font-semibold mt-6 mb-2">Details</h3>
-              <ul className="list-disc list-inside text-gray-700">
-                {Object.entries(product.details).map(([key, value]) => (
-                  <li key={key}>
-                    <strong>{key}:</strong> {String(value)}
-                  </li>
-                ))}
-              </ul>
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-3xl font-bold text-green-600">₹{displayPrice}</span>
+                {discountPercent > 0 && (
+                  <span className="text-lg text-gray-500 line-through">₹{originalPrice?.toFixed(2)}</span>
+                )}
+                {discountPercent > 0 && <span className="text-lg text-red-500">({discountPercent}% off)</span>}
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="variant-select" className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Variant:
+                </label>
+                <select
+                  id="variant-select"
+                  onChange={handleVariantChange}
+                  value={selectedVariant?.sku || ""}
+                  className="p-2 border border-gray-300 rounded-md w-full md:w-1/2"
+                >
+                  {product.variants.map((variant) => (
+                    <option key={variant.sku} value={variant.sku}>
+                      {variant.size} / {variant.color} (Stock: {variant.stock})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedVariant && (
+                <div className="mb-6 text-gray-700">
+                  <p>
+                    <strong>Size:</strong> {selectedVariant.size}
+                  </p>
+                  <p>
+                    <strong>Color:</strong> {selectedVariant.color}
+                  </p>
+                  <p>
+                    <strong>SKU:</strong> {selectedVariant.sku}
+                  </p>
+                  <p>
+                    <strong>Stock:</strong> {selectedVariant.stock}
+                  </p>
+                  {selectedVariant.stock === 0 && <p className="text-red-500 font-semibold">Out of Stock</p>}
+                </div>
+              )}
             </>
+          ) : (
+            <div className="text-lg text-gray-600 mb-6">No variants available for this product.</div>
           )}
+
+          {product.isOutOfStock && <span className="text-red-500 font-semibold mt-2 block">Overall Out of Stock</span>}
+
+          {/* Add to Cart Button */}
+          <button
+            onClick={() => handleAddToCart(product)}
+            className="bg-blue-600 text-white px-6 py-3 rounded-md text-lg font-semibold hover:bg-blue-700 transition-colors duration-300 disabled:opacity-50"
+            disabled={selectedVariant?.stock === 0 || product.isOutOfStock}
+          >
+            Add to Cart
+          </button>
         </div>
       </div>
 

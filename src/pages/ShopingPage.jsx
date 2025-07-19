@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import axios from "axios"
@@ -19,7 +21,7 @@ export default function ShopingPage() {
 
   // Assuming useShopProducts fetches and filters products based on searchTerm and selectedProductType
   const {
-    products,
+    displayedProducts: products, // Renamed from 'products' to 'displayedProducts' to avoid confusion with the hook's internal 'products' state
     loading,
     error,
     suggestions,
@@ -161,14 +163,22 @@ export default function ShopingPage() {
               <h2 className="text-xl font-semibold mb-2 truncate">{product.title}</h2>
               {product.productType && <p className="text-sm text-gray-600 mb-2">{product.productType}</p>}
               <div className="flex items-baseline gap-2">
-                <span className="text-lg font-bold text-green-600">
-                  ₹{calculateDiscountedPrice(product.variants[0]?.price, product.variants[0]?.discountPercent)}
-                </span>
-                {product.variants[0]?.discountPercent > 0 && (
-                  <span className="text-sm text-gray-500 line-through">₹{product.variants[0]?.price.toFixed(2)}</span>
-                )}
-                {product.variants[0]?.discountPercent > 0 && (
-                  <span className="text-sm text-red-500">({product.variants[0]?.discountPercent}% off)</span>
+                {product.variants && product.variants.length > 0 ? (
+                  <>
+                    <span className="text-lg font-bold text-green-600">
+                      ₹{calculateDiscountedPrice(product.variants[0].price, product.variants[0].discountPercent)}
+                    </span>
+                    {product.variants[0].discountPercent > 0 && (
+                      <span className="text-sm text-gray-500 line-through">
+                        ₹{product.variants[0].price.toFixed(2)}
+                      </span>
+                    )}
+                    {product.variants[0].discountPercent > 0 && (
+                      <span className="text-sm text-red-500">({product.variants[0].discountPercent}% off)</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-lg font-bold text-gray-600">Price N/A</span>
                 )}
               </div>
               {product.isOutOfStock && <span className="text-red-500 font-semibold mt-2 block">Out of Stock</span>}

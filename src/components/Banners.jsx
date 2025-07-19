@@ -8,8 +8,8 @@ import { HiOutlineShoppingBag } from "react-icons/hi2"
 import { FaRegUser } from "react-icons/fa"
 import { useSelector, useDispatch } from "react-redux"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice"
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
-import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice" // Correct import path
 
 const Banners = () => {
   const [hovered, setHovered] = useState(false)
@@ -24,7 +24,7 @@ const Banners = () => {
   const cartItems = useSelector((state) => state.cart.items) || []
   const currentUserId = useSelector((state) => state.cart.userId)
   const [searchTerm, setSearchTerm] = useState("")
-  const searchContainerRef = useRef(null) // ✅ NEW: Ref for the entire search container
+  const searchBoxRef = useRef(null)
   const [suggestions, setSuggestions] = useState([])
   const [user, setUser] = useState(() => {
     try {
@@ -37,6 +37,9 @@ const Banners = () => {
   const dropdownRef = useRef(null)
   const [sideImages, setSideImages] = useState([]) // These are your category banners
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
+  const [banners, setBanners] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // This useMemo creates the extended array for infinite looping: [last, ...original, first]
   const extendedImages = useMemo(() => {
@@ -155,7 +158,7 @@ const Banners = () => {
   const handleSelectSuggestion = useCallback(
     (id) => {
       navigate(`/product/${id}`)
-      setSearchTerm("") // Clear search term after navigating
+      setSearchTerm("")
       setSuggestions([])
     },
     [navigate],
@@ -169,17 +172,6 @@ const Banners = () => {
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  // ✅ NEW: Handle clicks outside the search input and suggestions
-  useEffect(() => {
-    function handleClickOutsideSearch(event) {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
-        setSuggestions([])
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutsideSearch)
-    return () => document.removeEventListener("mousedown", handleClickOutsideSearch)
   }, [])
 
   const handleCartClick = useCallback(() => {
@@ -279,23 +271,61 @@ const Banners = () => {
       })
   }, [])
 
-  // ✅ New: Handle click on side (category) banners
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setSuggestions([])
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
   const handleSideBannerClick = useCallback(
     (banner) => {
       if (banner.type === "category" && banner.title) {
-        // Navigate to all products page, filtering by the banner's title (which is the category)
         navigate(`/shop/allproduct?category=${encodeURIComponent(banner.title)}`)
       } else if (banner.productId) {
-        // Existing logic for product-linked banners
         const productId = typeof banner.productId === "object" ? banner.productId._id : banner.productId
         navigate(`/product/${productId}`)
       } else {
-        // Fallback for other types or if no specific link
         navigate("/shop/allproduct")
       }
     },
     [navigate],
   )
+
+  const handleBannerClick = useCallback(
+    (banner) => {
+      if (banner.linkType === "product" && banner.linkValue) {
+        navigate(`/product/${banner.linkValue}`)
+      } else if (banner.linkType === "category" && banner.linkValue) {
+        navigate(`/shop?productType=${encodeURIComponent(banner.linkValue)}`)
+      } else if (banner.linkType === "offer" && banner.linkValue) {
+        navigate(`/shop/offerproduct?discountUpTo=${encodeURIComponent(banner.linkValue)}`)
+      } else if (banner.linkType === "url" && banner.linkValue) {
+        window.open(banner.linkValue, "_blank")
+      }
+    },
+    [navigate],
+  )
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/banners/all-banners`)
+        setBanners(res.data)
+        setLoading(false)
+      } catch (err) {
+        setError("Failed to fetch banners.")
+        setLoading(false)
+      }
+    }
+    fetchBanners()
+  }, [])
+
+  if (loading) return <div className="text-center py-8">Loading banners...</div>
+  if (error) return <div className="text-center py-8 text-red-500">Error: {error}</div>
 
   return (
     <div className="w-full h-full flex">
@@ -320,7 +350,7 @@ const Banners = () => {
                 img && (
                   <img
                     key={`${img._id || i}-${i}`}
-                    src={img.imageUrl || "/placeholder.svg"} // ✅ Use direct imageUrl (Cloudinary URL)
+                    src={`${API_BASE}${img.imageUrl}?v=${img._id}`}
                     alt={img.title || `Slide ${i + 1}`}
                     loading="lazy"
                     decoding="async"
@@ -428,15 +458,13 @@ const Banners = () => {
       </div>
       <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
         {/* Search */}
-        <div className="px-2 relative" ref={searchContainerRef}>
-          {" "}
-          {/* ✅ UPDATED: Apply ref here */}
+        <div className="px-2" ref={searchBoxRef}>
           <input
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
-            // ✅ REMOVED: onBlur from here, handled by useEffect
+            onBlur={() => setTimeout(() => setSuggestions([]), 150)}
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
           />
@@ -445,7 +473,6 @@ const Banners = () => {
               {suggestions.map((item) => (
                 <li
                   key={item._id}
-                  // ✅ REMOVED: onMouseDown e.preventDefault() no longer needed with new blur handling
                   onClick={() => handleSelectSuggestion(item._id)}
                   className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >
@@ -465,12 +492,6 @@ const Banners = () => {
               ))}
             </ul>
           )}
-          {/* ✅ ADDED: Message for no search results */}
-          {searchTerm.trim() && suggestions.length === 0 && (
-            <div className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow w-full p-3 text-sm text-gray-500">
-              No products found for "{searchTerm}".
-            </div>
-          )}
         </div>
         {/* Scrollable Side Banners */}
         <div className="flex-1 overflow-y-auto px-2 ">
@@ -481,7 +502,7 @@ const Banners = () => {
               onClick={() => handleSideBannerClick(item)}
             >
               <img
-                src={item.imageUrl || "/placeholder.svg"} // ✅ Use direct imageUrl (Cloudinary URL)
+                src={`${API_BASE}${item.imageUrl}`}
                 alt={item.title || `Banner ${i + 1}`}
                 className="w-full h-full object-cover"
               />
@@ -490,6 +511,36 @@ const Banners = () => {
                   {item.title}
                 </div>
               )}
+            </div>
+          ))}
+        </div>
+        {/* Grid of Banners */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {banners.map((banner) => (
+            <div
+              key={banner._id}
+              className="border rounded-lg shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300"
+              onClick={() => handleBannerClick(banner)}
+            >
+              <div className="w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                {banner.imageUrl ? (
+                  <img
+                    src={banner.imageUrl || "/placeholder.svg"}
+                    alt={banner.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src="/placeholder.svg?height=192&width=192&text=No Image"
+                    alt="No Image"
+                    className="w-full h-full object-cover text-gray-500"
+                  />
+                )}
+              </div>
+              <div className="p-4">
+                <h2 className="text-xl font-semibold mb-2 truncate">{banner.title}</h2>
+                <p className="text-sm text-gray-600">{banner.description}</p>
+              </div>
             </div>
           ))}
         </div>

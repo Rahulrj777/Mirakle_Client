@@ -1,155 +1,98 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
 import { API_BASE } from "../utils/api"
-import specialoffer from "../assets/specialoffer.png"
-import discount50 from "../assets/discount50.png"
-import { useNavigate } from "react-router-dom" // Import useNavigate
+import { calculateDiscountedPrice } from "../utils/shopPageUtils"
 
-const ProductOffer = () => {
-  const [offers, setOffers] = useState([])
+export default function ProductOffer() {
+  const [offerProducts, setOfferProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const navigate = useNavigate() // Initialize useNavigate
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const fetchOffers = async () => {
+    const fetchOfferProducts = async () => {
       setLoading(true)
-      setError(null)
       try {
-        const res = await axios.get(`${API_BASE}/api/offer-banners`)
-        console.log("Offers Response:", res.data)
-        setOffers(res.data)
+        const res = await axios.get(`${API_BASE}/api/products/all-products`)
+        // Filter products that have at least one variant with a discount
+        const productsWithOffers = res.data.filter(
+          (product) => product.variants && product.variants.some((variant) => variant.discountPercent > 0),
+        )
+        setOfferProducts(productsWithOffers)
+        setLoading(false)
       } catch (err) {
-        console.error("Failed to load offer banners:", err)
-        setError(err.response?.data?.message || err.message || "Failed to load offer banners")
-        setOffers([])
-      } finally {
+        setError("Failed to fetch offer products.")
         setLoading(false)
       }
     }
-    fetchOffers()
+    fetchOfferProducts()
   }, [])
 
-  const leftBanner = offers.find((b) => b.slot === "left")
-  const rightBanner = offers.find((b) => b.slot === "right")
+  const handleProductClick = useCallback(
+    (productId, e) => {
+      e.stopPropagation() // Prevent event bubbling if nested
+      navigate(`/product/${productId}`)
+    },
+    [navigate],
+  )
 
-  // ✅ NEW: Handle click for offer banners
-  const handleOfferBannerClick = (banner, e) => {
-    // Add event object
-    e.stopPropagation() // Prevent event from bubbling up
-    console.log("Offer banner clicked, navigating...")
-    let path = "/shop/allproduct"
-    const params = new URLSearchParams()
-
-    if (banner.linkedProductId) {
-      navigate(`/product/${banner.linkedProductId}`)
-      return // Navigate directly to product detail page
-    } else if (banner.linkedCategory) {
-      params.append("category", banner.linkedCategory)
-    }
-
-    if (banner.linkedDiscountUpTo > 0) {
-      params.append("discountUpTo", banner.linkedDiscountUpTo)
-    }
-
-    if (params.toString()) {
-      path += `?${params.toString()}`
-    }
-    navigate(path)
-  }
-
-  if (loading) {
-    return (
-      <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-10 mt-5">
-        <div className="flex-1 bg-gray-200 rounded-xl animate-pulse h-48"></div>
-        <div className="flex-1 bg-gray-200 rounded-xl animate-pulse h-48"></div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return <div className="w-[85%] mx-auto py-10 text-center text-red-500">Error loading offers: {error}</div>
-  }
-
-  if (!leftBanner && !rightBanner) {
-    return (
-      <div className="w-[85%] mx-auto py-10 text-center text-gray-500">No special offers available at the moment.</div>
-    )
-  }
+  if (loading) return <div className="text-center py-8">Loading offers...</div>
+  if (error) return <div className="text-center py-8 text-red-500">Error: {error}</div>
 
   return (
-    <div className="w-[85%] mx-auto py-10 flex flex-col lg:flex-row gap-10 mt-5">
-      {leftBanner && (
-        <div
-          className="flex-1 bg-yellow-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
-          onClick={(e) => handleOfferBannerClick(leftBanner, e)} // Attach click handler and pass event
-        >
-          <div className="absolute -top-14 -left-8 z-20 w-[120px]">
-            <img
-              src={discount50 || "/placeholder.svg"}
-              alt="50% Off"
-              className="w-full object-contain drop-shadow-md"
-            />
-          </div>
-          {/* Text Section - 50% */}
-          <div className="w-1/2 z-10">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">{leftBanner.title}</h2>
-            {leftBanner.percentage > 0 && (
-              <p className="text-lg font-bold text-red-600 mb-2">{leftBanner.percentage}% OFF</p>
-            )}
-            <button className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition">
-              Shop Now
-            </button>
-          </div>
-          {/* Image Section - 50% */}
-          <div className="w-1/2 flex justify-end items-center">
-            <img
-              src={leftBanner.imageUrl || "/placeholder.svg"}
-              alt={leftBanner.title}
-              className="h-32 md:h-40 lg:h-48 object-contain"
-            />
-          </div>
-        </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-center mb-8">Special Offers</h1>
+      {offerProducts.length === 0 && (
+        <div className="text-center text-gray-600 text-lg">No special offers available at the moment.</div>
       )}
-      {rightBanner && (
-        <div
-          className="flex-1 bg-gray-100 rounded-xl p-6 flex flex-row items-center relative overflow-visible cursor-pointer"
-          onClick={(e) => handleOfferBannerClick(rightBanner, e)} // Attach click handler and pass event
-        >
-          <div className="absolute -top-12 -left-20 z-20 w-[230px]">
-            <img
-              src={specialoffer || "/placeholder.svg"}
-              alt="Special Offer"
-              className="w-full object-contain drop-shadow-md"
-            />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {offerProducts.map((product) => (
+          <div
+            key={product._id}
+            className="border rounded-lg shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300"
+            onClick={(e) => handleProductClick(product._id, e)}
+          >
+            <div className="w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+              {product.images?.others?.[0]?.url ? (
+                <img
+                  src={product.images.others[0].url || "/placeholder.svg"}
+                  alt={product.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src="/placeholder.svg?height=192&width=192&text=No Image"
+                  alt="No Image"
+                  className="w-full h-full object-cover text-gray-500"
+                />
+              )}
+            </div>
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-2 truncate">{product.title}</h2>
+              {product.productType && <p className="text-sm text-gray-600 mb-2">{product.productType}</p>}
+              {product.variants && product.variants.length > 0 ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-bold text-green-600">
+                    ₹{calculateDiscountedPrice(product.variants[0].price, product.variants[0].discountPercent)}
+                  </span>
+                  {product.variants[0].discountPercent > 0 && (
+                    <span className="text-sm text-gray-500 line-through">₹{product.variants[0].price.toFixed(2)}</span>
+                  )}
+                  {product.variants[0].discountPercent > 0 && (
+                    <span className="text-sm text-red-500">({product.variants[0].discountPercent}% off)</span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-lg font-bold text-gray-600">Price N/A</span>
+              )}
+              {product.isOutOfStock && <span className="text-red-500 font-semibold mt-2 block">Out of Stock</span>}
+            </div>
           </div>
-          {/* Text Section - Special Offer */}
-          <div className="w-1/2 z-10">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">{rightBanner.title}</h2>
-            {rightBanner.percentage > 0 && (
-              <p className="text-lg font-bold text-red-600 mb-2">{rightBanner.percentage}% OFF</p>
-            )}
-            <button
-              // ✅ REMOVED: onClick from here, parent div handles navigation
-              className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition"
-            >
-              Shop Now
-            </button>
-          </div>
-          {/* Image Section - Special Offer */}
-          <div className="w-1/2 flex justify-end items-center">
-            <img
-              src={rightBanner.imageUrl || "/placeholder.svg"}
-              alt={rightBanner.title}
-              className="h-32 md:h-40 lg:h-48 object-contain"
-            />
-          </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   )
 }
-
-export default ProductOffer
