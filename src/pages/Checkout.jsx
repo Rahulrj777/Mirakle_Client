@@ -42,6 +42,8 @@ const Checkout = () => {
       return null;
     }
 
+  const imageUrl =item.images?.others?.[0]?.url || "/placeholder.jpg";
+
   return (
     <div className="max-w-3xl mx-auto mt-10 p-6 border rounded shadow">
       <h1 className="text-2xl font-bold mb-4">Checkout</h1>
@@ -49,7 +51,7 @@ const Checkout = () => {
       {product && (
         <div className="flex gap-4">
           <img
-            src={product.images?.others?.[0]?.url || "/placeholder.svg"}
+            src={imageUrl}
             alt={product.title}
             className="w-40 h-40 object-cover rounded"
           />
