@@ -184,7 +184,7 @@ const Banners = () => {
 
   const handleCartClick = useCallback(() => {
     if (!user) {
-      alert("Please login to view your cart.")
+      alert("Please login to view your cart")
       navigate("/login_signup")
     } else {
       navigate("/AddToCart")
@@ -452,7 +452,7 @@ const Banners = () => {
                   <div className="flex items-center gap-3">
                     {item.images?.others?.[0] && (
                       <img
-                        src={item.images.main?.url || item.images.others[0].url || "/placeholder.svg"}
+                        src={`${API_BASE}${item.images.others[0]}`}
                         alt={item.title}
                         className="w-10 h-10 object-cover rounded"
                       />
