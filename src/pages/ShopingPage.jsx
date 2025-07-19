@@ -1,150 +1,137 @@
-import { useState, useEffect, useCallback } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
-import axios from "axios"
-import { API_BASE } from "../utils/api"
-import useShopProducts from "../hooks/useShopProducts"
-import { calculateDiscountedPrice } from "../utils/shopPageUtils"
+"use client" // This file still needs 'use client' because it uses React Hooks (useLocation, useNavigate)
+import { useLocation, useNavigate, Link } from "react-router-dom"
+import { FiSearch } from "react-icons/fi"
+import { useShopProducts } from "../hooks/useShopProducts" // Import the new hook
+import { getShopPageTitle } from "../utils/shopPageUtils" // Import the new utility
 
-export default function ShopingPage() {
-  const navigate = useNavigate()
+const ShopingPage = () => {
   const location = useLocation()
-  const queryParams = new URLSearchParams(location.search)
-  const initialSearchTerm = queryParams.get("search") || ""
-  const initialProductType = queryParams.get("productType") || ""
+  const navigate = useNavigate()
+  // Use the custom hook to get all necessary state and functions
+  const {
+    displayedProducts,
+    filterType,
+    setFilterType,
+    searchTerm,
+    suggestions,
+    loading,
+    error,
+    handleSearchChange,
+    handleSuggestionClick,
+    handleKeyDown,
+  } = useShopProducts() // The hook now manages location and navigate internally
 
-  const [searchTerm, setSearchTerm] = useState(initialSearchTerm)
-  const [selectedProductType, setSelectedProductType] = useState(initialProductType)
-  const [availableProductTypes, setAvailableProductTypes] = useState([])
+  // Get the page title using the utility function
+  const pageTitle = getShopPageTitle(location, filterType)
 
-  const { products, loading, error } = useShopProducts(searchTerm, selectedProductType)
+  if (loading) {
+    return <div className="text-center py-10">Loading products...</div>
+  }
 
-  useEffect(() => {
-    const fetchProductTypes = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/api/products/all-products`)
-        const uniqueTypes = [...new Set(res.data.map((p) => p.productType).filter(Boolean))].sort()
-        setAvailableProductTypes(uniqueTypes)
-      } catch (err) {
-        console.error("Error fetching product types:", err)
-      }
-    }
-    fetchProductTypes()
-  }, [])
-
-  useEffect(() => {
-    setSearchTerm(initialSearchTerm)
-    setSelectedProductType(initialProductType)
-  }, [initialSearchTerm, initialProductType])
-
-  const handleSearchChange = useCallback(
-    (e) => {
-      setSearchTerm(e.target.value)
-      const newParams = new URLSearchParams(location.search)
-      if (e.target.value) {
-        newParams.set("search", e.target.value)
-      } else {
-        newParams.delete("search")
-      }
-      navigate(`?${newParams.toString()}`, { replace: true })
-    },
-    [location.search, navigate],
-  )
-
-  const handleProductTypeChange = useCallback(
-    (e) => {
-      setSelectedProductType(e.target.value)
-      const newParams = new URLSearchParams(location.search)
-      if (e.target.value) {
-        newParams.set("productType", e.target.value)
-      } else {
-        newParams.delete("productType")
-      }
-      navigate(`?${newParams.toString()}`, { replace: true })
-    },
-    [location.search, navigate],
-  )
-
-  const handleProductClick = useCallback(
-    (productId) => {
-      navigate(`/product/${productId}`)
-    },
-    [navigate],
-  )
-
-  if (loading) return <div className="text-center py-8">Loading products...</div>
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error}</div>
+  if (error) {
+    return <div className="text-center py-10 text-red-500">Error: {error}</div>
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-8">Our Products</h1>
-
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="p-2 border border-gray-300 rounded-md flex-grow"
-        />
+    <div className="max-w-6xl mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-3 text-center">{pageTitle}</h1>
+      {/* Filter Controls */}
+      <div className="flex justify-between items-center my-8 flex-wrap gap-4 w-full">
         <select
-          value={selectedProductType}
-          onChange={handleProductTypeChange}
-          className="p-2 border border-gray-300 rounded-md md:w-auto"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="p-2 border w-[150px] rounded"
         >
-          <option value="">All Categories</option>
-          {availableProductTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
+          <option value="all">All Products</option>
+          <option value="offer">Offer Products</option>
         </select>
+        <div className="relative w-full md:w-1/2">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+            <FiSearch />
+          </span>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Search product name..."
+            className="pl-10 pr-4 py-2 border rounded w-full"
+          />
+          {searchTerm.trim() !== "" && suggestions.length > 0 && (
+            <ul className="absolute z-10 w-full bg-white shadow-md mt-1 rounded max-h-60 overflow-y-auto border">
+              {suggestions.map((product) => (
+                <li
+                  key={product._id}
+                  onClick={() => handleSuggestionClick(product._id)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                >
+                  {product.title}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-
-      {products.length === 0 && (
-        <div className="text-center text-gray-600 text-lg">No products found matching your criteria.</div>
+      {searchTerm && (
+        <p className="text-sm text-gray-500 mb-2">
+          Showing results for "<strong>{searchTerm}</strong>" and other products.
+        </p>
       )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <div
-            key={product._id}
-            className="border rounded-lg shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300"
-            onClick={() => handleProductClick(product._id)}
-          >
-            <div className="w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
-              {product.images?.others?.[0]?.url ? (
-                <img
-                  src={product.images.others[0].url || "/placeholder.svg"}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src="/placeholder.svg?height=192&width=192&text=No Image"
-                  alt="No Image"
-                  className="w-full h-full object-cover text-gray-500"
-                />
-              )}
-            </div>
-            <div className="p-4">
-              <h2 className="text-xl font-semibold mb-2 truncate">{product.title}</h2>
-              {product.productType && <p className="text-sm text-gray-600 mb-2">{product.productType}</p>}
-              <div className="flex items-baseline gap-2">
-                <span className="text-lg font-bold text-green-600">
-                  ₹{calculateDiscountedPrice(product.variants[0]?.price, product.variants[0]?.discountPercent)}
-                </span>
-                {product.variants[0]?.discountPercent > 0 && (
-                  <span className="text-sm text-gray-500 line-through">₹{product.variants[0]?.price.toFixed(2)}</span>
-                )}
-                {product.variants[0]?.discountPercent > 0 && (
-                  <span className="text-sm text-red-500">({product.variants[0]?.discountPercent}% off)</span>
-                )}
-              </div>
-              {product.isOutOfStock && <span className="text-red-500 font-semibold mt-2 block">Out of Stock</span>}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Product Grid */}
+      {displayedProducts.length === 0 ? (
+        <p className="text-center text-gray-500 mt-10">No products found.</p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {displayedProducts.map((product) => {
+            // ✅ MODIFIED: Access image URL from the object
+            const frontImage = product.images?.others?.[0]?.url || ""
+            const isOut = product.isOutOfStock
+            const variant = product.variants?.[0]
+            const discount = variant?.discountPercent || 0
+            const originalPrice = variant?.price || 0
+            const finalPrice = originalPrice - (originalPrice * discount) / 100
+            return (
+              <Link to={`/product/${product._id}`} key={product._id} className="block">
+                <div
+                  className={`relative border rounded-lg shadow transition overflow-hidden cursor-pointer ${
+                    isOut ? "opacity-60" : "hover:shadow-lg"
+                  }`}
+                >
+                  {discount > 0 && !isOut && (
+                    <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-5">
+                      {discount}% OFF
+                    </div>
+                  )}
+                  <img
+                    // ✅ MODIFIED: Use frontImage directly (it's already a full URL)
+                    src={frontImage || "/placeholder.svg?height=150&width=150"}
+                    alt={product.title}
+                    className="w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t"
+                  />
+                  <div className="p-3">
+                    <h2 className="text-base font-semibold truncate" title={product.title}>
+                      {product.title}
+                    </h2>
+                    {variant && (
+                      <>
+                        <p className="text-sm text-gray-500 mt-1">{variant.size}</p>
+                        <div className="mt-2 flex gap-2 items-center">
+                          {discount > 0 && (
+                            <span className="text-gray-400 line-through text-sm">₹{originalPrice.toFixed(2)}</span>
+                          )}
+                          <span className="text-green-600 font-bold text-base">₹{finalPrice.toFixed(2)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
+
+export default ShopingPage

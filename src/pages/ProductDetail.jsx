@@ -1,3 +1,4 @@
+"use client"
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -5,28 +6,30 @@ import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { safeApiCall } from "../utils/axiosWithToken"
-import { calculateDiscountedPrice } from "../utils/shopPageUtils"
 
 const ProductDetail = () => {
   const { id } = useParams()
-  const navigate = useNavigate()
   const [product, setProduct] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
-  const [mainImage, setMainImage] = useState("")
-  const [relatedProducts, setRelatedProducts] = useState([])
+  // ✅ MODIFIED: selectedImage now stores the full URL
   const [selectedImage, setSelectedImage] = useState("")
+  const [error, setError] = useState("")
+  const [relatedProducts, setRelatedProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [addingToCart, setAddingToCart] = useState(false)
+  // Review form states
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewComment, setReviewComment] = useState("")
   const [reviewImages, setReviewImages] = useState([])
   const [reviewImagePreviews, setReviewImagePreviews] = useState([])
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewError, setReviewError] = useState("")
+  // Review list states
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
 
   const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   const user = useMemo(() => {
     try {
@@ -44,37 +47,38 @@ const ProductDetail = () => {
   const token = user?.token
 
   const fetchProduct = useCallback(async () => {
-    setLoading(true)
-    setError(null)
     try {
-      const res = await axios.get(`${API_BASE}/api/products/${id}`)
-      setProduct(res.data)
-      if (res.data.variants && res.data.variants.length > 0) {
-        setSelectedVariant(res.data.variants[0])
-      }
-      // Set the first image from Cloudinary as the main image
-      if (res.data.images?.others?.[0]?.url) {
-        setMainImage(res.data.images.others[0].url)
+      setLoading(true)
+      setError("")
+      const res = await axios.get(`${API_BASE}/api/products/all-products`)
+      const found = res.data.find((p) => p._id === id)
+      if (found) {
+        setProduct(found)
+        // ✅ MODIFIED: Set selectedImage to the URL from the product object
+        setSelectedImage(found.images?.others?.[0]?.url || "")
+        if (found.variants && found.variants.length > 0) {
+          setSelectedVariant(found.variants[0])
+        }
       } else {
-        setMainImage("/placeholder.svg?height=400&width=400&text=No Image")
+        setError("Product not found")
       }
-      fetchRelatedProducts(id)
     } catch (err) {
-      console.error("Error fetching product details:", err)
-      setError("Failed to load product details.")
+      console.error("Error fetching product:", err)
+      setError("Failed to load product")
     } finally {
       setLoading(false)
     }
   }, [id])
 
-  const fetchRelatedProducts = useCallback(async (productId) => {
+  const fetchRelated = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_BASE}/api/products/related/${productId}`)
-      setRelatedProducts(res.data)
+      const res = await axios.get(`${API_BASE}/api/products/related/${id}`)
+      setRelatedProducts(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
-      console.error("Error fetching related products:", err)
+      console.error("Failed to fetch related products", err)
+      setRelatedProducts([])
     }
-  }, [])
+  }, [id])
 
   const loadCartSafely = useCallback(async () => {
     if (!token || cartItems.length > 0) return
@@ -89,8 +93,11 @@ const ProductDetail = () => {
   }, [token, cartItems.length, dispatch])
 
   useEffect(() => {
-    fetchProduct()
-  }, [fetchProduct])
+    if (id) {
+      fetchProduct()
+      fetchRelated()
+    }
+  }, [id, fetchProduct, fetchRelated])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -100,31 +107,13 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
-  const handleThumbnailClick = useCallback((imageUrl) => {
-    setMainImage(imageUrl)
-    setSelectedImage(imageUrl)
-  }, [])
-
-  const handleRelatedProductClick = useCallback(
-    (relatedProductId) => {
-      navigate(`/product/${relatedProductId}`)
-      // Reset state for new product detail page
-      setProduct(null)
-      setLoading(true)
-      setError(null)
-      setSelectedVariant(null)
-      setMainImage("")
-      setRelatedProducts([])
-    },
-    [navigate],
-  )
-
   const handleSizeClick = useCallback((variant) => {
     setSelectedVariant(variant)
   }, [])
 
   const handleAddToCart = useCallback(
     async (product) => {
+      if (addingToCart) return
       if (!user?.token) {
         alert("Please login to add items to cart")
         navigate("/login_signup")
@@ -134,6 +123,7 @@ const ProductDetail = () => {
         alert("Please select a variant")
         return
       }
+      setAddingToCart(true)
       const productToAdd = {
         _id: product._id,
         title: product.title,
@@ -144,9 +134,7 @@ const ProductDetail = () => {
           value: selectedVariant?.weight?.value || selectedVariant?.size,
           unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
         },
-        currentPrice: Number.parseFloat(
-          calculateDiscountedPrice(selectedVariant.price, selectedVariant.discountPercent),
-        ),
+        currentPrice: Number.parseFloat(finalPrice),
         quantity: 1,
       }
       try {
@@ -160,9 +148,11 @@ const ProductDetail = () => {
       } catch (err) {
         console.error("❌ Add to cart failed:", err)
         alert("Something went wrong while adding to cart")
+      } finally {
+        setAddingToCart(false)
       }
     },
-    [user, selectedVariant, navigate, dispatch],
+    [addingToCart, user, selectedVariant, navigate, dispatch],
   )
 
   const handleReviewImageChange = useCallback((e) => {
@@ -309,6 +299,13 @@ const ProductDetail = () => {
     return (total / validRatings.length).toFixed(1)
   }, [product?.reviews])
 
+  const finalPrice = useMemo(() => {
+    if (!selectedVariant) return "0.00"
+    const price = selectedVariant.price
+    const discount = selectedVariant.discountPercent || 0
+    return (price - (price * discount) / 100).toFixed(2)
+  }, [selectedVariant])
+
   const currentUserReview = useMemo(() => {
     if (!Array.isArray(product?.reviews)) return null
     const currentUserId = user?.user?.userId || user?.user?._id
@@ -339,7 +336,7 @@ const ProductDetail = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="1.5"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-.38 1.81.588 1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
             />
           </svg>
         ))}
@@ -347,102 +344,129 @@ const ProductDetail = () => {
     )
   }, [])
 
-  if (loading) return <div className="text-center py-8">Loading product details...</div>
-  if (error) return <div className="text-center py-8 text-red-500">{error}</div>
-  if (!product) return <div className="text-center py-8">Product not found.</div>
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="grid md:grid-cols-2 gap-8 animate-pulse">
+          <div className="h-96 bg-gray-200 rounded"></div>
+          <div className="space-y-4">
+            <div className="h-8 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-10 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !product) {
+    return <div className="text-center mt-20 text-red-500">{error}</div>
+  }
+
+  if (!product || !selectedVariant) {
+    return <div className="text-center mt-20">Product not found</div>
+  }
+
+  const price = selectedVariant.price
+  const discount = selectedVariant.discountPercent || 0
+  const reviewsToShow = showAllReviews ? otherReviews : otherReviews.slice(0, 3)
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Product Image Gallery */}
-        <div className="flex flex-col items-center">
-          <div className="w-full max-w-md h-96 bg-gray-200 flex items-center justify-center overflow-hidden rounded-lg shadow-md">
-            <img src={mainImage || "/placeholder.svg"} alt={product.title} className="w-full h-full object-contain" />
-          </div>
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-            {product.images?.others?.map((img, index) => (
-              <div
-                key={index}
-                className={`w-20 h-20 flex-shrink-0 cursor-pointer border-2 rounded-md overflow-hidden ${
-                  mainImage === img.url ? "border-blue-500" : "border-transparent"
+    <div className="max-w-6xl mx-auto p-6">
+      {/* Product Images and Info */}
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Image Preview */}
+        <div>
+          <img
+            // ✅ MODIFIED: Use selectedImage directly (it's already a full URL)
+            src={selectedImage || "/placeholder.svg"}
+            className="w-full h-[400px] object-contain rounded"
+            alt={product.title}
+            loading="lazy"
+          />
+          <div className="flex gap-2 mt-2">
+            {product.images?.others?.map((img, i) => (
+              <img
+                key={i}
+                // ✅ MODIFIED: Use img.url for thumbnail images
+                src={img.url || "/placeholder.svg"}
+                onClick={() => setSelectedImage(img.url)}
+                className={`w-20 h-20 object-cover border cursor-pointer transition-all ${
+                  selectedImage === img.url ? "border-blue-500 scale-105" : "hover:scale-105"
                 }`}
-                onClick={() => handleThumbnailClick(img.url)}
-              >
-                <img
-                  src={img.url || "/placeholder.svg"}
-                  alt={`${product.title} thumbnail ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+                alt={`${product.title} ${i + 1}`}
+                loading="lazy"
+              />
             ))}
           </div>
         </div>
-
-        {/* Product Details */}
+        {/* Product Info */}
         <div>
-          <h1 className="text-4xl font-bold mb-2">{product.title}</h1>
-          {product.productType && <p className="text-lg text-gray-600 mb-4">{product.productType}</p>}
-
-          {selectedVariant && (
-            <div className="mb-4">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-bold text-green-600">
-                  ₹{calculateDiscountedPrice(selectedVariant.price, selectedVariant.discountPercent)}
-                </span>
-                {selectedVariant.discountPercent > 0 && (
-                  <span className="text-lg text-gray-500 line-through">₹{selectedVariant.price.toFixed(2)}</span>
-                )}
-                {selectedVariant.discountPercent > 0 && (
-                  <span className="text-lg text-red-500">({selectedVariant.discountPercent}% off)</span>
-                )}
-              </div>
-              <p className="text-xl text-gray-700">Size: {selectedVariant.size}</p>
-              <p className="text-xl text-gray-700">Stock: {selectedVariant.stock}</p>
-              {product.isOutOfStock && (
-                <span className="text-red-500 font-semibold mt-2 block text-xl">Out of Stock</span>
-              )}
+          <h1 className="text-2xl font-bold">{product.title}</h1>
+          <div className="flex items-center gap-2 my-2">
+            {renderStars(Number.parseFloat(avgRating))}
+            <span className="text-sm text-gray-700">
+              {avgRating} / 5 ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? "s" : ""})
+            </span>
+          </div>
+          <div className="text-3xl font-bold text-green-600 mb-2">
+            ₹{finalPrice}
+            {discount > 0 && (
+              <>
+                <span className="text-gray-400 line-through text-sm ml-3">₹{price}</span>
+                <span className="text-sm text-red-500 ml-2">{discount}% OFF</span>
+              </>
+            )}
+          </div>
+          <div className="mt-4">
+            <p className="font-medium mb-1">Select Size:</p>
+            <div className="flex gap-2 flex-wrap">
+              {product.variants?.map((v, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSizeClick(v)}
+                  className={`px-4 py-1 border rounded-full cursor-pointer transition-all ${
+                    v.size === selectedVariant.size
+                      ? "bg-green-600 text-white scale-105"
+                      : "hover:bg-gray-200 hover:scale-105"
+                  }`}
+                >
+                  {v.size}
+                </button>
+              ))}
             </div>
-          )}
-
-          {product.variants && product.variants.length > 1 && (
-            <div className="mb-4">
-              <h3 className="text-xl font-semibold mb-2">Available Variants:</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((variant, index) => (
-                  <button
-                    key={index}
-                    className={`px-4 py-2 border rounded-md ${
-                      selectedVariant?._id === variant._id
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setSelectedVariant(variant)}
-                  >
-                    {variant.size}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <h3 className="text-2xl font-semibold mt-6 mb-2">Description</h3>
-          <p className="text-gray-700 leading-relaxed">{product.description || "No description available."}</p>
-
-          {Object.keys(product.details).length > 0 && (
-            <>
-              <h3 className="text-2xl font-semibold mt-6 mb-2">Details</h3>
-              <ul className="list-disc list-inside text-gray-700">
-                {Object.entries(product.details).map(([key, value]) => (
-                  <li key={key}>
-                    <strong>{key}:</strong> {String(value)}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          </div>
+          <div className="mt-6 flex gap-4">
+            <button
+              onClick={() => handleAddToCart(product)}
+              disabled={addingToCart}
+              className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+            >
+              {addingToCart ? "Adding..." : "Add to Cart"}
+            </button>
+            <button className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer hover:bg-green-700 transition-all transform hover:scale-105">
+              Buy Now
+            </button>
+          </div>
+          <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
         </div>
       </div>
-
+      {/* Product Details Section */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold mb-2">Product Details</h2>
+        {product.details && typeof product.details === "object" ? (
+          <ul className="text-gray-700 text-sm list-disc pl-5">
+            {Object.entries(product.details).map(([key, value]) => (
+              <li key={key}>
+                <strong className="capitalize">{key}</strong>: {value}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-sm">No additional info</p>
+        )}
+      </div>
       {/* Ratings & Reviews Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
@@ -622,12 +646,12 @@ const ProductDetail = () => {
             </div>
           )}
           {/* Other Reviews */}
-          {otherReviews.length === 0 && !currentUserReview && (
+          {reviewsToShow.length === 0 && !currentUserReview && (
             <div className="text-center py-8">
               <p className="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
             </div>
           )}
-          {otherReviews.map((review) => {
+          {reviewsToShow.map((review) => {
             const isLikeLoading = actionLoading[`like-${review._id}`]
             const isDislikeLoading = actionLoading[`dislike-${review._id}`]
             return (
@@ -697,57 +721,37 @@ const ProductDetail = () => {
           )}
         </div>
       </div>
-
+      {/* Related Products */}
       {relatedProducts.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-3xl font-bold text-center mb-8">Related Products</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {relatedProducts.map((relatedProduct) => (
-              <div
-                key={relatedProduct._id}
-                className="border rounded-lg shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300"
-                onClick={() => handleRelatedProductClick(relatedProduct._id)}
-              >
-                <div className="w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {relatedProduct.images?.others?.[0]?.url ? (
-                    <img
-                      src={relatedProduct.images.others[0].url || "/placeholder.svg"}
-                      alt={relatedProduct.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src="/placeholder.svg?height=192&width=192&text=No Image"
-                      alt="No Image"
-                      className="w-full h-full object-cover text-gray-500"
-                    />
-                  )}
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Related Products</h2>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+            {relatedProducts.map((p) => {
+              // ✅ MODIFIED: Access image URL from the object
+              const mainImage = p.images?.others?.[0]?.url || "/placeholder.jpg"
+              const firstVariant = p.variants?.[0]
+              const price = firstVariant?.price || 0
+              const discount = firstVariant?.discountPercent || 0
+              const finalPrice = (price - (price * discount) / 100).toFixed(2)
+              return (
+                <div
+                  key={p._id}
+                  onClick={() => navigate(`/product/${p._id}`)}
+                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200"
+                >
+                  <img
+                    // ✅ MODIFIED: Use mainImage directly (it's already a full URL)
+                    src={mainImage || "/placeholder.svg"}
+                    alt={p.title}
+                    className="w-full h-48 object-cover rounded mb-2 hover:scale-105 transition-transform duration-200"
+                    loading="lazy"
+                  />
+                  <h4 className="text-sm font-semibold">{p.title}</h4>
+                  <p className="text-green-600 font-bold">₹{finalPrice}</p>
+                  {discount > 0 && <p className="text-xs text-gray-400 line-through">₹{price}</p>}
                 </div>
-                <div className="p-4">
-                  <h3 className="text-xl font-semibold mb-2 truncate">{relatedProduct.title}</h3>
-                  {relatedProduct.productType && (
-                    <p className="text-sm text-gray-600 mb-2">{relatedProduct.productType}</p>
-                  )}
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-green-600">
-                      ₹
-                      {calculateDiscountedPrice(
-                        relatedProduct.variants[0]?.price,
-                        relatedProduct.variants[0]?.discountPercent,
-                      )}
-                    </span>
-                    {relatedProduct.variants[0]?.discountPercent > 0 && (
-                      <span className="text-sm text-gray-500 line-through">
-                        ₹{relatedProduct.variants[0]?.price.toFixed(2)}
-                      </span>
-                    )}
-                    {relatedProduct.variants[0]?.discountPercent > 0 && (
-                      <span className="text-sm text-red-500">({relatedProduct.variants[0]?.discountPercent}% off)</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
