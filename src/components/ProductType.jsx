@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useRef, useState } from "react"
 import axios from "axios"
 import { Swiper, SwiperSlide } from "swiper/react"
@@ -18,11 +17,12 @@ const ProductType = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/api/banners`)
-        const filtered = res.data.filter((b) => b.type === "product-type")
-        setProductTypes(filtered)
+        // Fetch banners of type "product-type"
+        const res = await axios.get(`${API_BASE}/api/banners?type=product-type`)
+        setProductTypes(res.data)
       } catch (err) {
-        console.error("Failed to fetch banners:", err.message)
+        console.error("Failed to fetch product-type banners:", err.message)
+        setProductTypes([])
       }
     }
     fetchData()
@@ -43,7 +43,23 @@ const ProductType = () => {
       node.removeEventListener("mouseenter", handleMouseEnter)
       node.removeEventListener("mouseleave", handleMouseLeave)
     }
-  }, [productTypes])
+  }, [productTypes]) // Re-run effect if productTypes change
+
+  const handleProductTypeClick = (item) => {
+    if (item.linkedUrl) {
+      window.open(item.linkedUrl, "_blank")
+    } else if (item.productId) {
+      // Navigate to product detail page
+      const productId = typeof item.productId === "object" ? item.productId._id : item.productId
+      navigate(`/product/${productId}`)
+    } else if (item.title) {
+      // Navigate to shop page filtered by category (productType title)
+      navigate(`/shop/allproduct?category=${encodeURIComponent(item.title)}`)
+    } else {
+      // Fallback to all products page
+      navigate("/shop/allproduct")
+    }
+  }
 
   return (
     <div className="w-full py-10 bg-white overflow-hidden relative">
@@ -75,19 +91,12 @@ const ProductType = () => {
                 <SwiperSlide key={item._id}>
                   <div
                     className="p-4 rounded-lg shadow-md text-center border h-full flex flex-col justify-between cursor-pointer "
-                    onClick={() => {
-                      const productId = typeof item.productId === "object" ? item.productId._id : item.productId
-                      if (productId) {
-                        navigate(`/product/${productId}`)
-                      } else {
-                        navigate("/shop/allproduct")
-                      }
-                    }}
+                    onClick={() => handleProductTypeClick(item)}
                   >
                     <div className="relative w-full h-[150px] mb-2">
                       <img
                         key={`${item._id}-${i}`}
-                        src={`${API_BASE}${item.imageUrl}?v=${item._id}`} // Product-type banners still use local images
+                        src={item.imageUrl || "/placeholder.svg?height=150&width=150&text=Product Type Image"} // Use imageUrl directly (Cloudinary URL)
                         alt={item.title || "Product"}
                         loading="lazy"
                         decoding="async"
