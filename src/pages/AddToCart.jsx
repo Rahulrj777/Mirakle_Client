@@ -10,7 +10,7 @@ import { axiosWithToken } from '../utils/axiosWithToken';
 
 const AddToCart = () => {
   const { items: cartItems, cartReady } = useSelector((state) => state.cart);
-  const { address } = useSelector((state) => state.user);
+  const { address } = useSelector((state) => state.user || {});
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
