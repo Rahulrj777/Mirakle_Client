@@ -447,7 +447,7 @@ const Banners = () => {
                   <div className="flex items-center gap-3">
                     {item.images?.others?.[0]?.url && (
                       <img
-                        src={`${API_BASE}${item.images.others[0].url}`}
+                        src={item.images.others[0].url}
                         alt={item.title}
                         className="w-10 h-10 object-cover rounded"
                       />
