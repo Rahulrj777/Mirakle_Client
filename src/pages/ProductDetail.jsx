@@ -681,7 +681,7 @@ const ProductDetail = () => {
                   </div>
                 )}
                 {/* Like/Dislike buttons */}
-                <div className="flex items-center gap-4 mt-2">
+                {/* <div className="flex items-center gap-4 mt-2">
                   <button
                     onClick={() => handleLikeReview(review._id)}
                     disabled={isLikeLoading}
@@ -702,7 +702,7 @@ const ProductDetail = () => {
                     <span>👎</span>
                     <span>{isDislikeLoading ? "..." : review.dislikes?.length || 0}</span>
                   </button>
-                </div>
+                </div> */}
               </div>
             )
           })}
