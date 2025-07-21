@@ -5,12 +5,12 @@ import {
   decrementQuantity,
   removeFromCart,
 } from "../Redux/cartSlice";
-import { API_BASE } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from '../utils/axiosWithToken';
 
 const AddToCart = () => {
   const { items: cartItems, cartReady } = useSelector((state) => state.cart);
+  const { address } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -51,6 +51,31 @@ const AddToCart = () => {
         {/* Left: Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-2xl font-bold mb-2">Shopping Cart</h2>
+
+          {/* Address Section */}
+          <div className="bg-white p-4 rounded shadow mb-4">
+            {address ? (
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium">Deliver to:</p>
+                  <p className="text-lg">{address.city} - {address.pincode}</p>
+                </div>
+                <button
+                  onClick={() => navigate("/address")}
+                  className="text-blue-600 hover:underline"
+                >
+                  Change
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => navigate("/address")}
+                className="bg-green-600 text-white px-4 py-2 rounded"
+              >
+                Add Address
+              </button>
+            )}
+          </div>
 
           {cartItems.length === 0 ? (
             <p>Your cart is empty.</p>
