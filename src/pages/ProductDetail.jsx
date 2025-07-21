@@ -631,7 +631,7 @@ const ProductDetail = () => {
                     {currentUserReview.images.map((image, index) => (
                       <img
                         key={index}
-                        src={`${API_BASE}${image}`}
+                        src={image.url}
                         alt={`Review image ${index + 1}`}
                         className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                         onClick={() => {
