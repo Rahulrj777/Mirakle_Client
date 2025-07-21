@@ -88,9 +88,19 @@ const AddToCart = () => {
 
                   <div className="mt-3 flex items-center gap-4">
                     <div className="flex items-center border rounded">
-                      <button className="px-3 py-1 text-lg" onClick={() => dispatch(decrementQuantity(item._id))}>−</button>
+                      <button
+                        className="px-3 py-1 text-lg"
+                        onClick={() => dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))}
+                        >
+                        −
+                      </button>
                       <span className="px-4">{item.quantity}</span>
-                      <button className="px-3 py-1 text-lg" onClick={() => dispatch(incrementQuantity(item._id))}>+</button>
+                      <button
+                        className="px-3 py-1 text-lg"
+                        onClick={() => dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))}
+                        >
+                        +
+                      </button>
                     </div>
                     <button
                       className="text-red-500 text-sm hover:underline"
