@@ -69,7 +69,7 @@ const AddToCart = () => {
                 />
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{item.title}</h2>
-                  <p className="text-sm text-gray-600">Size: {item.weight}</p>
+                  <p className="text-sm text-gray-600">Size: {item.weight.value}</p>
                   <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
 
                   <div className="flex items-center gap-3">
