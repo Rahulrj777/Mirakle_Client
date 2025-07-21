@@ -140,7 +140,7 @@ const Header = () => {
                 {item.label}
               </Link>
               {isActive(item.path) && (
-                <div className="mt-1 w-3/4 h-[3px] bg-blue-700 rounded-full" />
+                <div className="mt-1 w-3/4 h-[3px] bg-green-700 rounded-full" />
               )}
             </li>
           ))}
