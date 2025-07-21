@@ -11,6 +11,7 @@ import ResetPassword from "../pages/ResetPassword"
 import ScrollToTop from "../pages/ScrollToTop"
 import CartPage from "../pages/CartPage"
 import Checkout from "../pages/Checkout"
+import Address from "../pages/Address"
 
 const Routing = () => {
   return (
@@ -31,6 +32,7 @@ const Routing = () => {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/Address" element={<Address />} />
       </Routes>
       <Footer />
     </BrowserRouter>
