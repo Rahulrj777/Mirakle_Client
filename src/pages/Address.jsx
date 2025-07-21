@@ -1,6 +1,6 @@
 // pages/SelectAddress.jsx or any page
 import React from "react";
-import LocationPicker from "../components/LocationPicker";
+import LocationPicker from "../pages/LocationPicker";
 
 const SelectAddress = () => {
   return (
