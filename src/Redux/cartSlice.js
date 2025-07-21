@@ -81,6 +81,7 @@ const cartSlice = createSlice({
         console.log("✅ Incremented quantity for", item.title)
       }
     },
+
     decrementQuantity: (state, action) => {
       if (!Array.isArray(state.items)) {
         state.items = []
