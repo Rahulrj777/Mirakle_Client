@@ -115,7 +115,7 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full px-10 py-5 flex items-center justify-between bg-transparent text-white h-[80px] top-5 left-0 z-50">
+    <header className="w-full px-10 py-5 flex items-center justify-between bg-transparent text-white h-[80px] top-0 left-0 z-50">
       {/* Logo */}
       <Link to="/">
         <img src={logo} alt="logo" className="w-[150px] object-contain" />
