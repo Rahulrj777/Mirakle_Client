@@ -164,9 +164,9 @@ const Header = () => {
                   className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >
                   <div className="flex items-center gap-2">
-                    {item.images?.others?.[0] && (
+                    {item.images?.others?.[0]?.url && (
                       <img
-                        src={`${API_BASE}${item.images.others[0]}`}
+                        src={item.images.others[0].url}
                         alt={item.title}
                         className="w-8 h-8 object-cover rounded"
                       />
