@@ -32,6 +32,8 @@ const AddToCart = () => {
     }
   }, [cartItems, cartReady]);
 
+  console.log(cartItems);
+
   return (
     <div className="bg-gray-100 min-h-screen py-6">
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">

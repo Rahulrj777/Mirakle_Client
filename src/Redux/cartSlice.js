@@ -14,7 +14,6 @@ const cartSlice = createSlice({
       state.userId = action.payload
     },
     setCartItem: (state, action) => {
-      // ✅ CRITICAL FIX: Always ensure items is an array
       const payload = action.payload
       if (Array.isArray(payload)) {
         state.items = payload
@@ -75,7 +74,8 @@ const cartSlice = createSlice({
         state.items = []
         return
       }
-      const item = state.items.find((item) => item._id === action.payload)
+      const { _id, variantId } = action.payload
+      const item = state.items.find((item) => item._id === _id && item.variantId === variantId)
       if (item) {
         item.quantity += 1
         console.log("✅ Incremented quantity for", item.title)
@@ -86,7 +86,8 @@ const cartSlice = createSlice({
         state.items = []
         return
       }
-      const item = state.items.find((item) => item._id === action.payload)
+      const { _id, variantId } = action.payload
+      const item = state.items.find((item) => item._id === _id && item.variantId === variantId)
       if (item && item.quantity > 1) {
         item.quantity -= 1
         console.log("✅ Decremented quantity for", item.title)
