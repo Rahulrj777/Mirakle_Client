@@ -49,7 +49,6 @@ const Banners = () => {
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems) ? cartItems.length : 0
   }, [cartItems])
-
   const [searchTimeout, setSearchTimeout] = useState(null)
   const handleSearchChange = useCallback(
     async (e) => {
@@ -442,14 +441,13 @@ const Banners = () => {
               {suggestions.map((item) => (
                 <li
                   key={item._id}
-                  // ✅ REMOVED: onMouseDown e.preventDefault() no longer needed with new blur handling
                   onClick={() => handleSelectSuggestion(item._id)}
                   className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >
                   <div className="flex items-center gap-3">
-                    {item.images?.others?.[0] && (
+                    {item.images?.others?.[0]?.url && (
                       <img
-                        src={`${API_BASE}${item.images.others[0]}`}
+                        src={`${API_BASE}${item.images.others[0].url}`}
                         alt={item.title}
                         className="w-10 h-10 object-cover rounded"
                       />
