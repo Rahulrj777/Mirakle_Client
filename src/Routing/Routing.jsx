@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom"
+import { useEffect } from "react"
 import Mirakle_Home_page from "../pages/Mirakle_Home_page"
 import ShopingPage from "../pages/ShopingPage"
 import AboutUs from "../pages/AboutUs"
@@ -12,18 +13,25 @@ import ScrollToTop from "../pages/ScrollToTop"
 import CartPage from "../pages/CartPage"
 import Checkout from "../pages/Checkout"
 import Address from "../pages/Address"
+import Header from "../components/Header"
 
-const Routing = () => {
+const AppRoutes = () => {
+  const location = useLocation()
+
+  // You can also add scroll to top here if needed
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  const hideHeaderOnPaths = ["/"] // list of paths where you don't want the header
+
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      {/* <Header /> */}
+    <>
+      {!hideHeaderOnPaths.includes(location.pathname) && <Header />}
       <Routes>
         <Route path="/" element={<Mirakle_Home_page />} />
-        {/* Shop Pages */}
         <Route path="/shop/allproduct" element={<ShopingPage filterType="all" />} />
         <Route path="/shop/offerproduct" element={<ShopingPage filterType="offer" />} />
-        {/* Other Pages */}
         <Route path="/About_Us" element={<AboutUs />} />
         <Route path="/Contect_Us" element={<ContectUs />} />
         <Route path="/login_signup" element={<LoginSignUp />} />
@@ -35,8 +43,15 @@ const Routing = () => {
         <Route path="/Address" element={<Address />} />
       </Routes>
       <Footer />
-    </BrowserRouter>
+    </>
   )
 }
+
+const Routing = () => (
+  <BrowserRouter>
+    <ScrollToTop />
+    <AppRoutes />
+  </BrowserRouter>
+)
 
 export default Routing
