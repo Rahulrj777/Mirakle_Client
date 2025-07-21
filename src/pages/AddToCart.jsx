@@ -91,15 +91,15 @@ const AddToCart = () => {
                       <button
                         className="px-3 py-1 text-lg"
                         onClick={() => dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))}
-                        >
-                        −
+                      >
+                      −
                       </button>
                       <span className="px-4">{item.quantity}</span>
                       <button
                         className="px-3 py-1 text-lg"
                         onClick={() => dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))}
-                        >
-                        +
+                      >
+                      +
                       </button>
                     </div>
                     <button
