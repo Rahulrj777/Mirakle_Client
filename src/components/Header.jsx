@@ -133,16 +133,19 @@ const Header = () => {
             <li key={item.path} className="cursor-pointer flex flex-col items-center">
               <Link
                 to={item.path}
-                className={`text-black transition-colors ${isActive(item.path) ? "underline" : ""}`}
+                className={`text-black transition-colors ${
+                  isActive(item.path) ? "font-bold text-blue-700" : "text-gray-700"
+                }`}
               >
                 {item.label}
               </Link>
-              {isActive(item.path) && <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px]" />}
+              {isActive(item.path) && (
+                <div className="mt-1 w-3/4 h-[3px] bg-blue-700 rounded-full" />
+              )}
             </li>
           ))}
         </ul>
       </nav>
-
       {/* Search & Icons */}
       <div className="flex items-center gap-5 text-[24px] relative">
         {/* Search Box */}
