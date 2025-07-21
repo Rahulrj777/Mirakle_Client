@@ -625,23 +625,15 @@ const ProductDetail = () => {
               </div>
               <p className="text-sm text-gray-700 mb-3">{currentUserReview.comment}</p>
               {/* Review Images */}
-              {currentUserReview.images && currentUserReview.images.length > 0 && (
-                <div className="mb-3">
-                  <div className="flex flex-wrap gap-2">
-                    {currentUserReview.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image.url}
-                        alt={`Review image ${index + 1}`}
-                        className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => {
-                          window.open(`${API_BASE}${image}`, "_blank")
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {currentUserReview.images.map((image, index) => (
+                <img
+                  key={index}
+                  src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                  alt={`Review image ${index + 1}`}
+                  className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
+                />
+              ))}
             </div>
           )}
           {/* Other Reviews */}
@@ -668,16 +660,14 @@ const ProductDetail = () => {
                   <div className="mb-3">
                     <div className="flex flex-wrap gap-2">
                       {review.images.map((image, index) => (
-                        <img
-                          key={index}
-                          src={image.url}
-                          alt={`Review image ${index + 1}`}
-                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => {
-                            window.open(`${API_BASE}${image}`, "_blank")
-                          }}
-                        />
-                      ))}
+                      <img
+                        key={index}
+                        src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                        alt={`Review image ${index + 1}`}
+                        className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
+                      />
+                    ))}
                     </div>
                   </div>
                 )}
