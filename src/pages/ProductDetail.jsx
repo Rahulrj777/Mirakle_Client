@@ -15,17 +15,14 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [addingToCart, setAddingToCart] = useState(false)
-  // Review form states
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewComment, setReviewComment] = useState("")
   const [reviewImages, setReviewImages] = useState([])
   const [reviewImagePreviews, setReviewImagePreviews] = useState([])
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewError, setReviewError] = useState("")
-  // Review list states
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
-
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
@@ -109,49 +106,53 @@ const ProductDetail = () => {
     setSelectedVariant(variant)
   }, [])
 
-  const handleAddToCart = useCallback(
-    async (product) => {
-      if (addingToCart) return
-      if (!user?.token) {
-        alert("Please login to add items to cart")
-        navigate("/login_signup")
-        return
+ const handleAddToCart = useCallback(
+  async (product) => {
+    if (addingToCart) return;
+    if (!user?.token) {
+      alert("Please login to add items to cart");
+      navigate("/login_signup");
+      return;
+    }
+    if (!selectedVariant) {
+      alert("Please select a variant");
+      return;
+    }
+    setAddingToCart(true);
+
+    const productToAdd = {
+      _id: product._id,
+      title: product.title,
+      images: product.images,
+      variantId: selectedVariant._id,
+      size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
+      },
+      originalPrice: Number.parseFloat(selectedVariant.price), // ✅ Added
+      discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0, // ✅ Added
+      currentPrice: Number.parseFloat(finalPrice),
+      quantity: 1,
+    };
+
+    try {
+      dispatch(addToCart(productToAdd));
+      const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", { item: productToAdd }));
+      if (syncResult) {
+        console.log("✅ Cart synced to backend");
+      } else {
+        console.warn("⚠️ Backend sync failed, but item added to local cart");
       }
-      if (!selectedVariant) {
-        alert("Please select a variant")
-        return
-      }
-      setAddingToCart(true)
-      const productToAdd = {
-        _id: product._id,
-        title: product.title,
-        images: product.images,
-        variantId: selectedVariant._id,
-        size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
-        weight: {
-          value: selectedVariant?.weight?.value || selectedVariant?.size,
-          unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
-        },
-        currentPrice: Number.parseFloat(finalPrice),
-        quantity: 1,
-      }
-      try {
-        dispatch(addToCart(productToAdd))
-        const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", { item: productToAdd }))
-        if (syncResult) {
-          console.log("✅ Cart synced to backend")
-        } else {
-          console.warn("⚠️ Backend sync failed, but item added to local cart")
-        }
-      } catch (err) {
-        console.error("❌ Add to cart failed:", err)
-        alert("Something went wrong while adding to cart")
-      } finally {
-        setAddingToCart(false)
-      }
-    },
-    [addingToCart, user, selectedVariant, navigate, dispatch],
-  )
+    } catch (err) {
+      console.error("❌ Add to cart failed:", err);
+      alert("Something went wrong while adding to cart");
+    } finally {
+      setAddingToCart(false);
+    }
+  },
+  [addingToCart, user, selectedVariant, navigate, dispatch],
+);
 
   const handleReviewImageChange = useCallback((e) => {
     const files = Array.from(e.target.files)

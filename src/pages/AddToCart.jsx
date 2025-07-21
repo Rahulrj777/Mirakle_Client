@@ -1,10 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect } from "react";
-import {
-  incrementQuantity,
-  decrementQuantity,
-  removeFromCart,
-} from "../Redux/cartSlice";
+import { incrementQuantity, decrementQuantity, removeFromCart } from "../Redux/cartSlice";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from "../utils/axiosWithToken";
 
@@ -47,20 +43,14 @@ const AddToCart = () => {
               <>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Deliver to:</p>
-                  <p className="text-lg font-semibold">{address?.line1}, {address?.city} - {address?.pincode}</p>
+                  <p className="text-lg font-semibold">{address.line1}, {address.city} - {address.pincode}</p>
                 </div>
-                <button
-                  onClick={() => navigate("/address")}
-                  className="text-blue-600 hover:underline text-sm"
-                >
+                <button onClick={() => navigate("/address")} className="text-blue-600 hover:underline text-sm">
                   Change
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => navigate("/address")}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
+              <button onClick={() => navigate("/address")} className="bg-blue-600 text-white px-4 py-2 rounded">
                 Add Address
               </button>
             )}
@@ -71,10 +61,7 @@ const AddToCart = () => {
             <p className="text-center py-10 text-gray-600">Your cart is empty.</p>
           ) : (
             cartItems.map((item) => (
-              <div
-                key={item._id}
-                className="bg-white rounded shadow p-4 flex gap-4"
-              >
+              <div key={item._id} className="bg-white rounded shadow p-4 flex gap-4">
                 <img
                   src={item.images?.others?.[0]?.url || "/placeholder.svg"}
                   alt={item.title}
@@ -82,14 +69,14 @@ const AddToCart = () => {
                 />
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{item.title}</h2>
-                  <p className="text-sm text-gray-600">Size: {item.weight.value}</p>
+                  <p className="text-sm text-gray-600">Size: {item.weight}</p>
                   <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-green-600 font-bold text-xl">₹{item.currentPrice}</span>
+                    <span className="text-green-600 font-bold text-xl">₹{item.currentPrice.toFixed(2)}</span>
                     {item.originalPrice > item.currentPrice && (
                       <>
-                        <span className="line-through text-sm text-gray-500">₹{item.originalPrice}</span>
+                        <span className="line-through text-sm text-gray-500">₹{item.originalPrice.toFixed(2)}</span>
                         <span className="text-red-500 text-sm font-medium">
                           {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
                         </span>
@@ -97,18 +84,11 @@ const AddToCart = () => {
                     )}
                   </div>
 
-                  {/* Quantity and Remove */}
                   <div className="mt-3 flex items-center gap-4">
                     <div className="flex items-center border rounded">
-                      <button
-                        className="px-3 py-1 text-lg"
-                        onClick={() => dispatch(decrementQuantity(item._id))}
-                      >−</button>
+                      <button className="px-3 py-1 text-lg" onClick={() => dispatch(decrementQuantity(item._id))}>−</button>
                       <span className="px-4">{item.quantity}</span>
-                      <button
-                        className="px-3 py-1 text-lg"
-                        onClick={() => dispatch(incrementQuantity(item._id))}
-                      >+</button>
+                      <button className="px-3 py-1 text-lg" onClick={() => dispatch(incrementQuantity(item._id))}>+</button>
                     </div>
                     <button
                       className="text-red-500 text-sm hover:underline"
@@ -123,7 +103,7 @@ const AddToCart = () => {
           )}
         </div>
 
-        {/* Right: Price Summary */}
+        {/* Right side: Price Details */}
         <div className="bg-white p-6 rounded shadow h-fit sticky top-28">
           <h3 className="text-xl font-bold mb-4">Price Details</h3>
           <div className="flex justify-between mb-2">
