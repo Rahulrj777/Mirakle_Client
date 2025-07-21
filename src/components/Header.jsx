@@ -133,7 +133,7 @@ const Header = () => {
             <li key={item.path} className="cursor-pointer flex flex-col items-center">
               <Link
                 to={item.path}
-                className={`hover:text-gray-200 text-black transition-colors ${isActive(item.path) ? "underline" : ""}`}
+                className={`text-black transition-colors ${isActive(item.path) ? "underline" : ""}`}
               >
                 {item.label}
               </Link>
