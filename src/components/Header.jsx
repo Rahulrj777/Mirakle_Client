@@ -133,7 +133,7 @@ const Header = () => {
             <li key={item.path} className="cursor-pointer flex flex-col items-center">
               <Link
                 to={item.path}
-                className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "font-bold" : ""}`}
+                className={`hover:text-gray-200 text-black transition-colors ${isActive(item.path) ? "font-bold" : ""}`}
               >
                 {item.label}
               </Link>
@@ -211,7 +211,7 @@ const Header = () => {
 
         {/* Cart Icon */}
         <span className="relative cursor-pointer" onClick={handleCartClick}>
-          <HiOutlineShoppingBag className="hover:text-green-600 transition-colors" />
+          <HiOutlineShoppingBag className="text-black transition-colors" />
           {cartCount > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
               {cartCount}
