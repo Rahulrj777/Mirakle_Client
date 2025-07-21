@@ -134,7 +134,7 @@ const Header = () => {
               <Link
                 to={item.path}
                 className={`text-black transition-colors ${
-                  isActive(item.path) ? "font-bold text-blue-700" : "text-gray-700"
+                  isActive(item.path) ? "font-bold text-green-700" : "text-gray-700"
                 }`}
               >
                 {item.label}
