@@ -22,36 +22,31 @@ const Address = () => {
   }
 
   const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser")
-      return
-    }
-
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords
+        (pos) => {
+        const { latitude, longitude } = pos.coords;
 
-        // Reverse Geocode
-        fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_API_KEY`)
-          .then(res => res.json())
-          .then(data => {
-            const addressObj = data.results[0]
+        axios.get(`/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`)
+            .then(res => {
+            const addressObj = res.data.results[0];
             if (addressObj) {
-              setForm((prev) => ({
-                ...prev,
+                setForm({
+                ...form,
                 street: addressObj.formatted_address,
-              }))
+                });
             } else {
-              alert("Address not found, please enter manually.")
+                alert("Address not found, please enter manually.");
             }
-          })
-          .catch(() => alert("Address not found, please enter manually."))
-      },
-      () => {
-        alert("Unable to detect location. Please enter manually.")
-      }
-    )
-  }
+            })
+            .catch(() => {
+            alert("Error fetching location.");
+            });
+        },
+        () => {
+        alert("Unable to detect location. Please enter manually.");
+        }
+    );
+    };
 
   const handleSaveAddress = (e) => {
     e.preventDefault()
@@ -66,13 +61,32 @@ const Address = () => {
       type: "HOME",
     }
 
-    dispatch(addAddress(newAddress))    // Add to redux addresses
-    dispatch(selectAddress(newAddress)) // Set as selected address
+    dispatch(addAddress(newAddress))
+    dispatch(selectAddress(newAddress))
 
     localStorage.setItem("deliveryAddress", JSON.stringify(newAddress))
 
     navigate("/addtocart")
   }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+        const { latitude, longitude } = position.coords;
+    },
+    (error) => {
+        alert("Unable to fetch current location");
+    }
+  );
+
+  fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_API_KEY`)
+    .then(res => res.json())
+    .then(data => {
+        const result = data.results[0];
+        if (result) {
+        const address = result.formatted_address;
+        // Set this in your form or Redux
+        }
+    });
 
   return (
     <div className="max-w-lg mx-auto p-4">
