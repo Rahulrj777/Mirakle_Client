@@ -32,7 +32,7 @@ const Address = () => {
         const { latitude, longitude } = pos.coords;
 
         // Call your backend API
-        fetch(`/api/reverse-geocode?lat=${latitude}&lng=${longitude}`)
+        fetch(`/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`)
           .then(res => res.json())
           .then(data => {
             if (data.address) {
