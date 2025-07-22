@@ -248,48 +248,6 @@ const ProductDetail = () => {
     [id, fetchProduct],
   )
 
-  const handleLikeReview = useCallback(
-    async (reviewId) => {
-      if (!user?.token) {
-        alert("Please login to like reviews")
-        return
-      }
-      setActionLoading((prev) => ({ ...prev, [`like-${reviewId}`]: true }))
-      const result = await safeApiCall(async (api) => {
-        return await api.post(`/products/${id}/review/${reviewId}/like`)
-      })
-      if (result) {
-        setProduct((prev) => ({
-          ...prev,
-          reviews: prev.reviews.map((review) => (review._id === reviewId ? result.review : review)),
-        }))
-      }
-      setActionLoading((prev) => ({ ...prev, [`like-${reviewId}`]: false }))
-    },
-    [user, id],
-  )
-
-  const handleDislikeReview = useCallback(
-    async (reviewId) => {
-      if (!user?.token) {
-        alert("Please login to dislike reviews")
-        return
-      }
-      setActionLoading((prev) => ({ ...prev, [`dislike-${reviewId}`]: true }))
-      const result = await safeApiCall(async (api) => {
-        return await api.post(`/products/${id}/review/${reviewId}/dislike`)
-      })
-      if (result) {
-        setProduct((prev) => ({
-          ...prev,
-          reviews: prev.reviews.map((review) => (review._id === reviewId ? result.review : review)),
-        }))
-      }
-      setActionLoading((prev) => ({ ...prev, [`dislike-${reviewId}`]: false }))
-    },
-    [user, id],
-  )
-
   const avgRating = useMemo(() => {
     if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
     const validRatings = product.reviews.filter((r) => r && typeof r.rating === "number")
@@ -643,8 +601,6 @@ const ProductDetail = () => {
             </div>
           )}
           {reviewsToShow.map((review) => {
-            const isLikeLoading = actionLoading[`like-${review._id}`]
-            const isDislikeLoading = actionLoading[`dislike-${review._id}`]
             return (
               <div key={review._id} className="border p-4 rounded shadow-sm bg-white">
                 <div className="flex justify-between items-start mb-2">
@@ -671,29 +627,6 @@ const ProductDetail = () => {
                     </div>
                   </div>
                 )}
-                {/* Like/Dislike buttons */}
-                {/* <div className="flex items-center gap-4 mt-2">
-                  <button
-                    onClick={() => handleLikeReview(review._id)}
-                    disabled={isLikeLoading}
-                    className={`text-xs flex items-center gap-1 hover:underline transition-colors ${
-                      review.userLiked ? "text-blue-600 font-semibold" : "text-green-600"
-                    } disabled:opacity-50`}
-                  >
-                    <span>👍</span>
-                    <span>{isLikeLoading ? "..." : review.likes?.length || 0}</span>
-                  </button>
-                  <button
-                    onClick={() => handleDislikeReview(review._id)}
-                    disabled={isDislikeLoading}
-                    className={`text-xs flex items-center gap-1 hover:underline transition-colors ${
-                      review.userDisliked ? "text-red-600 font-semibold" : "text-red-500"
-                    } disabled:opacity-50`}
-                  >
-                    <span>👎</span>
-                    <span>{isDislikeLoading ? "..." : review.dislikes?.length || 0}</span>
-                  </button>
-                </div> */}
               </div>
             )
           })}
