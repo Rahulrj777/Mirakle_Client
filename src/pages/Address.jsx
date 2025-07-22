@@ -22,28 +22,37 @@ const Address = () => {
   }
 
   const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        return;
+    }
+
     navigator.geolocation.getCurrentPosition(
         (pos) => {
-        const { latitude, longitude } = pos.coords;
+        const latitude = pos.coords.latitude;
+        const longitude = pos.coords.longitude;
 
-        axios.get(`/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`)
-            .then(res => {
-            const addressObj = res.data.results[0];
-            if (addressObj) {
-                setForm({
-                ...form,
-                street: addressObj.formatted_address,
-                });
+        // Call backend API
+        fetch(`/api/reverse-geocode?lat=${latitude}&lng=${longitude}`)
+            .then(res => res.json())
+            .then(data => {
+            if (data.address) {
+                setForm(prev => ({
+                ...prev,
+                street: data.address.formatted_address,
+                }));
             } else {
-                alert("Address not found, please enter manually.");
+                alert("Address not found");
             }
             })
-            .catch(() => {
-            alert("Error fetching location.");
+            .catch(err => {
+            console.error(err);
+            alert("Error fetching address");
             });
         },
-        () => {
-        alert("Unable to detect location. Please enter manually.");
+        (error) => {
+        console.error(error);
+        alert("Unable to get current location");
         }
     );
     };
