@@ -8,7 +8,7 @@ const mapContainerStyle = {
 };
 
 const center = {
-  lat: 12.9716, // default location (Bangalore)
+  lat: 12.9716,
   lng: 77.5946,
 };
 
