@@ -55,7 +55,7 @@ const AddressPage = () => {
   const handleSaveAddress = () => {
     dispatch(setAddress(form));
     localStorage.setItem("deliveryAddress", JSON.stringify(form));
-    navigate("/cart");
+    navigate("/AddToCart");
   }
 
   return (

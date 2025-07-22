@@ -10,7 +10,6 @@ import ProductDetail from "../pages/ProductDetail"
 import LoginSignUp from "../pages/LoginSignUp"
 import ResetPassword from "../pages/ResetPassword"
 import ScrollToTop from "../pages/ScrollToTop"
-import CartPage from "../pages/CartPage"
 import Checkout from "../pages/Checkout"
 import Address from "../pages/Address"
 import Header from "../components/Header"
@@ -38,7 +37,6 @@ const AppRoutes = () => {
         <Route path="/AddToCart" element={<AddToCart />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/Address" element={<Address />} />
       </Routes>
