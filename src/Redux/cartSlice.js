@@ -3,8 +3,9 @@
   const initialState = {
     items: [],
     cartReady: false,
-    address: null,
     userId: null,
+    addresses: [],
+    selectedAddress: null,
   }
 
   const cartSlice = createSlice({
@@ -104,11 +105,14 @@
         state.items = state.items.filter((item) => item._id !== action.payload)
         console.log("✅ Removed item, cart size:", initialLength, "→", state.items.length)
       },
-      setAddress: (state, action) => {
-        state.address = action.payload;
+      addAddress: (state, action) => {
+        state.addresses.push(action.payload);
       },
-      clearAddress: (state) => {
-        state.address = null;
+      setAddresses: (state, action) => {
+        state.addresses = action.payload;
+      },
+      selectAddress: (state, action) => {
+        state.selectedAddress = action.payload;
       },
     },
   })
@@ -123,8 +127,9 @@
     decrementQuantity,
     removeFromCart,
     setCartReady,
-    setAddress,
-    clearAddress
+    addAddress,
+    setAddresses,
+    selectAddress
   } = cartSlice.actions
 
   export default cartSlice.reducer

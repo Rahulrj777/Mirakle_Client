@@ -1,16 +1,14 @@
 import { useSelector, useDispatch } from "react-redux";
-import { useEffect } from "react";
-import { incrementQuantity, decrementQuantity, removeFromCart } from "../Redux/cartSlice";
+import { useEffect, useState } from "react";
+import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress } from "../Redux/cartSlice";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from "../utils/axiosWithToken";
 
 const AddToCart = () => {
-  const { items: cartItems, cartReady } = useSelector((state) => state.cart);
-  const reduxAddress = useSelector((state) => state.user?.address);
-  const localAddress = JSON.parse(localStorage.getItem("deliveryAddress"));
-  const address = reduxAddress || localAddress;
+  const { items: cartItems, cartReady, selectedAddress, addresses } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   const subtotal = cartItems.reduce(
     (acc, item) => acc + item.currentPrice * item.quantity,
@@ -34,8 +32,6 @@ const AddToCart = () => {
     }
   }, [cartItems, cartReady]);
 
-  console.log(cartItems);
-
   return (
     <div className="bg-gray-100 min-h-screen py-6">
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -43,18 +39,28 @@ const AddToCart = () => {
         <div className="lg:col-span-2 space-y-4">
           {/* Address */}
           <div className="bg-white p-4 rounded shadow flex justify-between items-center">
-            {address ? (
+            {selectedAddress ? (
               <>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Deliver to:</p>
-                  <p className="text-lg font-semibold">{address.line1}, {address.city} - {address.pincode}</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    Deliver to: {selectedAddress.name}, {selectedAddress.pincode}
+                  </p>
+                  <p className="text-md">
+                    {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.landmark}
+                  </p>
                 </div>
-                <button onClick={() => navigate("/address")} className="text-blue-600 hover:underline text-sm">
+                <button
+                  onClick={() => setShowAddressModal(true)}
+                  className="text-blue-600 hover:underline text-sm"
+                >
                   Change
                 </button>
               </>
             ) : (
-              <button onClick={() => navigate("/address")} className="bg-blue-600 text-white px-4 py-2 rounded">
+              <button
+                onClick={() => setShowAddressModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
                 Add Address
               </button>
             )}
@@ -77,12 +83,19 @@ const AddToCart = () => {
                   <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-green-600 font-bold text-xl">₹{item.currentPrice.toFixed(2)}</span>
+                    <span className="text-green-600 font-bold text-xl">
+                      ₹{item.currentPrice.toFixed(2)}
+                    </span>
                     {item.originalPrice > item.currentPrice && (
                       <>
-                        <span className="line-through text-sm text-gray-500">₹{item.originalPrice.toFixed(2)}</span>
+                        <span className="line-through text-sm text-gray-500">
+                          ₹{item.originalPrice.toFixed(2)}
+                        </span>
                         <span className="text-red-500 text-sm font-medium">
-                          {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
+                          {Math.round(
+                            ((item.originalPrice - item.currentPrice) / item.originalPrice) * 100
+                          )}
+                          % Off
                         </span>
                       </>
                     )}
@@ -92,16 +105,20 @@ const AddToCart = () => {
                     <div className="flex items-center border rounded">
                       <button
                         className="px-3 py-1 text-lg"
-                        onClick={() => dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))}
+                        onClick={() =>
+                          dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))
+                        }
                       >
-                      −
+                        −
                       </button>
                       <span className="px-4">{item.quantity}</span>
                       <button
                         className="px-3 py-1 text-lg"
-                        onClick={() => dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))}
+                        onClick={() =>
+                          dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))
+                        }
                       >
-                      +
+                        +
                       </button>
                     </div>
                     <button
@@ -146,6 +163,44 @@ const AddToCart = () => {
           </button>
         </div>
       </div>
+
+      {/* Address Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
+            {addresses.length === 0 ? (
+              <p className="text-gray-500">No addresses saved yet.</p>
+            ) : (
+              addresses.map((addr, idx) => (
+                <div key={idx} className="border p-3 rounded mb-2">
+                  <input
+                    type="radio"
+                    name="selectedAddress"
+                    checked={addr === selectedAddress}
+                    onChange={() => {
+                      dispatch(selectAddress(addr));
+                      setShowAddressModal(false);
+                    }}
+                  />
+                  <span className="ml-2">{addr.name}, {addr.pincode}</span>
+                  <p className="text-sm text-gray-600">{addr.line1}, {addr.city}, {addr.landmark}</p>
+                </div>
+              ))
+            )}
+
+            <button
+              onClick={() => {
+                setShowAddressModal(false);
+                navigate("/address");
+              }}
+              className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
+            >
+              Add New Address
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
