@@ -28,7 +28,7 @@ const AddToCart = () => {
     const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user;
     if (user && cartReady) {
       localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems));
-      axiosWithToken().post('/cart', { items: cartItems }).catch(console.error);
+      axiosWithToken().post('/AddToCart', { items: cartItems }).catch(console.error);
     }
   }, [cartItems, cartReady]);
 
