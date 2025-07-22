@@ -1,8 +1,9 @@
   import { createSlice } from "@reduxjs/toolkit"
 
   const initialState = {
-    items: [], // Always ensure this is an array
+    items: [],
     cartReady: false,
+    address: null,
     userId: null,
   }
 
@@ -103,6 +104,12 @@
         state.items = state.items.filter((item) => item._id !== action.payload)
         console.log("✅ Removed item, cart size:", initialLength, "→", state.items.length)
       },
+      setAddress: (state, action) => {
+        state.address = action.payload;
+      },
+      clearAddress: (state) => {
+        state.address = null;
+      },
     },
   })
 
@@ -116,6 +123,8 @@
     decrementQuantity,
     removeFromCart,
     setCartReady,
+    setAddress,
+    clearAddress
   } = cartSlice.actions
 
   export default cartSlice.reducer

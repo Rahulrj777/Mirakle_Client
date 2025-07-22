@@ -6,7 +6,9 @@ import { axiosWithToken } from "../utils/axiosWithToken";
 
 const AddToCart = () => {
   const { items: cartItems, cartReady } = useSelector((state) => state.cart);
-  const { address } = useSelector((state) => state.user || {});
+  const reduxAddress = useSelector((state) => state.user?.address);
+  const localAddress = JSON.parse(localStorage.getItem("deliveryAddress"));
+  const address = reduxAddress || localAddress;
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
