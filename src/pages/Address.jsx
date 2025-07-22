@@ -23,42 +23,46 @@ const Address = () => {
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser");
-        return;
+      alert("Geolocation is not supported by your browser");
+      return;
     }
 
     navigator.geolocation.getCurrentPosition(
-        (pos) => {
-        const latitude = pos.coords.latitude;
-        const longitude = pos.coords.longitude;
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
 
-        // Call backend API
+        // Call your backend API
         fetch(`/api/reverse-geocode?lat=${latitude}&lng=${longitude}`)
-            .then(res => res.json())
-            .then(data => {
+          .then(res => res.json())
+          .then(data => {
             if (data.address) {
-                setForm(prev => ({
+              const addr = data.address;
+
+              // Example: Parse address components if needed
+              setForm(prev => ({
                 ...prev,
-                street: data.address.formatted_address,
-                }));
+                street: addr.street || addr.formatted_address,
+                city: addr.city || "",
+                pincode: addr.pincode || "",
+              }));
             } else {
-                alert("Address not found");
+              alert("Address not found");
             }
-            })
-            .catch(err => {
+          })
+          .catch(err => {
             console.error(err);
             alert("Error fetching address");
-            });
-        },
-        (error) => {
+          });
+      },
+      (error) => {
         console.error(error);
         alert("Unable to get current location");
-        }
+      }
     );
-    };
+  };
 
   const handleSaveAddress = (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     const newAddress = {
       name: form.name,
@@ -70,32 +74,13 @@ const Address = () => {
       type: "HOME",
     }
 
-    dispatch(addAddress(newAddress))
-    dispatch(selectAddress(newAddress))
+    dispatch(addAddress(newAddress));
+    dispatch(selectAddress(newAddress));
 
-    localStorage.setItem("deliveryAddress", JSON.stringify(newAddress))
+    localStorage.setItem("deliveryAddress", JSON.stringify(newAddress));
 
-    navigate("/addtocart")
+    navigate("/addtocart");
   }
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-        const { latitude, longitude } = position.coords;
-    },
-    (error) => {
-        alert("Unable to fetch current location");
-    }
-  );
-
-  fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_API_KEY`)
-    .then(res => res.json())
-    .then(data => {
-        const result = data.results[0];
-        if (result) {
-        const address = result.formatted_address;
-        // Set this in your form or Redux
-        }
-    });
 
   return (
     <div className="max-w-lg mx-auto p-4">
@@ -122,4 +107,4 @@ const Address = () => {
   )
 }
 
-export default Address
+export default Address;
