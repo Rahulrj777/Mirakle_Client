@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDispatch } from "react-redux"
 import { addAddress, selectAddress } from "../Redux/cartSlice"
+import { API_BASE } from "../utils/api";
 
 const Address = () => {
   const navigate = useNavigate()
@@ -21,45 +22,43 @@ const Address = () => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
+const handleUseCurrentLocation = () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const latitude = pos.coords.latitude;
+      const longitude = pos.coords.longitude;
+
+      fetch(`${API_BASE}/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`)
+        .then(res => res.json())
+        .then(data => {
+          const result = data.results[0];
+          if (result) {
+            setForm(prev => ({
+              ...prev,
+              street: result.formatted_address,
+              city: result.address_components.find(c => c.types.includes("locality"))?.long_name || "",
+              pincode: result.address_components.find(c => c.types.includes("postal_code"))?.long_name || "",
+            }));
+          } else {
+            alert("Address not found");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Error fetching address");
+        });
+    },
+    (error) => {
+      console.error(error);
+      alert("Unable to get current location");
     }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-
-        // Call your backend API
-        fetch(`/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.address) {
-              const addr = data.address;
-
-              // Example: Parse address components if needed
-              setForm(prev => ({
-                ...prev,
-                street: addr.street || addr.formatted_address,
-                city: addr.city || "",
-                pincode: addr.pincode || "",
-              }));
-            } else {
-              alert("Address not found");
-            }
-          })
-          .catch(err => {
-            console.error(err);
-            alert("Error fetching address");
-          });
-      },
-      (error) => {
-        console.error(error);
-        alert("Unable to get current location");
-      }
-    );
-  };
+  );
+};
 
   const handleSaveAddress = (e) => {
     e.preventDefault();
