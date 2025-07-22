@@ -36,17 +36,19 @@ const handleUseCurrentLocation = () => {
       fetch(`${API_BASE}/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`)
         .then(res => res.json())
         .then(data => {
-          const result = data.results[0];
-          if (result) {
+            console.log("Google Geocode Response:", data); // ADD THIS
+
+            const result = data.results[0];
+            if (result) {
             setForm(prev => ({
-              ...prev,
-              street: result.formatted_address,
-              city: result.address_components.find(c => c.types.includes("locality"))?.long_name || "",
-              pincode: result.address_components.find(c => c.types.includes("postal_code"))?.long_name || "",
+                ...prev,
+                street: result.formatted_address,
+                city: result.address_components.find(c => c.types.includes("locality"))?.long_name || "",
+                pincode: result.address_components.find(c => c.types.includes("postal_code"))?.long_name || "",
             }));
-          } else {
+            } else {
             alert("Address not found");
-          }
+            }
         })
         .catch(err => {
           console.error(err);
