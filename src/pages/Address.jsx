@@ -62,26 +62,47 @@ const handleUseCurrentLocation = () => {
   );
 };
 
-  const handleSaveAddress = (e) => {
-    e.preventDefault();
+    const handleSaveAddress = async (e) => {
+        e.preventDefault();
 
-    const newAddress = {
-      name: form.name,
-      phone: form.phone,
-      line1: `${form.house}, ${form.street}`,
-      city: form.city,
-      pincode: form.pincode,
-      landmark: form.landmark,
-      type: "HOME",
-    }
+        const newAddress = {
+            name: form.name,
+            phone: form.phone,
+            line1: `${form.house}, ${form.street}`,
+            city: form.city,
+            pincode: form.pincode,
+            landmark: form.landmark,
+            type: "HOME",
+        };
 
-    dispatch(addAddress(newAddress));
-    dispatch(selectAddress(newAddress));
+        try {
+            const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
 
-    localStorage.setItem("deliveryAddress", JSON.stringify(newAddress));
+            if (!token) {
+            alert("Login required");
+            return;
+            }
 
-    navigate("/addtocart");
-  }
+            // Save to backend
+            await fetch(`${API_BASE}/api/users/address`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`, // 🔐
+            },
+            body: JSON.stringify(newAddress),
+            });
+
+            // Local Redux and Navigation
+            dispatch(addAddress(newAddress));
+            dispatch(selectAddress(newAddress));
+            localStorage.setItem("deliveryAddress", JSON.stringify(newAddress));
+            navigate("/addtocart");
+        } catch (err) {
+            console.error("Failed to save address:", err);
+            alert("Could not save address");
+        }
+        };
 
   return (
     <div className="max-w-lg mx-auto p-4">

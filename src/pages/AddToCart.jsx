@@ -26,11 +26,30 @@ const AddToCart = () => {
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user;
+    const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+
     if (user && cartReady) {
+      // Save cart to DB
       localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems));
       axiosWithToken().post('/cart', { items: cartItems }).catch(console.error);
     }
-  }, [cartItems, cartReady]);
+
+    // Load saved addresses
+    if (token) {
+      fetch(`${API_BASE}/api/users/address`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.addresses?.length) {
+            data.addresses.forEach(addr => dispatch(addAddress(addr)));
+          }
+        })
+        .catch(console.error);
+    }
+  }, [cartItems, cartReady, dispatch]);
 
   return (
     <div className="bg-gray-100 min-h-screen py-6">

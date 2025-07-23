@@ -51,7 +51,7 @@ const Checkout = () => {
       {product && (
         <div className="flex gap-4">
           <img
-            src={imageUrl}
+            src={imageUrl.url}
             alt={product.title}
             loading="lazy"
             className="w-40 h-40 object-cover rounded"
