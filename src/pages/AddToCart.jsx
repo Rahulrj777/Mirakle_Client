@@ -4,12 +4,14 @@ import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress, ad
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from "../utils/axiosWithToken";
 import { API_BASE } from "../utils/api";
+import { useRef, useEffect } from "react";
 
 const AddToCart = () => {
   const { items: cartItems, cartReady, selectedAddress, addresses } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const modalRef = useRef();
 
   const subtotal = cartItems.reduce(
     (acc, item) => acc + item.currentPrice * item.quantity,
@@ -110,6 +112,22 @@ const AddToCart = () => {
       alert("Could not delete address. Try again later.");
     }
   };
+  
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowAddressModal(false);
+      }
+    };
+
+    if (showAddressModal) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showAddressModal]);
 
   return (
     <div className="bg-gray-100 min-h-screen py-6">
@@ -247,7 +265,10 @@ const AddToCart = () => {
       {/* Address Modal */}
       {showAddressModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div
+            ref={modalRef}  // Add this ref to modal box
+            className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto"
+          >
             <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
 
             {addresses.length === 0 ? (
@@ -271,7 +292,7 @@ const AddToCart = () => {
                     onClick={() => {
                       const confirmDelete = window.confirm("Are you sure you want to delete this address?");
                       if (confirmDelete) handleDeleteAddress(addr._id);
-                  }}
+                    }}
                     className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
                   >
                     Delete
