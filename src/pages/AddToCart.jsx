@@ -71,6 +71,31 @@ const AddToCart = () => {
       }
   }, [cartItems, cartReady, dispatch]);
 
+  const confirmDelete = (addressId) => {
+    const confirm = window.confirm("Are you sure you want to delete this address?");
+    if (confirm) {
+      handleDeleteAddress(addressId);
+    }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    try {
+      const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+      const res = await fetch(`${API_BASE}/api/users/address/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (data.addresses) {
+        dispatch(setAddresses(data.addresses));
+      }
+    } catch (err) {
+      console.error("Failed to delete address", err);
+    }
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen py-6">
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -209,22 +234,33 @@ const AddToCart = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
+
             {addresses.length === 0 ? (
               <p className="text-gray-500">No addresses saved yet.</p>
             ) : (
               addresses.map((addr, idx) => (
-                <div key={idx} className="border p-3 rounded mb-2">
+                <div key={addr._id || idx} className="border p-3 rounded mb-2 relative">
                   <input
                     type="radio"
                     name="selectedAddress"
-                    checked={addr === selectedAddress}
+                    checked={selectedAddress?._id === addr._id}
                     onChange={() => {
                       dispatch(selectAddress(addr));
                       setShowAddressModal(false);
                     }}
                   />
-                  <span className="ml-2">{addr.name}, {addr.pincode}</span>
+                  <span className="ml-2 font-medium">{addr.name}, {addr.pincode}</span>
                   <p className="text-sm text-gray-600">{addr.line1}, {addr.city}, {addr.landmark}</p>
+
+                  <button
+                    onClick={() => {
+                      const confirmDelete = window.confirm("Are you sure you want to delete this address?");
+                      if (confirmDelete) handleDeleteAddress(addr._id);
+                    }}
+                    className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
+                  >
+                    Delete
+                  </button>
                 </div>
               ))
             )}
