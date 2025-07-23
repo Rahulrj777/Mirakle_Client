@@ -42,7 +42,7 @@ const LoginSignUp = () => {
 
     try {
       setLoading(true)
-      const res = await axios.post(`${API_BASE}/api/user/signup`, {
+      const res = await axios.post(`${API_BASE}/api/users/signup`, {
         name: name.trim(),
         email: email.trim(),
         password,
@@ -80,7 +80,7 @@ const LoginSignUp = () => {
 
       // 🔥 STEP 2: Login
       console.log("🔐 Attempting login...")
-      const res = await axios.post(`${API_BASE}/api/user/login`, {
+      const res = await axios.post(`${API_BASE}/api/users/login`, {
         email: email.trim(),
         password,
       })
