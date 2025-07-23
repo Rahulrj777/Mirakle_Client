@@ -1,10 +1,9 @@
 import { useSelector, useDispatch } from "react-redux";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress, addAddress, setAddresses} from "../Redux/cartSlice";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from "../utils/axiosWithToken";
 import { API_BASE } from "../utils/api";
-import { useRef, useEffect } from "react";
 
 const AddToCart = () => {
   const { items: cartItems, cartReady, selectedAddress, addresses } = useSelector((state) => state.cart);
@@ -61,14 +60,17 @@ const AddToCart = () => {
     const saved = localStorage.getItem("deliveryAddress");
       if (saved) {
         const parsed = JSON.parse(saved);
-        dispatch(selectAddress(parsed));
 
-        const alreadyExists = addresses.some(
-          a => a.line1 === parsed.line1 && a.pincode === parsed.pincode
+        // ✅ Only reselect if it still exists
+        const stillExists = addresses.some(
+          a => a._id === parsed._id
         );
 
-        if (!alreadyExists) {
-          dispatch(addAddress(parsed));
+        if (stillExists) {
+          dispatch(selectAddress(parsed));
+        } else {
+          localStorage.removeItem("deliveryAddress");
+          dispatch(selectAddress(null));
         }
       }
   }, [cartItems, cartReady, dispatch]);
@@ -99,15 +101,21 @@ const AddToCart = () => {
 
       const data = await res.json();
       if (data.addresses) {
-        dispatch(setAddresses(data.addresses));
+      dispatch(setAddresses(data.addresses));
 
-        // If deleted address was selected, deselect it
-        if (selectedAddress?._id === id) {
+      // Deselect if deleted address was selected
+      if (selectedAddress?._id === id) {
+        localStorage.removeItem("deliveryAddress");
+
+        if (data.addresses.length === 1) {
+          dispatch(selectAddress(data.addresses[0]));
+          localStorage.setItem("deliveryAddress", JSON.stringify(data.addresses[0]));
+        } else {
           dispatch(selectAddress(null));
-          localStorage.removeItem("deliveryAddress");
         }
       }
-    } catch (err) {
+    }
+} catch (err) {
       console.error("Failed to delete address", err);
       alert("Could not delete address. Try again later.");
     }
