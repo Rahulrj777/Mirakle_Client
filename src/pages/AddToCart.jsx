@@ -86,8 +86,16 @@ const AddToCart = () => {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Server responded with:", errorText);
+        throw new Error("Failed to delete address");
+      }
+
       const data = await res.json();
       if (data.addresses) {
         dispatch(setAddresses(data.addresses));
