@@ -19,6 +19,7 @@ const AddToCart = () => {
   const navigate = useNavigate()
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [addressesLoaded, setAddressesLoaded] = useState(false)
+  const [addressesLoading, setAddressesLoading] = useState(true)
   const modalRef = useRef()
 
   const cartItems = useSelector((state) => state.cart.items)
@@ -27,9 +28,7 @@ const AddToCart = () => {
   const selectedAddress = useSelector((state) => state.cart.selectedAddress)
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.currentPrice * item.quantity, 0)
-
   const originalTotal = cartItems.reduce((acc, item) => acc + item.originalPrice * item.quantity, 0)
-
   const discountAmount = originalTotal - subtotal
 
   const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token
@@ -39,6 +38,8 @@ const AddToCart = () => {
     if (!cartReady) return
 
     if (token && !addressesLoaded) {
+      setAddressesLoading(true)
+
       fetch(`${API_BASE}/api/users/address`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -72,8 +73,14 @@ const AddToCart = () => {
           }
         })
         .catch(console.error)
+        .finally(() => {
+          setAddressesLoading(false)
+        })
+    } else if (!token) {
+      // If no token, stop loading immediately
+      setAddressesLoading(false)
     }
-  }, [dispatch, addressesLoaded, cartReady])
+  }, [dispatch, addressesLoaded, cartReady, token])
 
   useEffect(() => {
     if (user && cartReady) {
@@ -159,7 +166,17 @@ const AddToCart = () => {
         <div className="lg:col-span-2 space-y-4">
           {/* Address */}
           <div className="bg-white p-4 rounded shadow flex justify-between items-center">
-            {selectedAddress ? (
+            {addressesLoading ? (
+              <div className="flex items-center">
+                <div className="animate-pulse flex space-x-4">
+                  <div className="rounded-full bg-gray-300 h-4 w-4"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-300 rounded w-48"></div>
+                    <div className="h-3 bg-gray-300 rounded w-32"></div>
+                  </div>
+                </div>
+              </div>
+            ) : selectedAddress ? (
               <>
                 <div>
                   <p className="text-sm font-medium text-gray-500">
