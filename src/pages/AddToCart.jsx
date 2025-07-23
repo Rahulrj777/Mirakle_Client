@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useState, useRef } from "react";
-import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress, addAddress, setAddresses} from "../Redux/cartSlice";
+import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress, setAddresses, addAddress} from "../Redux/cartSlice";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from "../utils/axiosWithToken";
 import { API_BASE } from "../utils/api";
@@ -120,6 +120,19 @@ const AddToCart = () => {
       alert("Could not delete address. Try again later.");
     }
   };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("selectedAddress");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        dispatch(selectAddress(parsed));
+        dispatch(addAddress(parsed)); // Add to address list if needed
+      } catch (e) {
+        console.error("Failed to parse selectedAddress from localStorage", e);
+      }
+    }
+  }, []);
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -290,7 +303,7 @@ const AddToCart = () => {
                     checked={selectedAddress?._id === addr._id}
                     onChange={() => {
                       dispatch(selectAddress(addr));
-                      localStorage.setItem("deliveryAddress", JSON.stringify(addr)); // ✅ persist
+                      localStorage.setItem("deliveryAddress", JSON.stringify(addr)); 
                       setShowAddressModal(false);
                     }}
                   />
