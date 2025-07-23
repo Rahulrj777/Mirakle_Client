@@ -288,11 +288,7 @@ const AddToCart = () => {
                     type="radio"
                     name="selectedAddress"
                     checked={selectedAddress?._id === addr._id}
-                    onChange={() => {
-                      dispatch(selectAddress(addr));
-                      localStorage.setItem("deliveryAddress", JSON.stringify(addr)); // ✅ persist
-                      setShowAddressModal(false);
-                    }}
+                    onClick={() => confirmDelete(addr._id)}
                   />
                   <span className="ml-2 font-medium">{addr.name}, {addr.pincode}</span>
                   <p className="text-sm text-gray-600">{addr.line1}, {addr.city}, {addr.landmark}</p>
