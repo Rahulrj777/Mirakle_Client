@@ -81,6 +81,7 @@ const AddToCart = () => {
   const handleDeleteAddress = async (id) => {
     try {
       const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+      console.log("Deleting:", `${API_BASE}/api/users/address/${id}`);
       const res = await fetch(`${API_BASE}/api/users/address/${id}`, {
         method: "DELETE",
         headers: {
@@ -95,7 +96,6 @@ const AddToCart = () => {
       console.error("Failed to delete address", err);
     }
   };
-  console.log("Deleting:", `${API_BASE}/api/users/address/${id}`);
 
   return (
     <div className="bg-gray-100 min-h-screen py-6">
