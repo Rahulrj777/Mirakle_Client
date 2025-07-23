@@ -22,7 +22,7 @@ const AddToCart = () => {
   const modalRef = useRef()
 
   const cartItems = useSelector((state) => state.cart.items)
-  const cartReady = useSelector((state) => state.cart.ready)
+  const cartReady = useSelector((state) => state.cart.cartReady)
   const addresses = useSelector((state) => state.cart.addresses)
   const selectedAddress = useSelector((state) => state.cart.selectedAddress)
 
