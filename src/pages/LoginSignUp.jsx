@@ -40,7 +40,7 @@ const LoginSignUp = () => {
 
     try {
       setLoading(true)
-      const res = await axios.post(`${API_BASE}/api/users/signup`, {
+      await axios.post(`${API_BASE}/api/users/signup`, {
         name: name.trim(),
         email: email.trim(),
         password,
@@ -115,7 +115,7 @@ const LoginSignUp = () => {
                 console.warn("⚠️ Failed to sync local cart to server:", syncError.message)
               }
             }
-          } catch (parseError) {
+          } catch{
             console.warn("⚠️ Failed to parse local cart, will fetch from server")
           }
         }
