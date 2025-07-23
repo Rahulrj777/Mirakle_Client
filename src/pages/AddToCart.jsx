@@ -290,6 +290,7 @@ const AddToCart = () => {
                     checked={selectedAddress?._id === addr._id}
                     onChange={() => {
                       dispatch(selectAddress(addr));
+                      localStorage.setItem("deliveryAddress", JSON.stringify(addr)); // ✅ persist
                       setShowAddressModal(false);
                     }}
                   />
