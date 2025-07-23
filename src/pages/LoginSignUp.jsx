@@ -42,7 +42,7 @@ const LoginSignUp = () => {
 
     try {
       setLoading(true)
-      const res = await axios.post(`${API_BASE}/api/signup`, {
+      const res = await axios.post(`${API_BASE}/api/user/signup`, {
         name: name.trim(),
         email: email.trim(),
         password,
@@ -80,7 +80,7 @@ const LoginSignUp = () => {
 
       // 🔥 STEP 2: Login
       console.log("🔐 Attempting login...")
-      const res = await axios.post(`${API_BASE}/api/login`, {
+      const res = await axios.post(`${API_BASE}/api/user/login`, {
         email: email.trim(),
         password,
       })
@@ -169,7 +169,7 @@ const LoginSignUp = () => {
     if (!userEmail || !userEmail.trim()) return
 
     axios
-      .post(`${API_BASE}/api/forgot-password`, { email: userEmail.trim() })
+      .post(`${API_BASE}/api/admin/forgot-password`, { email: userEmail.trim() })
       .then(() => alert("📩 Reset email sent!"))
       .catch((err) => alert("❌ " + (err.response?.data?.message || "Error sending reset email")))
   }

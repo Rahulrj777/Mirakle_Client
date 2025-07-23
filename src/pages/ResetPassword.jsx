@@ -17,7 +17,7 @@ const ResetPassword = () => {
     }
 
     try {
-      await axios.post(`${API_BASE}/api/reset-password/${token}`, {
+      await axios.post(`${API_BASE}/api/admin/reset-password/${token}`, {
         password,
       });
       alert("✅ Password reset successful!");
