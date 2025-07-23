@@ -37,7 +37,7 @@ const AddToCart = () => {
 
     // Load saved addresses
     if (token) {
-      fetch(`${API_BASE}/api/users/address`, {
+      fetch(`${API_BASE}/api/user/address`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

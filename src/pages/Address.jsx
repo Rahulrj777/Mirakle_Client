@@ -84,11 +84,11 @@ const handleUseCurrentLocation = () => {
             }
 
             // Save to backend
-            await fetch(`${API_BASE}/api/users/address`, {
+            await fetch(`${API_BASE}/api/user/address`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`, // 🔐
+                Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(newAddress),
             });
