@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
-import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress, addAddress} from "../Redux/cartSlice";
+import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress, addAddress, setAddresses} from "../Redux/cartSlice";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from "../utils/axiosWithToken";
 import { API_BASE } from "../utils/api";
@@ -29,13 +29,13 @@ const AddToCart = () => {
     const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user;
     const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
 
+    // Sync cart to backend
     if (user && cartReady) {
-      // Save cart to DB
       localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems));
       axiosWithToken().post('/cart', { items: cartItems }).catch(console.error);
     }
 
-    // Load saved addresses
+    // ✅ Load addresses from backend
     if (token) {
       fetch(`${API_BASE}/api/user/address`, {
         headers: {
@@ -45,11 +45,30 @@ const AddToCart = () => {
         .then(res => res.json())
         .then(data => {
           if (data.addresses?.length) {
-            data.addresses.forEach(addr => dispatch(addAddress(addr)));
+            const uniqueAddresses = data.addresses.filter(
+              addr => !addresses.some(a => a.line1 === addr.line1 && a.pincode === addr.pincode)
+            );
+            if (uniqueAddresses.length > 0) {
+              dispatch(setAddresses([...addresses, ...uniqueAddresses])); // ✅ append only new
+            }
           }
         })
         .catch(console.error);
     }
+
+    const saved = localStorage.getItem("deliveryAddress");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        dispatch(selectAddress(parsed));
+
+        const alreadyExists = addresses.some(
+          a => a.line1 === parsed.line1 && a.pincode === parsed.pincode
+        );
+
+        if (!alreadyExists) {
+          dispatch(addAddress(parsed));
+        }
+      }
   }, [cartItems, cartReady, dispatch]);
 
   return (
@@ -187,8 +206,8 @@ const AddToCart = () => {
 
       {/* Address Modal */}
       {showAddressModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
             {addresses.length === 0 ? (
               <p className="text-gray-500">No addresses saved yet.</p>

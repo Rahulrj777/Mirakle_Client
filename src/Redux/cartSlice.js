@@ -113,7 +113,8 @@
       },
       selectAddress: (state, action) => {
         state.selectedAddress = action.payload;
-      },
+        localStorage.setItem("deliveryAddress", JSON.stringify(action.payload));
+      }
     },
   })
 
