@@ -84,7 +84,7 @@ const handleUseCurrentLocation = () => {
             }
 
             // Save to backend
-            await fetch(`${API_BASE}/api/user/address`, {
+            await fetch(`${API_BASE}/api/users/address`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
