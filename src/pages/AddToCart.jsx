@@ -81,7 +81,7 @@ const AddToCart = () => {
   const handleDeleteAddress = async (id) => {
     try {
       const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
-      console.log("Deleting:", `${API_BASE}/api/users/address/${id}`);
+
       const res = await fetch(`${API_BASE}/api/users/address/${id}`, {
         method: "DELETE",
         headers: {
@@ -92,16 +92,22 @@ const AddToCart = () => {
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("Server responded with:", errorText);
-        throw new Error("Failed to delete address");
+        throw new Error(`Failed to delete address: ${errorText}`);
       }
 
       const data = await res.json();
       if (data.addresses) {
         dispatch(setAddresses(data.addresses));
+
+        // If deleted address was selected, deselect it
+        if (selectedAddress?._id === id) {
+          dispatch(selectAddress(null));
+          localStorage.removeItem("deliveryAddress");
+        }
       }
     } catch (err) {
       console.error("Failed to delete address", err);
+      alert("Could not delete address. Try again later.");
     }
   };
 
@@ -265,7 +271,7 @@ const AddToCart = () => {
                     onClick={() => {
                       const confirmDelete = window.confirm("Are you sure you want to delete this address?");
                       if (confirmDelete) handleDeleteAddress(addr._id);
-                    }}
+                  }}
                     className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
                   >
                     Delete
