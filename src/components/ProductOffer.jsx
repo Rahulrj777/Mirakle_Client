@@ -81,6 +81,7 @@ const ProductOffer = () => {
             <img
               src={discount50 || "/placeholder.svg"}
               alt="50% Off"
+              loading="lazy"
               className="w-full object-contain drop-shadow-md"
             />
           </div>
@@ -102,6 +103,7 @@ const ProductOffer = () => {
             <img
               src={leftBanner.imageUrl || "/placeholder.svg"}
               alt={leftBanner.title}
+              loading="lazy"
               className="h-32 md:h-40 lg:h-48 object-contain"
             />
           </div>
@@ -116,6 +118,7 @@ const ProductOffer = () => {
             <img
               src={specialoffer || "/placeholder.svg"}
               alt="Special Offer"
+              loading="lazy"
               className="w-full object-contain drop-shadow-md"
             />
           </div>
@@ -137,6 +140,7 @@ const ProductOffer = () => {
             <img
               src={rightBanner.imageUrl || "/placeholder.svg"}
               alt={rightBanner.title}
+              loading="lazy"
               className="h-32 md:h-40 lg:h-48 object-contain"
             />
           </div>

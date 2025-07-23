@@ -75,6 +75,7 @@ const AddToCart = () => {
                 <img
                   src={item.images?.others?.[0]?.url || "/placeholder.svg"}
                   alt={item.title}
+                  loading="lazy"
                   className="w-28 h-28 object-cover border rounded"
                 />
                 <div className="flex-1">

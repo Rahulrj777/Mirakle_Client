@@ -55,6 +55,7 @@ const OfferPage = () => {
                 <img
                   src={`${API_BASE}${frontImage}`}
                   alt={product.title}
+                  loading="lazy"
                   className={`w-full h-48 object-cover rounded-t-lg ${
                     isOut ? 'grayscale' : ''
                   }`}

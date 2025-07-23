@@ -103,6 +103,7 @@ const ShopingPage = () => {
                     // ✅ MODIFIED: Use frontImage directly (it's already a full URL)
                     src={frontImage || "/placeholder.svg?height=150&width=150"}
                     alt={product.title}
+                    loading="lazy"
                     className="w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t"
                   />
                   <div className="p-3">

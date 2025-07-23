@@ -53,6 +53,7 @@ const Checkout = () => {
           <img
             src={imageUrl}
             alt={product.title}
+            loading="lazy"
             className="w-40 h-40 object-cover rounded"
           />
           <div>

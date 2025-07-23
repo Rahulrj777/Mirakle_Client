@@ -449,6 +449,7 @@ const Banners = () => {
                       <img
                         src={item.images.others[0].url}
                         alt={item.title}
+                        loading="lazy"
                         className="w-10 h-10 object-cover rounded"
                       />
                     )}
@@ -477,6 +478,7 @@ const Banners = () => {
             >
               <img
                 src={item.imageUrl || "/placeholder.svg"}
+                loading="lazy"
                 alt={item.title || `Banner ${i + 1}`}
                 className="w-full h-full object-cover"
               />

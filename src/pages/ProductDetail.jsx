@@ -527,6 +527,7 @@ const ProductDetail = () => {
                       <img
                         src={preview || "/placeholder.svg"}
                         alt={`Preview ${index + 1}`}
+                        loading="lazy"
                         className="w-20 h-20 object-cover rounded border"
                       />
                       <button
@@ -588,6 +589,7 @@ const ProductDetail = () => {
                   key={index}
                   src={image.startsWith("http") ? image : `${API_BASE}${image}`}
                   alt={`Review image ${index + 1}`}
+                  loading="lazy"
                   className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                   onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
                 />
@@ -619,6 +621,7 @@ const ProductDetail = () => {
                       <img
                         key={index}
                         src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                        loading="lazy"
                         alt={`Review image ${index + 1}`}
                         className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                         onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
