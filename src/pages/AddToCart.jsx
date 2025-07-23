@@ -95,6 +95,7 @@ const AddToCart = () => {
       console.error("Failed to delete address", err);
     }
   };
+  console.log("Deleting:", `${API_BASE}/api/users/address/${id}`);
 
   return (
     <div className="bg-gray-100 min-h-screen py-6">
