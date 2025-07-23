@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { incrementQuantity, decrementQuantity, removeFromCart, selectAddress } from "../Redux/cartSlice";
 import { useNavigate } from "react-router-dom";
 import { axiosWithToken } from "../utils/axiosWithToken";
+import { API_BASE } from "../utils/api";
 
 const AddToCart = () => {
   const { items: cartItems, cartReady, selectedAddress, addresses } = useSelector((state) => state.cart);
