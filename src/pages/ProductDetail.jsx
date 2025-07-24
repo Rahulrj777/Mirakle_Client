@@ -39,6 +39,13 @@ const ProductDetail = () => {
     return Array.isArray(items) ? items : []
   })
 
+   const finalPrice = useMemo(() => {
+    if (!selectedVariant) return "0.00"
+    const price = selectedVariant.price
+    const discount = selectedVariant.discountPercent || 0
+    return (price - (price * discount) / 100).toFixed(2)
+  }, [selectedVariant])
+  
   const token = user?.token
 
   const fetchProduct = useCallback(async () => {
@@ -255,13 +262,6 @@ const ProductDetail = () => {
     const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
     return (total / validRatings.length).toFixed(1)
   }, [product?.reviews])
-
-  const finalPrice = useMemo(() => {
-    if (!selectedVariant) return "0.00"
-    const price = selectedVariant.price
-    const discount = selectedVariant.discountPercent || 0
-    return (price - (price * discount) / 100).toFixed(2)
-  }, [selectedVariant])
 
   const currentUserReview = useMemo(() => {
     if (!Array.isArray(product?.reviews)) return null
