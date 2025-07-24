@@ -50,7 +50,8 @@ const cartSlice = createSlice({
 
       const existingItem = state.items.find(
         (i) =>
-          i._id === item._id && i.variantId === item.variantId
+          i._id.toString() === item._id.toString() &&
+          i.variantId?.toString() === item.variantId?.toString()
       );
 
       if (existingItem) {
