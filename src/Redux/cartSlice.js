@@ -3,8 +3,7 @@ import { createSlice } from "@reduxjs/toolkit"
 const initialState = {
   items: [],
   cartReady: false,
-  userId: null,
-  serId: 'guest',
+  userId: 'guest',
   addresses: [],
   selectedAddress: null,
 }
@@ -14,7 +13,7 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     setUserId: (state, action) => {
-      state.userId = action.payload
+      state.userId = action.payload || 'guest'
     },
     setCartItem: (state, action) => {
       const payload = action.payload
@@ -111,9 +110,7 @@ const cartSlice = createSlice({
         (item) => !(item._id === _id && item.variantId === variantId)
       )
       console.log(
-        "✅ Removed item (Product ID:", _id,
-        "| Variant ID:", variantId + "), Cart size:",
-        initialLength, "→", state.items.length
+        `✅ Removed item (Product ID: ${_id} | Variant ID: ${variantId}), Cart size: ${initialLength} → ${state.items.length}`
       )
     },
     addAddress: (state, action) => {
