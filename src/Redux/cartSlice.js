@@ -4,6 +4,7 @@ const initialState = {
   items: [],
   cartReady: false,
   userId: null,
+  serId: 'guest',
   addresses: [],
   selectedAddress: null,
 }

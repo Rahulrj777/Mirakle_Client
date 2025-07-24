@@ -33,9 +33,14 @@ const rootReducer = combineReducers({
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    }).concat(thunk),
+    getDefaultMiddleware({ serializableCheck: false }).concat(thunk),
+  preloadedState: {
+    cart: {
+      items: [],
+      userId: userId, 
+      cartReady: false,
+    },
+  },
 });
 
 export const persistor = persistStore(store);
