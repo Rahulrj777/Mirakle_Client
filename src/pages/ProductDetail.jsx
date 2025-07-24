@@ -25,14 +25,7 @@ const ProductDetail = () => {
   const [actionLoading, setActionLoading] = useState({})
   const dispatch = useDispatch()
   const navigate = useNavigate()
-
-  const user = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("mirakleUser"))
-    } catch {
-      return null
-    }
-  }, [])
+  const user = useSelector((state) => state.auth.user);
 
   const cartItems = useSelector((state) => {
     const items = state.cart?.items
@@ -130,10 +123,12 @@ const ProductDetail = () => {
         value: selectedVariant?.weight?.value || selectedVariant?.size,
         unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
       },
-      originalPrice: Number.parseFloat(selectedVariant.price), // ✅ Added
-      discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0, // ✅ Added
+      originalPrice: Number.parseFloat(selectedVariant.price),
+      discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0,
       currentPrice: Number.parseFloat(finalPrice),
       quantity: 1,
+      userEmail: user?.email,
+      userId: user?._id,
     };
 
     try {
