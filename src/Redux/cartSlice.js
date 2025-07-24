@@ -3,7 +3,7 @@ import { createSlice } from "@reduxjs/toolkit"
 const initialState = {
   items: [],
   cartReady: false,
-  userId: 'guest',
+  userId: null,
   addresses: [],
   selectedAddress: null,
 }
@@ -13,7 +13,7 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     setUserId: (state, action) => {
-      state.userId = action.payload || 'guest'
+      state.userId = action.payload
     },
     setCartItem: (state, action) => {
       const payload = action.payload
@@ -100,16 +100,20 @@ const cartSlice = createSlice({
       }
     },
     removeFromCart: (state, action) => {
-      const { _id, variantId } = action.payload || {}
-      if (!_id) {
-        console.warn("❌ Missing _id in removeFromCart payload:", action.payload)
+      if (!Array.isArray(state.items)) {
+        state.items = []
         return
       }
+      const { _id, variantId } = action.payload
       const initialLength = state.items.length
       state.items = state.items.filter(
         (item) => !(item._id === _id && item.variantId === variantId)
       )
-      console.log(`✅ Removed item (Product ID: ${_id} | Variant ID: ${variantId}), Cart size: ${initialLength} → ${state.items.length}`)
+      console.log(
+        "✅ Removed item (Product ID:", _id,
+        "| Variant ID:", variantId + "), Cart size:",
+        initialLength, "→", state.items.length
+      )
     },
     addAddress: (state, action) => {
       const exists = state.addresses.some(addr => addr.id === action.payload.id)
