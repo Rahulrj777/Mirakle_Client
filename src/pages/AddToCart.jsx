@@ -1,7 +1,7 @@
 "use client"
 
 import { useSelector, useDispatch } from "react-redux"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import {
   incrementQuantity,
   decrementQuantity,
@@ -9,6 +9,7 @@ import {
   selectAddress,
   setAddresses,
   initializeSelectedAddress,
+  setCartItem,
 } from "../Redux/cartSlice"
 import { useNavigate } from "react-router-dom"
 import { axiosWithToken } from "../utils/axiosWithToken"
@@ -75,10 +76,43 @@ const AddToCart = () => {
     }
   }, [dispatch, addressesLoaded, cartReady, token])
 
+  const cleanCorruptedCart = useCallback(async () => {
+    if (!token) return
+
+    try {
+      console.log("🧹 Attempting to clean corrupted cart data...")
+      const response = await axiosWithToken().post("/cart/migrate-clean")
+      if (response.data) {
+        console.log("✅ Cart cleaned successfully")
+        dispatch(setCartItem([]))
+      }
+    } catch (error) {
+      console.error("❌ Failed to clean cart:", error)
+    }
+  }, [token, dispatch])
+
+  // Add this useEffect to automatically clean cart on first load if there are persistent errors
+  useEffect(() => {
+    // Only run this once when component mounts and if we have persistent cart errors
+    const hasCartErrors = localStorage.getItem("cartErrors")
+    if (hasCartErrors && token && cartReady) {
+      cleanCorruptedCart()
+      localStorage.removeItem("cartErrors") // Clear the flag
+    }
+  }, [cleanCorruptedCart, token, cartReady])
+
   useEffect(() => {
     if (user && cartReady) {
       localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems))
-      axiosWithToken().post("/cart", { items: cartItems }).catch(console.error)
+      axiosWithToken()
+        .post("/cart", { items: cartItems })
+        .catch((error) => {
+          console.error("❌ Cart sync failed:", error)
+          // Set a flag for persistent cart errors
+          if (error.response?.status === 500) {
+            localStorage.setItem("cartErrors", "true")
+          }
+        })
     }
   }, [cartItems, cartReady, user])
 
