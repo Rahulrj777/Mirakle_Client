@@ -5,7 +5,6 @@ import { getShopPageTitle } from "../utils/shopPageUtils"
 
 const ShopingPage = () => {
   const location = useLocation()
-
   const {
     displayedProducts,
     filterType,
@@ -18,7 +17,6 @@ const ShopingPage = () => {
     handleSuggestionClick,
     handleKeyDown,
   } = useShopProducts() 
-
   const pageTitle = getShopPageTitle(location, filterType)
 
   if (loading) {

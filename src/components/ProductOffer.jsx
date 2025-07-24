@@ -89,7 +89,7 @@ const ProductOffer = () => {
           <div className="w-1/2 z-10">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">{leftBanner.title}</h2>
             {leftBanner.percentage > 0 && (
-              <p className="text-lg font-bold text-red-600 mb-2">{leftBanner.percentage}% OFF</p>
+              <p className="text-lg font-bold text-red-600 mb-2">UP TO {leftBanner.percentage}% OFF</p>
             )}
             <button 
               className="mt-3 bg-blue-600 text-white px-5 py-2 rounded font-medium hover:bg-blue-700 transition cursor-pointer"
