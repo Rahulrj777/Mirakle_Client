@@ -12,7 +12,7 @@ const ProductDetail = () => {
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0) // ✅ Added index tracking
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
   const [selectedImage, setSelectedImage] = useState("")
   const [error, setError] = useState("")
   const [relatedProducts, setRelatedProducts] = useState([])
@@ -64,7 +64,7 @@ const ProductDetail = () => {
         if (found.variants && found.variants.length > 0) {
           console.log("🔍 Product variants:", found.variants)
           setSelectedVariant(found.variants[0])
-          setSelectedVariantIndex(0) // ✅ Set initial index
+          setSelectedVariantIndex(0)
         }
       } else {
         setError("Product not found")
@@ -114,14 +114,13 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
-  // ✅ FIXED: Handle variant selection with index
   const handleSizeClick = useCallback((variant, index) => {
     console.log("🎯 Selected variant:", variant, "at index:", index)
     setSelectedVariant(variant)
     setSelectedVariantIndex(index)
   }, [])
 
-  // ✅ FIXED: Use variant index as unique identifier
+  // ✅ FIXED: Remove alert and add proper success feedback
   const handleAddToCart = useCallback(
     async (product) => {
       if (addingToCart) return
@@ -142,14 +141,12 @@ const ProductDetail = () => {
 
       setAddingToCart(true)
 
-      // ✅ Create unique variant identifier using index and size
       const variantId = `${product._id}_variant_${selectedVariantIndex}_${selectedVariant.size}`
 
       const productToAdd = {
         _id: product._id,
         title: product.title,
         images: product.images,
-        // ✅ Use generated variantId
         variantId: variantId,
         size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
         weight: {
@@ -168,11 +165,10 @@ const ProductDetail = () => {
         // Add to Redux store first
         dispatch(addToCart(productToAdd))
 
-        // ✅ For backend, we'll use the variant index since there's no _id
         const backendPayload = {
           productId: product._id,
-          variantIndex: selectedVariantIndex, // ✅ Use index instead of _id
-          variantId: variantId, // ✅ Use our generated ID
+          variantIndex: selectedVariantIndex,
+          variantId: variantId,
           quantity: 1,
         }
 
@@ -187,7 +183,8 @@ const ProductDetail = () => {
           console.warn("⚠️ Backend sync failed, but item added to local cart")
         }
 
-        alert(`Added ${selectedVariant.size} to cart!`)
+        // ✅ REMOVED: No more alert message
+        console.log(`✅ Added ${selectedVariant.size} to cart successfully`)
       } catch (err) {
         console.error("❌ Add to cart failed:", err)
         alert("Something went wrong while adding to cart")
@@ -420,7 +417,6 @@ const ProductDetail = () => {
                   key={`variant-${i}`}
                   onClick={() => handleSizeClick(v, i)}
                   className={`px-4 py-2 border rounded-full cursor-pointer transition-all font-medium ${
-                    // ✅ FIXED: Compare by index instead of _id
                     i === selectedVariantIndex
                       ? "bg-green-600 text-white border-green-600 scale-105 shadow-md"
                       : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:scale-105"
