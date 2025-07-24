@@ -87,7 +87,7 @@ const ProductOffer = () => {
           </div>
           {/* Text Section - 50% */}
           <div className="w-1/2 z-10">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">{leftBanner.title}</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 line-clamp-2">{leftBanner.title}</h2>
             {leftBanner.percentage > 0 && (
               <p className="text-lg font-bold text-red-600 mb-2">UP TO {leftBanner.percentage}% OFF</p>
             )}
@@ -124,7 +124,7 @@ const ProductOffer = () => {
           </div>
           {/* Text Section - Special Offer */}
           <div className="w-1/2 z-10">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">{rightBanner.title}</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 line-clamp-2">{rightBanner.title}</h2>
             {rightBanner.percentage > 0 && (
               <p className="text-lg font-bold text-red-600 mb-2">UP TO {rightBanner.percentage}% OFF</p>
             )}
