@@ -336,7 +336,6 @@ const ProductDetail = () => {
         {/* Image Preview */}
         <div>
           <img
-            // ✅ MODIFIED: Use selectedImage directly (it's already a full URL)
             src={selectedImage || "/placeholder.svg"}
             className="w-full h-[400px] object-contain rounded"
             alt={product.title}

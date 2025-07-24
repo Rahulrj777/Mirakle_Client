@@ -18,7 +18,7 @@ if (typeof window !== "undefined") {
 }
 
 const persistConfig = {
-  key: 'cart',
+  key: `cart_${userId}`, // ✅ Dynamic per user
   storage,
   whitelist: ['items', 'userId', 'cartReady'],
 };
