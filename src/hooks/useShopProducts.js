@@ -1,5 +1,3 @@
-"use client" // This directive is necessary because this file uses React Hooks
-
 import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { useLocation, useNavigate } from "react-router-dom" // Hooks from react-router-dom
