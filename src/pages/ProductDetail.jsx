@@ -1,3 +1,5 @@
+"use client"
+
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -23,6 +25,7 @@ const ProductDetail = () => {
   const [reviewError, setReviewError] = useState("")
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
+
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
@@ -39,13 +42,13 @@ const ProductDetail = () => {
     return Array.isArray(items) ? items : []
   })
 
-   const finalPrice = useMemo(() => {
+  const finalPrice = useMemo(() => {
     if (!selectedVariant) return "0.00"
     const price = selectedVariant.price
     const discount = selectedVariant.discountPercent || 0
     return (price - (price * discount) / 100).toFixed(2)
   }, [selectedVariant])
-  
+
   const token = user?.token
 
   const fetchProduct = useCallback(async () => {
@@ -56,7 +59,6 @@ const ProductDetail = () => {
       const found = res.data.find((p) => p._id === id)
       if (found) {
         setProduct(found)
-        // ✅ MODIFIED: Set selectedImage to the URL from the product object
         setSelectedImage(found.images?.others?.[0]?.url || "")
         if (found.variants && found.variants.length > 0) {
           setSelectedVariant(found.variants[0])
@@ -109,57 +111,81 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
+  // ✅ FIXED: Enhanced handleSizeClick with proper logging
   const handleSizeClick = useCallback((variant) => {
+    console.log("🎯 Selected variant:", variant)
     setSelectedVariant(variant)
   }, [])
 
- const handleAddToCart = useCallback(
-  async (product) => {
-    if (addingToCart) return;
-    if (!user?.token) {
-      alert("Please login to add items to cart");
-      navigate("/login_signup");
-      return;
-    }
-    if (!selectedVariant) {
-      alert("Please select a variant");
-      return;
-    }
-    setAddingToCart(true);
+  // ✅ FIXED: Enhanced handleAddToCart with proper variant handling
+  const handleAddToCart = useCallback(
+    async (product) => {
+      if (addingToCart) return
 
-    const productToAdd = {
-      _id: product._id,
-      title: product.title,
-      images: product.images,
-      variantId: selectedVariant._id,
-      size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
-      weight: {
-        value: selectedVariant?.weight?.value || selectedVariant?.size,
-        unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
-      },
-      originalPrice: Number.parseFloat(selectedVariant.price), // ✅ Added
-      discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0, // ✅ Added
-      currentPrice: Number.parseFloat(finalPrice),
-      quantity: 1,
-    };
-
-    try {
-      dispatch(addToCart(productToAdd));
-      const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", { item: productToAdd }));
-      if (syncResult) {
-        console.log("✅ Cart synced to backend");
-      } else {
-        console.warn("⚠️ Backend sync failed, but item added to local cart");
+      if (!user?.token) {
+        alert("Please login to add items to cart")
+        navigate("/login_signup")
+        return
       }
-    } catch (err) {
-      console.error("❌ Add to cart failed:", err);
-      alert("Something went wrong while adding to cart");
-    } finally {
-      setAddingToCart(false);
-    }
-  },
-  [addingToCart, user, selectedVariant, navigate, dispatch, finalPrice],
-);
+
+      if (!selectedVariant) {
+        alert("Please select a variant")
+        return
+      }
+
+      console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
+
+      setAddingToCart(true)
+
+      const productToAdd = {
+        _id: product._id,
+        title: product.title,
+        images: product.images,
+        // ✅ CRITICAL: Ensure variantId is properly set
+        variantId: selectedVariant._id,
+        size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
+        weight: {
+          value: selectedVariant?.weight?.value || selectedVariant?.size,
+          unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
+        },
+        originalPrice: Number.parseFloat(selectedVariant.price),
+        discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0,
+        currentPrice: Number.parseFloat(finalPrice),
+        quantity: 1,
+      }
+
+      console.log("🛒 Product to add:", productToAdd)
+
+      try {
+        // Add to Redux store first
+        dispatch(addToCart(productToAdd))
+
+        // Then sync to backend
+        const syncResult = await safeApiCall(
+          async (api) =>
+            await api.post("/cart/add", {
+              productId: product._id,
+              variantId: selectedVariant._id,
+              quantity: 1,
+            }),
+        )
+
+        if (syncResult) {
+          console.log("✅ Cart synced to backend")
+        } else {
+          console.warn("⚠️ Backend sync failed, but item added to local cart")
+        }
+
+        alert(`Added ${selectedVariant.size} to cart!`)
+      } catch (err) {
+        console.error("❌ Add to cart failed:", err)
+        alert("Something went wrong while adding to cart")
+      } finally {
+        setAddingToCart(false)
+      }
+    },
+    [addingToCart, user, selectedVariant, navigate, dispatch, finalPrice],
+  )
 
   const handleReviewImageChange = useCallback((e) => {
     const files = Array.from(e.target.files)
@@ -345,7 +371,6 @@ const ProductDetail = () => {
             {product.images?.others?.map((img, i) => (
               <img
                 key={i}
-                // ✅ MODIFIED: Use img.url for thumbnail images
                 src={img.url || "/placeholder.svg"}
                 onClick={() => setSelectedImage(img.url)}
                 className={`w-20 h-20 object-cover border cursor-pointer transition-all ${
@@ -357,6 +382,7 @@ const ProductDetail = () => {
             ))}
           </div>
         </div>
+
         {/* Product Info */}
         <div>
           <h1 className="text-2xl font-bold">{product.title}</h1>
@@ -380,10 +406,11 @@ const ProductDetail = () => {
             <div className="flex gap-2 flex-wrap">
               {product.variants?.map((v, i) => (
                 <button
-                  key={i}
+                  key={`${v._id}-${i}`}
                   onClick={() => handleSizeClick(v)}
                   className={`px-4 py-1 border rounded-full cursor-pointer transition-all ${
-                    v.size === selectedVariant.size
+                    // ✅ FIXED: Compare by _id instead of size to handle duplicate sizes
+                    v._id === selectedVariant._id
                       ? "bg-green-600 text-white scale-105"
                       : "hover:bg-gray-200 hover:scale-105"
                   }`}
@@ -408,6 +435,7 @@ const ProductDetail = () => {
           <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
         </div>
       </div>
+
       {/* Product Details Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-2">Product Details</h2>
@@ -423,9 +451,11 @@ const ProductDetail = () => {
           <p className="text-gray-500 text-sm">No additional info</p>
         )}
       </div>
+
       {/* Ratings & Reviews Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
+
         {/* Review Statistics */}
         {product.reviews && product.reviews.length > 0 && (
           <div className="mb-6 p-4 bg-gray-50 rounded">
@@ -457,10 +487,12 @@ const ProductDetail = () => {
             </div>
           </div>
         )}
+
         {/* Review Form - Only show if user hasn't reviewed yet */}
         {token && !currentUserReview ? (
           <form onSubmit={handleReviewSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Write a Review</h3>
+
             {/* Rating */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
@@ -488,6 +520,7 @@ const ProductDetail = () => {
                 </span>
               </div>
             </div>
+
             {/* Comment */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Review:</label>
@@ -504,6 +537,7 @@ const ProductDetail = () => {
                 {reviewComment.length < 10 && reviewComment.length > 0 && "(minimum 10 required)"}
               </div>
             </div>
+
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium mb-1">Add Photos (Optional):</label>
@@ -516,6 +550,7 @@ const ProductDetail = () => {
               />
               <div className="text-xs text-gray-500 mt-1">You can upload up to 5 images (max 5MB each)</div>
             </div>
+
             {/* Image Previews */}
             {reviewImagePreviews.length > 0 && (
               <div>
@@ -541,7 +576,9 @@ const ProductDetail = () => {
                 </div>
               </div>
             )}
+
             {reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
+
             <button
               type="submit"
               disabled={submittingReview || !reviewRating || !reviewComment.trim() || reviewComment.trim().length < 10}
@@ -560,6 +597,7 @@ const ProductDetail = () => {
             <p className="text-gray-600">Please login to write a review.</p>
           </div>
         )}
+
         {/* Reviews List */}
         <div className="space-y-4">
           {/* Current User's Review */}
@@ -582,25 +620,32 @@ const ProductDetail = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-700 mb-3">{currentUserReview.comment}</p>
+
               {/* Review Images */}
-              {currentUserReview.images.map((image, index) => (
-                <img
-                  key={index}
-                  src={image.startsWith("http") ? image : `${API_BASE}${image}`}
-                  alt={`Review image ${index + 1}`}
-                  loading="lazy"
-                  className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
-                />
-              ))}
+              {currentUserReview.images && currentUserReview.images.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {currentUserReview.images.map((image, index) => (
+                    <img
+                      key={index}
+                      src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                      alt={`Review image ${index + 1}`}
+                      loading="lazy"
+                      className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
           {/* Other Reviews */}
           {reviewsToShow.length === 0 && !currentUserReview && (
             <div className="text-center py-8">
               <p className="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
             </div>
           )}
+
           {reviewsToShow.map((review) => {
             return (
               <div key={review._id} className="border p-4 rounded shadow-sm bg-white">
@@ -612,26 +657,30 @@ const ProductDetail = () => {
                   <p className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>
                 </div>
                 <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
+
                 {/* Review Images */}
                 {review.images && review.images.length > 0 && (
                   <div className="mb-3">
                     <div className="flex flex-wrap gap-2">
                       {review.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image.startsWith("http") ? image : `${API_BASE}${image}`}
-                        loading="lazy"
-                        alt={`Review image ${index + 1}`}
-                        className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
-                      />
-                    ))}
+                        <img
+                          key={index}
+                          src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                          loading="lazy"
+                          alt={`Review image ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() =>
+                            window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")
+                          }
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
             )
           })}
+
           {/* Show More/Less Button */}
           {otherReviews.length > 3 && (
             <div className="text-center">
@@ -645,17 +694,18 @@ const ProductDetail = () => {
           )}
         </div>
       </div>
+
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div className="mt-10">
           <h2 className="text-xl font-bold mb-4">Related Products</h2>
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
             {relatedProducts.map((p) => {
-              const mainImage = p.images?.others?.[0]?.url || "/placeholder.jpg";
-              const firstVariant = p.variants?.[0];
-              const price = firstVariant?.price || 0;
-              const discount = firstVariant?.discountPercent || 0;
-              const finalPrice = (price - (price * discount) / 100).toFixed(2);
+              const mainImage = p.images?.others?.[0]?.url || "/placeholder.jpg"
+              const firstVariant = p.variants?.[0]
+              const price = firstVariant?.price || 0
+              const discount = firstVariant?.discountPercent || 0
+              const finalPrice = (price - (price * discount) / 100).toFixed(2)
 
               return (
                 <div
@@ -669,9 +719,8 @@ const ProductDetail = () => {
                       {discount}% OFF
                     </div>
                   )}
-
                   <img
-                    src={mainImage}
+                    src={mainImage || "/placeholder.svg"}
                     alt={p.title}
                     className="w-full h-48 object-cover rounded mb-2 hover:scale-105 transition-transform duration-200"
                     loading="lazy"
@@ -680,7 +729,7 @@ const ProductDetail = () => {
                   <p className="text-green-600 font-bold">₹{finalPrice}</p>
                   {discount > 0 && <p className="text-xs text-gray-400 line-through">₹{price}</p>}
                 </div>
-              );
+              )
             })}
           </div>
         </div>

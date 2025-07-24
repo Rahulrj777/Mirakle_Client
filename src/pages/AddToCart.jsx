@@ -1,3 +1,5 @@
+"use client"
+
 import { useSelector, useDispatch } from "react-redux"
 import { useEffect, useState, useRef } from "react"
 import {
@@ -34,10 +36,8 @@ const AddToCart = () => {
 
   useEffect(() => {
     if (!cartReady) return
-
     if (token && !addressesLoaded) {
       setAddressesLoading(true)
-
       fetch(`${API_BASE}/api/users/address`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -48,18 +48,14 @@ const AddToCart = () => {
           if (Array.isArray(data.addresses)) {
             dispatch(setAddresses(data.addresses))
             setAddressesLoaded(true)
-
-            // After addresses are loaded, check localStorage for selected address
             const savedAddress = localStorage.getItem("deliveryAddress")
             if (savedAddress) {
               try {
                 const parsed = JSON.parse(savedAddress)
-                // Verify the saved address still exists in the backend
                 const stillExists = data.addresses.some((a) => a._id === parsed._id)
                 if (stillExists) {
                   dispatch(initializeSelectedAddress(parsed))
                 } else {
-                  // Address was deleted, clear localStorage
                   localStorage.removeItem("deliveryAddress")
                   dispatch(selectAddress(null))
                 }
@@ -75,7 +71,6 @@ const AddToCart = () => {
           setAddressesLoading(false)
         })
     } else if (!token) {
-      // If no token, stop loading immediately
       setAddressesLoading(false)
     }
   }, [dispatch, addressesLoaded, cartReady, token])
@@ -87,25 +82,21 @@ const AddToCart = () => {
     }
   }, [cartItems, cartReady, user])
 
-  // Handle address selection and sync to localStorage
   const handleAddressSelect = (address) => {
     dispatch(selectAddress(address))
     localStorage.setItem("deliveryAddress", JSON.stringify(address))
     setShowAddressModal(false)
   }
 
-  // Close modal on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         setShowAddressModal(false)
       }
     }
-
     if (showAddressModal) {
       document.addEventListener("mousedown", handleClickOutside)
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
@@ -127,17 +118,13 @@ const AddToCart = () => {
           "Content-Type": "application/json",
         },
       })
-
       if (!res.ok) {
         const errorText = await res.text()
         throw new Error(`Failed to delete address: ${errorText}`)
       }
-
       const data = await res.json()
       if (data.addresses) {
         dispatch(setAddresses(data.addresses))
-
-        // Handle selected address after deletion
         if (selectedAddress?._id === id) {
           localStorage.removeItem("deliveryAddress")
           if (data.addresses.length > 0) {
@@ -200,7 +187,8 @@ const AddToCart = () => {
             <p className="text-center py-10 text-gray-600">Your cart is empty.</p>
           ) : (
             cartItems.map((item) => (
-              <div key={item._id} className="bg-white rounded shadow p-4 flex gap-4">
+              // ✅ FIXED: Use unique key combining _id and variantId
+              <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
                 <img
                   src={item.images?.others?.[0]?.url || "/placeholder.svg"}
                   alt={item.title}
@@ -209,7 +197,7 @@ const AddToCart = () => {
                 />
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{item.title}</h2>
-                  <p className="text-sm text-gray-600">Size: {item.weight.value}</p>
+                  <p className="text-sm text-gray-600">Size: {item.size}</p>
                   <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
                   <div className="flex items-center gap-3">
                     <span className="text-green-600 font-bold text-xl">₹{item.currentPrice.toFixed(2)}</span>
@@ -238,9 +226,10 @@ const AddToCart = () => {
                         +
                       </button>
                     </div>
+                    {/* ✅ FIXED: Pass both _id and variantId for removal */}
                     <button
                       className="text-red-500 text-sm hover:underline"
-                      onClick={() => dispatch(removeFromCart(item._id))}
+                      onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
                     >
                       Remove
                     </button>
