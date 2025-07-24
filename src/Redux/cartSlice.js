@@ -46,27 +46,18 @@ const cartSlice = createSlice({
       state.cartReady = action.payload
     },
     addToCart: (state, action) => {
-      if (!Array.isArray(state.items)) {
-        console.warn("⚠️ Cart items was not an array, resetting to empty array")
-        state.items = []
-      }
-      const newItem = action.payload
-      console.log("🛒 Adding to cart:", newItem)
+      const item = action.payload;
 
-      const existingItemIndex = state.items.findIndex(
-        (item) => item._id === newItem._id && item.variantId === newItem.variantId,
-      )
-      if (existingItemIndex >= 0) {
-        state.items[existingItemIndex].quantity += newItem.quantity || 1
-        console.log("✅ Updated existing item quantity")
+      const existingItem = state.items.find(
+        (i) =>
+          i._id === item._id && i.variantId === item.variantId
+      );
+
+      if (existingItem) {
+        existingItem.quantity += item.quantity;
       } else {
-        state.items.push({
-          ...newItem,
-          quantity: newItem.quantity || 1,
-        })
-        console.log("✅ Added new item to cart")
+        state.items.push(item);
       }
-      console.log("🛒 Cart now has", state.items.length, "items")
     },
     incrementQuantity: (state, action) => {
       if (!Array.isArray(state.items)) {
