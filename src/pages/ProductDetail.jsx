@@ -61,6 +61,7 @@ const ProductDetail = () => {
         setProduct(found)
         setSelectedImage(found.images?.others?.[0]?.url || "")
         if (found.variants && found.variants.length > 0) {
+          console.log("🔍 Product variants:", found.variants)
           setSelectedVariant(found.variants[0])
         }
       } else {
@@ -111,13 +112,12 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
-  // ✅ FIXED: Enhanced handleSizeClick with proper logging
   const handleSizeClick = useCallback((variant) => {
     console.log("🎯 Selected variant:", variant)
     setSelectedVariant(variant)
   }, [])
 
-  // ✅ FIXED: Enhanced handleAddToCart with proper variant handling
+  // ✅ FIXED: Enhanced handleAddToCart with proper backend sync
   const handleAddToCart = useCallback(
     async (product) => {
       if (addingToCart) return
@@ -133,7 +133,15 @@ const ProductDetail = () => {
         return
       }
 
+      // ✅ CRITICAL: Check if variant has _id
+      if (!selectedVariant._id) {
+        console.error("❌ Selected variant missing _id:", selectedVariant)
+        alert("Invalid variant selected. Please try again.")
+        return
+      }
+
       console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
+      console.log("🛒 Variant ID:", selectedVariant._id)
 
       setAddingToCart(true)
 
@@ -160,18 +168,20 @@ const ProductDetail = () => {
         // Add to Redux store first
         dispatch(addToCart(productToAdd))
 
-        // Then sync to backend
-        const syncResult = await safeApiCall(
-          async (api) =>
-            await api.post("/cart/add", {
-              productId: product._id,
-              variantId: selectedVariant._id,
-              quantity: 1,
-            }),
-        )
+        // ✅ FIXED: Send correct data structure to backend
+        const backendPayload = {
+          productId: product._id,
+          variantId: selectedVariant._id,
+          quantity: 1,
+        }
+
+        console.log("🔄 Syncing to backend with payload:", backendPayload)
+
+        // Then sync to backend using the /cart/add endpoint
+        const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", backendPayload))
 
         if (syncResult) {
-          console.log("✅ Cart synced to backend")
+          console.log("✅ Cart synced to backend successfully")
         } else {
           console.warn("⚠️ Backend sync failed, but item added to local cart")
         }
@@ -406,10 +416,9 @@ const ProductDetail = () => {
             <div className="flex gap-2 flex-wrap">
               {product.variants?.map((v, i) => (
                 <button
-                  key={`${v._id}-${i}`}
+                  key={`${v._id || i}-${i}`}
                   onClick={() => handleSizeClick(v)}
                   className={`px-4 py-1 border rounded-full cursor-pointer transition-all ${
-                    // ✅ FIXED: Compare by _id instead of size to handle duplicate sizes
                     v._id === selectedVariant._id
                       ? "bg-green-600 text-white scale-105"
                       : "hover:bg-gray-200 hover:scale-105"
