@@ -151,7 +151,7 @@ const ProductDetail = () => {
       setAddingToCart(false);
     }
   },
-  [addingToCart, user, selectedVariant, navigate, dispatch],
+  [addingToCart, user, selectedVariant, navigate, dispatch, finalPrice],
 );
 
   const handleReviewImageChange = useCallback((e) => {
