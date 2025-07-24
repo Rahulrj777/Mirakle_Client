@@ -100,18 +100,16 @@ const cartSlice = createSlice({
       }
     },
     removeFromCart: (state, action) => {
-      if (!Array.isArray(state.items)) {
-        state.items = []
+      const { _id, variantId } = action.payload || {}
+      if (!_id) {
+        console.warn("❌ Missing _id in removeFromCart payload:", action.payload)
         return
       }
-      const { _id, variantId } = action.payload
       const initialLength = state.items.length
       state.items = state.items.filter(
         (item) => !(item._id === _id && item.variantId === variantId)
       )
-      console.log(
-        `✅ Removed item (Product ID: ${_id} | Variant ID: ${variantId}), Cart size: ${initialLength} → ${state.items.length}`
-      )
+      console.log(`✅ Removed item (Product ID: ${_id} | Variant ID: ${variantId}), Cart size: ${initialLength} → ${state.items.length}`)
     },
     addAddress: (state, action) => {
       const exists = state.addresses.some(addr => addr.id === action.payload.id)

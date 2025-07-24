@@ -25,7 +25,7 @@ const ProductDetail = () => {
   const [actionLoading, setActionLoading] = useState({})
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const user = useSelector((state) => state.auth.user);
+  const user = useSelector((state) => state.auth?.user || null)
 
   const cartItems = useSelector((state) => {
     const items = state.cart?.items
