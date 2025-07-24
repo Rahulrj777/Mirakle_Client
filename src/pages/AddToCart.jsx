@@ -240,7 +240,9 @@ const AddToCart = () => {
                     </div>
                     <button
                       className="text-red-500 text-sm hover:underline"
-                      onClick={() => dispatch(removeFromCart(item._id))}
+                      onClick={() =>
+                        dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))
+                      }
                     >
                       Remove
                     </button>
