@@ -80,14 +80,15 @@ const AddToCart = () => {
     if (!token) return
 
     try {
-      console.log("🧹 Attempting to clean corrupted cart data...")
+      console.log("🧹 Attempting to clean corrupted cart data via API...")
+      // Call the new backend route to clean the cart
       const response = await axiosWithToken().post("/cart/migrate-clean")
       if (response.data) {
-        console.log("✅ Cart cleaned successfully")
-        dispatch(setCartItem([]))
+        console.log("✅ Cart cleaned successfully via API")
+        dispatch(setCartItem([])) // Clear local cart after backend cleanup
       }
     } catch (error) {
-      console.error("❌ Failed to clean cart:", error)
+      console.error("❌ Failed to clean cart via API:", error)
     }
   }, [token, dispatch])
 
