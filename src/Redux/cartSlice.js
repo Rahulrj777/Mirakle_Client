@@ -18,13 +18,20 @@ const cartSlice = createSlice({
     setCartItem: (state, action) => {
       const payload = action.payload
       if (Array.isArray(payload)) {
+        // Direct array of cart items
         state.items = payload
-      } else if (payload && Array.isArray(payload.items)) {
-        state.items = payload.items
-      } else if (payload && typeof payload === "object" && payload.items) {
-        state.items = Array.isArray(payload.items) ? payload.items : []
+      } else if (payload && typeof payload === "object") {
+        const items = payload.items
+
+        if (Array.isArray(items)) {
+          state.items = items
+        } else {
+          state.items = []
+          console.warn("⚠️ Invalid payload.items, expected array. Setting empty cart.")
+        }
       } else {
         state.items = []
+        console.warn("⚠️ Invalid payload for setCartItem. Setting empty cart.")
       }
       console.log("✅ Cart items set:", state.items)
     },
@@ -97,12 +104,22 @@ const cartSlice = createSlice({
         state.items = []
         return
       }
+      const { _id, variantId } = action.payload
       const initialLength = state.items.length
-      state.items = state.items.filter((item) => item._id !== action.payload)
-      console.log("✅ Removed item, cart size:", initialLength, "→", state.items.length)
+      state.items = state.items.filter(
+        (item) => !(item._id === _id && item.variantId === variantId)
+      )
+      console.log(
+        "✅ Removed item (Product ID:", _id,
+        "| Variant ID:", variantId + "), Cart size:",
+        initialLength, "→", state.items.length
+      )
     },
     addAddress: (state, action) => {
-      state.addresses.push(action.payload)
+      const exists = state.addresses.some(addr => addr.id === action.payload.id)
+      if (!exists) {
+        state.addresses.push(action.payload)
+      }
     },
     setAddresses: (state, action) => {
       state.addresses = action.payload
