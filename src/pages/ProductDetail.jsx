@@ -12,6 +12,7 @@ const ProductDetail = () => {
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0) // ✅ Added index tracking
   const [selectedImage, setSelectedImage] = useState("")
   const [error, setError] = useState("")
   const [relatedProducts, setRelatedProducts] = useState([])
@@ -63,6 +64,7 @@ const ProductDetail = () => {
         if (found.variants && found.variants.length > 0) {
           console.log("🔍 Product variants:", found.variants)
           setSelectedVariant(found.variants[0])
+          setSelectedVariantIndex(0) // ✅ Set initial index
         }
       } else {
         setError("Product not found")
@@ -112,12 +114,14 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
-  const handleSizeClick = useCallback((variant) => {
-    console.log("🎯 Selected variant:", variant)
+  // ✅ FIXED: Handle variant selection with index
+  const handleSizeClick = useCallback((variant, index) => {
+    console.log("🎯 Selected variant:", variant, "at index:", index)
     setSelectedVariant(variant)
+    setSelectedVariantIndex(index)
   }, [])
 
-  // ✅ FIXED: Enhanced handleAddToCart with proper backend sync
+  // ✅ FIXED: Use variant index as unique identifier
   const handleAddToCart = useCallback(
     async (product) => {
       if (addingToCart) return
@@ -133,24 +137,20 @@ const ProductDetail = () => {
         return
       }
 
-      // ✅ CRITICAL: Check if variant has _id
-      if (!selectedVariant._id) {
-        console.error("❌ Selected variant missing _id:", selectedVariant)
-        alert("Invalid variant selected. Please try again.")
-        return
-      }
-
       console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
-      console.log("🛒 Variant ID:", selectedVariant._id)
+      console.log("🛒 Variant Index:", selectedVariantIndex)
 
       setAddingToCart(true)
+
+      // ✅ Create unique variant identifier using index and size
+      const variantId = `${product._id}_variant_${selectedVariantIndex}_${selectedVariant.size}`
 
       const productToAdd = {
         _id: product._id,
         title: product.title,
         images: product.images,
-        // ✅ CRITICAL: Ensure variantId is properly set
-        variantId: selectedVariant._id,
+        // ✅ Use generated variantId
+        variantId: variantId,
         size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
         weight: {
           value: selectedVariant?.weight?.value || selectedVariant?.size,
@@ -168,16 +168,17 @@ const ProductDetail = () => {
         // Add to Redux store first
         dispatch(addToCart(productToAdd))
 
-        // ✅ FIXED: Send correct data structure to backend
+        // ✅ For backend, we'll use the variant index since there's no _id
         const backendPayload = {
           productId: product._id,
-          variantId: selectedVariant._id,
+          variantIndex: selectedVariantIndex, // ✅ Use index instead of _id
+          variantId: variantId, // ✅ Use our generated ID
           quantity: 1,
         }
 
         console.log("🔄 Syncing to backend with payload:", backendPayload)
 
-        // Then sync to backend using the /cart/add endpoint
+        // Sync to backend
         const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", backendPayload))
 
         if (syncResult) {
@@ -194,7 +195,7 @@ const ProductDetail = () => {
         setAddingToCart(false)
       }
     },
-    [addingToCart, user, selectedVariant, navigate, dispatch, finalPrice],
+    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice],
   )
 
   const handleReviewImageChange = useCallback((e) => {
@@ -416,12 +417,13 @@ const ProductDetail = () => {
             <div className="flex gap-2 flex-wrap">
               {product.variants?.map((v, i) => (
                 <button
-                  key={`${v._id || i}-${i}`}
-                  onClick={() => handleSizeClick(v)}
-                  className={`px-4 py-1 border rounded-full cursor-pointer transition-all ${
-                    v._id === selectedVariant._id
-                      ? "bg-green-600 text-white scale-105"
-                      : "hover:bg-gray-200 hover:scale-105"
+                  key={`variant-${i}`}
+                  onClick={() => handleSizeClick(v, i)}
+                  className={`px-4 py-2 border rounded-full cursor-pointer transition-all font-medium ${
+                    // ✅ FIXED: Compare by index instead of _id
+                    i === selectedVariantIndex
+                      ? "bg-green-600 text-white border-green-600 scale-105 shadow-md"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:scale-105"
                   }`}
                 >
                   {v.size}
