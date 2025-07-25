@@ -118,7 +118,7 @@ const cartSlice = createSlice({
         state.items = []
         return
       }
-      const { _id, variantId } = action.payload
+      const { _id, variantId } = action.payload // ✅ Ensure variantId is passed for removal
       const initialLength = state.items.length
       // ✅ FIXED: Remove by both _id and variantId
       state.items = state.items.filter(

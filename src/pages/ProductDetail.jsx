@@ -7,7 +7,7 @@ import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { safeApiCall } from "../utils/axiosWithToken"
-import { generateVariantId } from "../utils/cartUtils" // Import the new utility
+import { generateVariantId } from "../utils/cartUtils" // ✅ Re-added import
 
 const ProductDetail = () => {
   const { id } = useParams()

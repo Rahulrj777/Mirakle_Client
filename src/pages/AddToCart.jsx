@@ -83,7 +83,8 @@ const AddToCart = () => {
     if (!token) return
     try {
       console.log("🧹 Attempting to clean corrupted cart data via API...")
-      const response = await axiosWithToken().post("/cart/migrate-clean") // This route might need to be implemented on backend
+      // This route might need to be implemented on backend if it's not already
+      const response = await axiosWithToken().post("/cart/migrate-clean")
       if (response.data) {
         console.log("✅ Cart cleaned successfully via API")
         dispatch(setCartItem([]))
