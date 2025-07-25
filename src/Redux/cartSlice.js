@@ -16,17 +16,26 @@ const cartSlice = createSlice({
       state.userId = action.payload
     },
     setCartItem: (state, action) => {
-      const payload = action.payload
-      if (Array.isArray(payload)) {
-        state.items = payload
-      } else if (payload && Array.isArray(payload.items)) {
-        state.items = payload.items
-      } else if (payload && typeof payload === "object" && payload.items) {
-        state.items = Array.isArray(payload.items) ? payload.items : []
-      } else {
-        state.items = []
-      }
-      console.log("✅ Cart items set:", state.items)
+      const incomingItems = Array.isArray(action.payload)
+        ? action.payload
+        : action.payload && Array.isArray(action.payload.items)
+          ? action.payload.items
+          : []
+
+      const aggregatedItems = []
+      incomingItems.forEach((item) => {
+        const existingItem = aggregatedItems.find(
+          (i) => i._id.toString() === item._id.toString() && i.variantId?.toString() === item.variantId?.toString(),
+        )
+
+        if (existingItem) {
+          existingItem.quantity += item.quantity
+        } else {
+          aggregatedItems.push({ ...item })
+        }
+      })
+      state.items = aggregatedItems
+      console.log("✅ Cart items set and aggregated:", state.items)
     },
     clearCart: (state) => {
       state.items = []
