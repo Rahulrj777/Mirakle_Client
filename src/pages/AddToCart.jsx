@@ -1,5 +1,3 @@
-"use client"
-
 import { useSelector, useDispatch } from "react-redux"
 import { useEffect, useState, useRef, useCallback } from "react"
 import {
