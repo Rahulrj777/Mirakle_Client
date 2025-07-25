@@ -68,12 +68,11 @@ const LoginSignUp = () => {
     try {
       setLoading(true)
 
-      // 🔥 STEP 1: Clear everything first
       console.log("🔄 Clearing previous session...")
       dispatch(clearUser())
       dispatch(setCartReady(false))
+      dispatch(setCartItem([]))
 
-      // Small delay to ensure Redux state is cleared
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       // 🔥 STEP 2: Login
