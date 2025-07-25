@@ -20,6 +20,7 @@ const AddToCart = () => {
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(true)
   const modalRef = useRef()
+  const prevCartRef = useRef([])
 
   const cartItems = useSelector((state) => state.cart.items)
   const cartReady = useSelector((state) => state.cart.cartReady)
@@ -79,11 +80,10 @@ const AddToCart = () => {
 
     try {
       console.log("🧹 Attempting to clean corrupted cart data via API...")
-      // Call the new backend route to clean the cart
       const response = await axiosWithToken().post("/cart/migrate-clean")
       if (response.data) {
         console.log("✅ Cart cleaned successfully via API")
-        dispatch(setCartItem([])) // Clear local cart after backend cleanup
+        dispatch(setCartItem([]))
       }
     } catch (error) {
       console.error("❌ Failed to clean cart via API:", error)
@@ -99,22 +99,27 @@ const AddToCart = () => {
   }, [cleanCorruptedCart, token, cartReady])
 
   useEffect(() => {
-    if (user && cartReady && Array.isArray(cartItems)) {
-      const key = `cart_${user._id}`
-      localStorage.setItem(key, JSON.stringify(cartItems))
+  if (user && cartReady && Array.isArray(cartItems)) {
+    const key = `cart_${user._id}`
+    localStorage.setItem(key, JSON.stringify(cartItems))
 
-      if (cartItems.length > 0) {
-        axiosWithToken().post("/cart", { items: cartItems })
-          .then(() => console.log("✅ Synced cart to backend"))
-          .catch((error) => {
-            console.error("❌ Sync failed:", error)
-            if (error.response?.status === 500) {
-              localStorage.setItem("cartErrors", "true")
-            }
-          })
-      }
+    const prevCart = prevCartRef.current
+    const hasChanged = JSON.stringify(prevCart) !== JSON.stringify(cartItems)
+    if (hasChanged && cartItems.length > 0) {
+      axiosWithToken().post("/cart", { items: cartItems })
+        .then(() => {
+          console.log("✅ Synced cart to backend")
+          prevCartRef.current = cartItems
+        })
+        .catch((error) => {
+          console.error("❌ Sync failed:", error)
+          if (error.response?.status === 500) {
+            localStorage.setItem("cartErrors", "true")
+          }
+        })
     }
-  }, [cartItems, cartReady, user])
+  }
+}, [cartItems, cartReady, user])
 
   const handleAddressSelect = (address) => {
     dispatch(selectAddress(address))

@@ -7,7 +7,7 @@ import { FaRegUser } from "react-icons/fa"
 import { useSelector, useDispatch } from "react-redux"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
-import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice" 
+import { setCartItem, setUserId, clearUser,setCartReady } from "../Redux/cartSlice" 
 const Banners = () => {
   const [hovered, setHovered] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -137,27 +137,30 @@ const Banners = () => {
   )
 
   const handleLogout = useCallback(() => {
-    const mirakleUser = localStorage.getItem("mirakleUser")
-    let userId = null
+    const mirakleUser = localStorage.getItem("mirakleUser");
+    let userId = null;
 
     if (mirakleUser) {
       try {
-        userId = JSON.parse(mirakleUser)?.user?._id
+        userId = JSON.parse(mirakleUser)?.user?._id;
       } catch {
-        console.warn("⚠️ Failed to parse user from localStorage")
+        console.warn("⚠️ Failed to parse user from localStorage");
       }
     }
 
-    localStorage.removeItem("mirakleUser")
+    localStorage.removeItem("mirakleUser");
     if (userId) {
-      localStorage.removeItem(`cart_${userId}`)
+      localStorage.removeItem(`cart_${userId}`);
     }
+    localStorage.removeItem("cartErrors"); // optional cleanup
 
-    dispatch(setCartItem([]))
-    dispatch(clearUser())
-    setShowDropdown(false)
-    navigate("/login_signup")
-  }, [dispatch, navigate])
+    dispatch(setCartItem([]));
+    dispatch(setCartReady(false)); // ✅ Reset cart readiness
+    dispatch(clearUser());
+
+    setShowDropdown(false);
+    navigate("/login_signup");
+  }, [dispatch, navigate]);
 
   const handleSelectSuggestion = useCallback(
     (id) => {

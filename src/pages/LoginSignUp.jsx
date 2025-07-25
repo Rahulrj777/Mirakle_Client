@@ -114,11 +114,10 @@ const LoginSignUp = () => {
           }
         }
 
-        // If no local cart or local cart is empty, fetch from server
         if (cartToLoad.length === 0) {
           try {
             console.log("📦 Fetching cart from server...")
-            const cartRes = await axiosWithToken().get("/cart")
+            const cartRes = await axiosWithToken(token).get("/cart")
             const serverCart = cartRes.data?.items || cartRes.data || []
 
             if (Array.isArray(serverCart) && serverCart.length > 0) {
