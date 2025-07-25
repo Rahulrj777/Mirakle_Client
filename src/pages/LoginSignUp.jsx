@@ -75,7 +75,6 @@ const LoginSignUp = () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // 🔥 STEP 2: Login
       console.log("🔐 Attempting login...")
       const res = await axios.post(`${API_BASE}/api/users/login`, {
         email: email.trim(),
@@ -87,15 +86,12 @@ const LoginSignUp = () => {
 
       console.log("✅ Login successful for user:", user._id)
 
-      // 🔥 STEP 3: Store user data
       localStorage.setItem("mirakleUser", JSON.stringify({ user, token }))
       dispatch(setUserId(user._id))
 
-      // 🔥 STEP 4: Handle cart loading with better error handling
       try {
         console.log("📦 Loading cart for user:", user._id)
 
-        // Check localStorage first
         const savedCart = localStorage.getItem(`cart_${user._id}`)
         let cartToLoad = []
 
@@ -106,9 +102,8 @@ const LoginSignUp = () => {
               console.log("📦 Found local cart with", parsedCart.length, "items")
               cartToLoad = parsedCart
 
-              // Sync local cart to server
               try {
-                await axiosWithToken().post("/cart", { items: parsedCart })
+                await axiosWithToken(token).post("/cart", { items: parsedCart })
                 console.log("✅ Local cart synced to server")
               } catch (syncError) {
                 console.warn("⚠️ Failed to sync local cart to server:", syncError.message)

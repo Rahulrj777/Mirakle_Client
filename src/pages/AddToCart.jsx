@@ -90,9 +90,7 @@ const AddToCart = () => {
     }
   }, [token, dispatch])
 
-  // Add this useEffect to automatically clean cart on first load if there are persistent errors
   useEffect(() => {
-    // Only run this once when component mounts and if we have persistent cart errors
     const hasCartErrors = localStorage.getItem("cartErrors")
     if (hasCartErrors && token && cartReady) {
       cleanCorruptedCart()
@@ -101,17 +99,20 @@ const AddToCart = () => {
   }, [cleanCorruptedCart, token, cartReady])
 
   useEffect(() => {
-    if (user && cartReady) {
-      localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems))
-      axiosWithToken()
-        .post("/cart", { items: cartItems })
-        .catch((error) => {
-          console.error("❌ Cart sync failed:", error)
-          // Set a flag for persistent cart errors
-          if (error.response?.status === 500) {
-            localStorage.setItem("cartErrors", "true")
-          }
-        })
+    if (user && cartReady && Array.isArray(cartItems)) {
+      const key = `cart_${user._id}`
+      localStorage.setItem(key, JSON.stringify(cartItems))
+
+      if (cartItems.length > 0) {
+        axiosWithToken().post("/cart", { items: cartItems })
+          .then(() => console.log("✅ Synced cart to backend"))
+          .catch((error) => {
+            console.error("❌ Sync failed:", error)
+            if (error.response?.status === 500) {
+              localStorage.setItem("cartErrors", "true")
+            }
+          })
+      }
     }
   }, [cartItems, cartReady, user])
 

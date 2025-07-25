@@ -137,13 +137,23 @@ const Banners = () => {
   )
 
   const handleLogout = useCallback(() => {
-    const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user
-    if (user?._id) {
-      console.log(`Logging out user ${user._id}, keeping their cart in localStorage`)
+    const mirakleUser = localStorage.getItem("mirakleUser")
+    let userId = null
+
+    if (mirakleUser) {
+      try {
+        userId = JSON.parse(mirakleUser)?.user?._id
+      } catch {
+        console.warn("⚠️ Failed to parse user from localStorage")
+      }
     }
+
     localStorage.removeItem("mirakleUser")
-    dispatch(setCartItem([])) 
-    localStorage.removeItem(`cart_${user._id}`);
+    if (userId) {
+      localStorage.removeItem(`cart_${userId}`)
+    }
+
+    dispatch(setCartItem([]))
     dispatch(clearUser())
     setShowDropdown(false)
     navigate("/login_signup")
