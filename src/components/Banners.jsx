@@ -21,7 +21,7 @@ const Banners = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const cartItems = useSelector((state) => state.cart.items) || []
+  const cartItems = useSelector((state) => state.cart.items)
   const currentUserId = useSelector((state) => state.cart.userId)
   const [searchTerm, setSearchTerm] = useState("")
   const searchContainerRef = useRef(null) // ✅ NEW: Ref for the entire search container
