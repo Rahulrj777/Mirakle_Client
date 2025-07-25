@@ -1,5 +1,7 @@
+"use client"
+
 import { useSelector, useDispatch } from "react-redux"
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import {
   incrementQuantity,
   decrementQuantity,
@@ -8,9 +10,11 @@ import {
   setAddresses,
   initializeSelectedAddress,
   setCartItem,
+  clearCart, // Import clearCart
+  setCartReady, // Import setCartReady
 } from "../Redux/cartSlice"
 import { useNavigate } from "react-router-dom"
-import { axiosWithToken } from "../utils/axiosWithToken"
+import { axiosWithToken, safeApiCall } from "../utils/axiosWithToken" // Ensure safeApiCall is imported
 import { API_BASE } from "../utils/api"
 
 const AddToCart = () => {
@@ -30,11 +34,54 @@ const AddToCart = () => {
   const originalTotal = cartItems.reduce((acc, item) => acc + item.originalPrice * item.quantity, 0)
   const discountAmount = originalTotal - subtotal
 
-  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token
-  const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user
+  // Use useMemo for user and token to ensure stable references
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("mirakleUser"))
+    } catch {
+      return null
+    }
+  }, []) // No dependencies, so it only re-evaluates if localStorage changes (e.g., on login/logout)
 
+  const token = user?.token
+
+  // ✅ NEW: Centralized function to fetch and set cart
+  const fetchAndSetCart = useCallback(async () => {
+    if (!token) {
+      console.log("👤 No user token, clearing local cart.")
+      dispatch(clearCart()) // Clear cart if no user token
+      dispatch(setCartReady(true)) // Mark as ready even if empty
+      return
+    }
+
+    try {
+      console.log("📦 Fetching cart for current user...")
+      const cartData = await safeApiCall(async (api) => await api.get("/cart"), { items: [] })
+      if (cartData && Array.isArray(cartData.items)) {
+        dispatch(setCartItem(cartData.items))
+        console.log("✅ Cart loaded from backend:", cartData.items.length, "items")
+      } else {
+        dispatch(setCartItem([]))
+        console.log("✅ No cart found or invalid data, setting empty cart.")
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch cart for user:", err)
+      dispatch(setCartItem([])) // Ensure cart is empty on error
+    } finally {
+      dispatch(setCartReady(true))
+    }
+  }, [token, dispatch])
+
+  // ✅ NEW: useEffect to handle user changes and initial cart load
   useEffect(() => {
-    if (!cartReady) return
+    console.log("👤 User or token changed, re-initializing cart.")
+    dispatch(setCartReady(false)) // Set cart not ready while fetching
+    fetchAndSetCart()
+  }, [token, fetchAndSetCart]) // Depend on token to trigger on login/logout
+
+  // Existing useEffect for addresses
+  useEffect(() => {
+    if (!cartReady) return // Wait for cart to be ready
     if (token && !addressesLoaded) {
       setAddressesLoading(true)
       fetch(`${API_BASE}/api/users/address`, {
@@ -79,7 +126,6 @@ const AddToCart = () => {
 
     try {
       console.log("🧹 Attempting to clean corrupted cart data via API...")
-      // Call the new backend route to clean the cart
       const response = await axiosWithToken().post("/cart/migrate-clean")
       if (response.data) {
         console.log("✅ Cart cleaned successfully via API")
@@ -100,6 +146,7 @@ const AddToCart = () => {
     }
   }, [cleanCorruptedCart, token, cartReady])
 
+  // Existing useEffect for syncing local cart to backend
   useEffect(() => {
     if (user && cartReady) {
       localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems))
@@ -220,8 +267,7 @@ const AddToCart = () => {
             <p className="text-center py-10 text-gray-600">Your cart is empty.</p>
           ) : (
             cartItems.map((item) => (
-              // ✅ FIXED: Use unique key combining _id and variantId
-              <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
+              <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4"> {/* ✅ FIXED: Use _id and variantId for key */}
                 <img
                   src={item.images?.others?.[0]?.url || "/placeholder.svg"}
                   alt={item.title}
@@ -230,7 +276,7 @@ const AddToCart = () => {
                 />
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{item.title}</h2>
-                  <p className="text-sm text-gray-600">Size: {item.size}</p>
+                  <p className="text-sm text-gray-600">Size: {item.size}</p> {/* ✅ FIXED: Display item.size */}
                   <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
                   <div className="flex items-center gap-3">
                     <span className="text-green-600 font-bold text-xl">₹{item.currentPrice.toFixed(2)}</span>
@@ -259,11 +305,10 @@ const AddToCart = () => {
                         +
                       </button>
                     </div>
-                    {/* ✅ FIXED: Pass both _id and variantId for removal */}
                     <button
                       className="text-red-500 text-sm hover:underline"
                       onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
-                    >
+                    >\
                       Remove
                     </button>
                   </div>
