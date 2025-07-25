@@ -36,6 +36,7 @@ const cartSlice = createSlice({
       state.userId = null
       state.items = []
       state.cartReady = false
+      // Clear address data when user logs out
       state.addresses = []
       state.selectedAddress = null
       localStorage.removeItem("deliveryAddress")
@@ -45,37 +46,19 @@ const cartSlice = createSlice({
       state.cartReady = action.payload
     },
     addToCart: (state, action) => {
-      const item = action.payload
-      console.log("🛒 Adding to cart:", item)
+      const item = action.payload;
 
-      // ✅ FIXED: More robust comparison using both _id and variantId
-      const existingItem = state.items.find((i) => {
-        const isSameProduct = i._id.toString() === item._id.toString()
-        const isSameVariant = i.variantId?.toString() === item.variantId?.toString()
-
-        console.log("Comparing items:", {
-          existing: { _id: i._id, variantId: i.variantId, size: i.size },
-          new: { _id: item._id, variantId: item.variantId, size: item.size },
-          isSameProduct,
-          isSameVariant,
-        })
-
-        return isSameProduct && isSameVariant
-      })
+      const existingItem = state.items.find(
+        (i) =>
+          i._id.toString() === item._id.toString() &&
+          i.variantId?.toString() === item.variantId?.toString()
+      );
 
       if (existingItem) {
-        console.log("✅ Found existing item, incrementing quantity")
-        existingItem.quantity += item.quantity
+        existingItem.quantity += item.quantity;
       } else {
-        console.log("✅ Adding new item to cart")
-        state.items.push({
-          ...item,
-          // ✅ Ensure we have a unique identifier for each variant
-          cartItemId: `${item._id}_${item.variantId}`,
-        })
+        state.items.push(item);
       }
-
-      console.log("Cart after addition:", state.items)
     },
     incrementQuantity: (state, action) => {
       if (!Array.isArray(state.items)) {
@@ -83,12 +66,10 @@ const cartSlice = createSlice({
         return
       }
       const { _id, variantId } = action.payload
-      const item = state.items.find(
-        (item) => item._id.toString() === _id.toString() && item.variantId?.toString() === variantId?.toString(),
-      )
+      const item = state.items.find((item) => item._id === _id && item.variantId === variantId)
       if (item) {
         item.quantity += 1
-        console.log("✅ Incremented quantity for", item.title, "variant:", item.variantId)
+        console.log("✅ Incremented quantity for", item.title)
       }
     },
     decrementQuantity: (state, action) => {
@@ -97,12 +78,10 @@ const cartSlice = createSlice({
         return
       }
       const { _id, variantId } = action.payload
-      const item = state.items.find(
-        (item) => item._id.toString() === _id.toString() && item.variantId?.toString() === variantId?.toString(),
-      )
+      const item = state.items.find((item) => item._id === _id && item.variantId === variantId)
       if (item && item.quantity > 1) {
         item.quantity -= 1
-        console.log("✅ Decremented quantity for", item.title, "variant:", item.variantId)
+        console.log("✅ Decremented quantity for", item.title)
       }
     },
     removeFromCart: (state, action) => {
@@ -110,14 +89,8 @@ const cartSlice = createSlice({
         state.items = []
         return
       }
-      const { _id, variantId } = action.payload
       const initialLength = state.items.length
-
-      // ✅ FIXED: Remove by both _id and variantId
-      state.items = state.items.filter(
-        (item) => !(item._id.toString() === _id.toString() && item.variantId?.toString() === variantId?.toString()),
-      )
-
+      state.items = state.items.filter((item) => item._id !== action.payload)
       console.log("✅ Removed item, cart size:", initialLength, "→", state.items.length)
     },
     addAddress: (state, action) => {
@@ -126,9 +99,11 @@ const cartSlice = createSlice({
     setAddresses: (state, action) => {
       state.addresses = action.payload
     },
+    // Remove localStorage side effect from reducer - handle in component
     selectAddress: (state, action) => {
       state.selectedAddress = action.payload
     },
+    // Add new action to initialize selected address from localStorage
     initializeSelectedAddress: (state, action) => {
       state.selectedAddress = action.payload
     },
@@ -151,4 +126,4 @@ export const {
   initializeSelectedAddress,
 } = cartSlice.actions
 
-export default cartSlice.reducer
+export default cartSlice.reducer 
