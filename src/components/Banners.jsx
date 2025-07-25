@@ -1,5 +1,3 @@
-"use client"
-
 import logo from "../assets/logo.png"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
@@ -9,14 +7,13 @@ import { FaRegUser } from "react-icons/fa"
 import { useSelector, useDispatch } from "react-redux"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
-import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice" // Correct import path
-
+import { setCartItem, setUserId, clearUser } from "../Redux/cartSlice" 
 const Banners = () => {
   const [hovered, setHovered] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const intervalRef = useRef(null)
-  const [originalImages, setOriginalImages] = useState([]) // Stores the actual banners
-  const [currentIndex, setCurrentIndex] = useState(1) // Start at 1 for the first real image
+  const [originalImages, setOriginalImages] = useState([])
+  const [currentIndex, setCurrentIndex] = useState(1)
   const sliderRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
@@ -24,7 +21,7 @@ const Banners = () => {
   const cartItems = useSelector((state) => state.cart.items)
   const currentUserId = useSelector((state) => state.cart.userId)
   const [searchTerm, setSearchTerm] = useState("")
-  const searchContainerRef = useRef(null) // ✅ NEW: Ref for the entire search container
+  const searchContainerRef = useRef(null)
   const [suggestions, setSuggestions] = useState([])
   const [user, setUser] = useState(() => {
     try {
@@ -35,10 +32,9 @@ const Banners = () => {
   })
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef(null)
-  const [sideImages, setSideImages] = useState([]) // These are your category banners
+  const [sideImages, setSideImages] = useState([])
   const isActive = useCallback((path) => location.pathname === path, [location.pathname])
 
-  // This useMemo creates the extended array for infinite looping: [last, ...original, first]
   const extendedImages = useMemo(() => {
     if (originalImages.length < 1) return []
     const first = originalImages[0]
@@ -146,6 +142,7 @@ const Banners = () => {
       console.log(`Logging out user ${user._id}, keeping their cart in localStorage`)
     }
     localStorage.removeItem("mirakleUser")
+    dispatch(setCartItem([])) 
     dispatch(clearUser())
     setShowDropdown(false)
     navigate("/login_signup")
@@ -154,7 +151,7 @@ const Banners = () => {
   const handleSelectSuggestion = useCallback(
     (id) => {
       navigate(`/product/${id}`)
-      setSearchTerm("") // Clear search term after navigating
+      setSearchTerm("")
       setSuggestions([])
     },
     [navigate],
@@ -170,7 +167,6 @@ const Banners = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // ✅ NEW: Handle clicks outside the search input and suggestions
   useEffect(() => {
     function handleClickOutsideSearch(event) {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
