@@ -22,7 +22,6 @@ const AddToCart = () => {
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(true)
   const modalRef = useRef()
-  const prevCartRef = useRef([])
 
   const cartItems = useSelector((state) => state.cart.items)
   const cartReady = useSelector((state) => state.cart.cartReady)
@@ -38,7 +37,6 @@ const AddToCart = () => {
 
   useEffect(() => {
     if (!cartReady) return
-
     if (token && !addressesLoaded) {
       setAddressesLoading(true)
       fetch(`${API_BASE}/api/users/address`, {
@@ -65,7 +63,6 @@ const AddToCart = () => {
               } catch (error) {
                 console.error("Error parsing saved address:", error)
                 localStorage.removeItem("deliveryAddress")
-                dispatch(selectAddress(null))
               }
             }
           }
@@ -81,20 +78,23 @@ const AddToCart = () => {
 
   const cleanCorruptedCart = useCallback(async () => {
     if (!token) return
+
     try {
       console.log("🧹 Attempting to clean corrupted cart data via API...")
-      // This route might need to be implemented on backend if it's not already
+      // Call the new backend route to clean the cart
       const response = await axiosWithToken().post("/cart/migrate-clean")
       if (response.data) {
         console.log("✅ Cart cleaned successfully via API")
-        dispatch(setCartItem([]))
+        dispatch(setCartItem([])) // Clear local cart after backend cleanup
       }
     } catch (error) {
       console.error("❌ Failed to clean cart via API:", error)
     }
   }, [token, dispatch])
 
+  // Add this useEffect to automatically clean cart on first load if there are persistent errors
   useEffect(() => {
+    // Only run this once when component mounts and if we have persistent cart errors
     const hasCartErrors = localStorage.getItem("cartErrors")
     if (hasCartErrors && token && cartReady) {
       cleanCorruptedCart()
@@ -103,27 +103,17 @@ const AddToCart = () => {
   }, [cleanCorruptedCart, token, cartReady])
 
   useEffect(() => {
-    if (user && cartReady && Array.isArray(cartItems)) {
-      const key = `cart_${user._id}`
-      localStorage.setItem(key, JSON.stringify(cartItems))
-
-      const prevCart = prevCartRef.current
-      const hasChanged = JSON.stringify(prevCart) !== JSON.stringify(cartItems)
-
-      if (hasChanged && cartItems.length > 0) {
-        axiosWithToken()
-          .post("/cart", { items: cartItems }) // This route now handles aggregation on backend
-          .then(() => {
-            console.log("✅ Synced cart to backend")
-            prevCartRef.current = cartItems
-          })
-          .catch((error) => {
-            console.error("❌ Sync failed:", error)
-            if (error.response?.status === 500) {
-              localStorage.setItem("cartErrors", "true")
-            }
-          })
-      }
+    if (user && cartReady) {
+      localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems))
+      axiosWithToken()
+        .post("/cart", { items: cartItems })
+        .catch((error) => {
+          console.error("❌ Cart sync failed:", error)
+          // Set a flag for persistent cart errors
+          if (error.response?.status === 500) {
+            localStorage.setItem("cartErrors", "true")
+          }
+        })
     }
   }, [cartItems, cartReady, user])
 
