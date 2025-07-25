@@ -7,7 +7,7 @@ import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { safeApiCall } from "../utils/axiosWithToken"
-import { generateVariantId } from "../utils/cartUtils" // ✅ Re-added import
+import { generateVariantId } from "../utils/cartUtils"
 
 const ProductDetail = () => {
   const { id } = useParams()
@@ -133,22 +133,24 @@ const ProductDetail = () => {
         return
       }
 
-      console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
-      console.log("🛒 Variant Index:", selectedVariantIndex)
+      console.log("--- Frontend AddToCart Start ---")
+      console.log(`Frontend: Product ID: ${product._id}`)
+      console.log("Frontend: Selected Variant Object:", selectedVariant)
+      console.log("Frontend: Selected Variant Index:", selectedVariantIndex)
+
       setAddingToCart(true)
 
-      // ✅ CRITICAL FIX: Use the consistent generateVariantId utility
       const variantId = generateVariantId(product._id, selectedVariant, selectedVariantIndex)
-      console.log(`Frontend: Generated variantId for add to cart: ${variantId}`)
+      console.log(`Frontend: Generated variantId for add to cart: '${variantId}'`)
 
       const productToAdd = {
         _id: product._id,
         title: product.title,
         images: product.images,
-        variantId: variantId, // Use the globally unique variant ID
+        variantId: variantId,
         size:
           selectedVariant.size ||
-          (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"), // Ensure size is always a string
+          (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"),
         weight: {
           value: selectedVariant?.weight?.value || selectedVariant?.size,
           unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
@@ -159,37 +161,36 @@ const ProductDetail = () => {
         quantity: 1,
       }
 
-      console.log("🛒 Product to add to Redux:", productToAdd)
+      console.log("Frontend: Product to add to Redux (productToAdd):", productToAdd)
 
       try {
-        // Add to Redux store first
         dispatch(addToCart(productToAdd))
 
         const backendPayload = {
           productId: product._id,
-          variantIndex: selectedVariantIndex, // Keep this for backend if needed
-          variantId: variantId, // Use the consistent variantId for backend
+          variantIndex: selectedVariantIndex,
+          variantId: variantId,
           quantity: 1,
         }
 
-        console.log("🔄 Syncing to backend with payload:", backendPayload)
-        // Sync to backend
+        console.log("Frontend: Sending payload to backend /cart/add:", backendPayload)
         const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", backendPayload))
 
         if (syncResult) {
-          console.log("✅ Cart synced to backend successfully")
+          console.log("✅ Frontend: Cart synced to backend successfully")
         } else {
-          console.warn("⚠️ Backend sync failed, but item added to local cart")
+          console.warn("⚠️ Frontend: Backend sync failed, but item added to local cart")
         }
-        console.log(`✅ Added ${productToAdd.size} to cart successfully`)
+        console.log(`✅ Frontend: Added ${productToAdd.size} to cart successfully`)
       } catch (err) {
-        console.error("❌ Add to cart failed:", err)
+        console.error("❌ Frontend: Add to cart failed:", err)
         alert("Something went wrong while adding to cart")
       } finally {
         setAddingToCart(false)
+        console.log("--- Frontend AddToCart End ---")
       }
     },
-    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice, product],
+    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice],
   )
 
   const handleReviewImageChange = useCallback((e) => {

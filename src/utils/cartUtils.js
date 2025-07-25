@@ -36,6 +36,6 @@ export function generateVariantId(productId, selectedVariant, variantIndex) {
   }
 
   const finalVariantId = `${String(productId).trim()}_${variantKey}` // Ensure productId is also a string and trimmed
-  console.log(`generateVariantId: Final ID for product ${productId}: ${finalVariantId}`)
+  console.log(`generateVariantId: Final ID for product ${productId}: '${finalVariantId}'`)
   return finalVariantId
 }
