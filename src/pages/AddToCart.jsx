@@ -77,7 +77,7 @@ const AddToCart = () => {
     console.log("👤 User or token changed, re-initializing cart.")
     dispatch(setCartReady(false)) // Set cart not ready while fetching
     fetchAndSetCart()
-  }, [token, fetchAndSetCart]) // Depend on token to trigger on login/logout
+  }, [token, fetchAndSetCart, dispatch]) // Depend on token to trigger on login/logout
 
   // Existing useEffect for addresses
   useEffect(() => {
