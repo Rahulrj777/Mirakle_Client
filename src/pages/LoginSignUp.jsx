@@ -90,6 +90,7 @@ const LoginSignUp = () => {
         console.log("📦 Fetching cart from server as source of truth...")
         const cartRes = await axiosWithToken(token).get("/cart")
         const serverCart = cartRes.data?.cart || cartRes.data?.items || cartRes.data || [] // Ensure it's an array
+        console.log("📦 Server cart data received:", serverCart)
 
         if (Array.isArray(serverCart)) {
           console.log("📦 Found server cart with", serverCart.length, "items. Overwriting local storage.")
