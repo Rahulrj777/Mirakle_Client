@@ -1,5 +1,3 @@
-"use client"
-
 import logo from "../assets/logo.png"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
