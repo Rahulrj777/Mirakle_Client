@@ -151,7 +151,7 @@ const ProductDetail = () => {
       setAddingToCart(false);
     }
   },
-  [addingToCart, user, selectedVariant, navigate, dispatch],
+  [addingToCart, user, selectedVariant, navigate, dispatch,finalPrice],
 );
 
   const handleReviewImageChange = useCallback((e) => {
@@ -199,7 +199,7 @@ const ProductDetail = () => {
         const formData = new FormData()
         formData.append("rating", reviewRating)
         formData.append("comment", reviewComment.trim())
-        reviewImages.forEach((image, index) => {
+        reviewImages.forEach((image) => {
           formData.append("images", image)
         })
         const result = await safeApiCall(async (api) => {
