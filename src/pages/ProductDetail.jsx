@@ -39,13 +39,6 @@ const ProductDetail = () => {
     return Array.isArray(items) ? items : []
   })
 
-   const finalPrice = useMemo(() => {
-    if (!selectedVariant) return "0.00"
-    const price = selectedVariant.price
-    const discount = selectedVariant.discountPercent || 0
-    return (price - (price * discount) / 100).toFixed(2)
-  }, [selectedVariant])
-  
   const token = user?.token
 
   const fetchProduct = useCallback(async () => {
@@ -158,7 +151,7 @@ const ProductDetail = () => {
       setAddingToCart(false);
     }
   },
-  [addingToCart, user, selectedVariant, navigate, dispatch, finalPrice],
+  [addingToCart, user, selectedVariant, navigate, dispatch,finalPrice],
 );
 
   const handleReviewImageChange = useCallback((e) => {
@@ -263,6 +256,13 @@ const ProductDetail = () => {
     return (total / validRatings.length).toFixed(1)
   }, [product?.reviews])
 
+  const finalPrice = useMemo(() => {
+    if (!selectedVariant) return "0.00"
+    const price = selectedVariant.price
+    const discount = selectedVariant.discountPercent || 0
+    return (price - (price * discount) / 100).toFixed(2)
+  }, [selectedVariant])
+
   const currentUserReview = useMemo(() => {
     if (!Array.isArray(product?.reviews)) return null
     const currentUserId = user?.user?.userId || user?.user?._id
@@ -336,6 +336,7 @@ const ProductDetail = () => {
         {/* Image Preview */}
         <div>
           <img
+            // ✅ MODIFIED: Use selectedImage directly (it's already a full URL)
             src={selectedImage || "/placeholder.svg"}
             className="w-full h-[400px] object-contain rounded"
             alt={product.title}
