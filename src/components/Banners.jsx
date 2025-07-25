@@ -161,6 +161,7 @@ const Banners = () => {
       }
     }
     localStorage.removeItem("mirakleUser")
+    // ✅ FIXED: Ensure the specific user's cart is removed from localStorage on logout
     if (userId) {
       localStorage.removeItem(`cart_${userId}`)
     }

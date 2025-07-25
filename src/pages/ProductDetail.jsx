@@ -7,6 +7,7 @@ import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { safeApiCall } from "../utils/axiosWithToken"
+import { generateVariantId } from "../utils/cartUtils" // Import the new utility
 
 const ProductDetail = () => {
   const { id } = useParams()
@@ -136,15 +137,8 @@ const ProductDetail = () => {
       console.log("🛒 Variant Index:", selectedVariantIndex)
       setAddingToCart(true)
 
-      // ✅ FIXED: Generate a more robust and globally unique variantId
-      // Use selectedVariant._id if available, otherwise combine product._id with size/weight
-      const variantKey =
-        selectedVariant._id ||
-        selectedVariant.size ||
-        (selectedVariant.weight
-          ? `${selectedVariant.weight.value}_${selectedVariant.weight.unit}`
-          : selectedVariantIndex)
-      const variantId = `${product._id}_${variantKey}`
+      // ✅ FIXED: Use the consistent generateVariantId utility
+      const variantId = generateVariantId(product._id, selectedVariant, selectedVariantIndex)
 
       const productToAdd = {
         _id: product._id,
@@ -194,7 +188,7 @@ const ProductDetail = () => {
         setAddingToCart(false)
       }
     },
-    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice],
+    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice, product], // Added product to dependency array
   )
 
   const handleReviewImageChange = useCallback((e) => {

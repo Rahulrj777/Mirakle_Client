@@ -87,52 +87,23 @@ const LoginSignUp = () => {
       dispatch(setUserId(user._id)) // Set new user ID in Redux
 
       try {
-        console.log("📦 Loading cart for user:", user._id)
-        const savedCart = localStorage.getItem(`cart_${user._id}`)
-        let cartToLoad = []
+        console.log("📦 Fetching cart from server as source of truth...")
+        const cartRes = await axiosWithToken(token).get("/cart")
+        const serverCart = cartRes.data?.cart || cartRes.data?.items || cartRes.data || [] // Ensure it's an array
 
-        if (savedCart) {
-          try {
-            const parsedCart = JSON.parse(savedCart)
-            if (Array.isArray(parsedCart) && parsedCart.length > 0) {
-              console.log("📦 Found local cart with", parsedCart.length, "items")
-              cartToLoad = parsedCart
-              try {
-                // Attempt to sync local cart to server
-                await axiosWithToken(token).post("/cart", { items: parsedCart })
-                console.log("✅ Local cart synced to server")
-              } catch (syncError) {
-                console.warn("⚠️ Failed to sync local cart to server:", syncError.message)
-              }
-            }
-          } catch {
-            console.warn("⚠️ Failed to parse local cart, will fetch from server")
-          }
+        if (Array.isArray(serverCart)) {
+          console.log("📦 Found server cart with", serverCart.length, "items. Overwriting local storage.")
+          localStorage.setItem(`cart_${user._id}`, JSON.stringify(serverCart))
+          dispatch(setCartItem(serverCart)) // Set cart in Redux
+        } else {
+          console.warn("⚠️ Server cart data was not an array, initializing empty cart.")
+          localStorage.removeItem(`cart_${user._id}`) // Clear potentially bad local storage
+          dispatch(setCartItem([]))
         }
-
-        if (cartToLoad.length === 0) {
-          try {
-            console.log("📦 Fetching cart from server...")
-            const cartRes = await axiosWithToken(token).get("/cart")
-            const serverCart = cartRes.data?.items || cartRes.data || []
-            if (Array.isArray(serverCart) && serverCart.length > 0) {
-              console.log("📦 Found server cart with", serverCart.length, "items")
-              cartToLoad = serverCart
-              // Save server cart to localStorage
-              localStorage.setItem(`cart_${user._id}`, JSON.stringify(serverCart))
-            }
-          } catch (fetchError) {
-            console.warn("⚠️ Failed to fetch cart from server:", fetchError.message)
-            // Don't throw error, just use empty cart
-          }
-        }
-
-        // Set cart in Redux
-        dispatch(setCartItem(cartToLoad))
-        console.log("✅ Cart loaded with", cartToLoad.length, "items")
       } catch (cartError) {
-        console.error("❌ Cart loading failed:", cartError)
-        // Set empty cart on any cart-related error
+        console.error("❌ Cart loading failed from server:", cartError)
+        // On error, ensure local storage is cleared and Redux cart is empty
+        localStorage.removeItem(`cart_${user._id}`)
         dispatch(setCartItem([]))
       }
 
