@@ -25,11 +25,10 @@ const cartSlice = createSlice({
       const aggregatedItems = []
       incomingItems.forEach((item) => {
         // Ensure _id and variantId are treated as strings for consistent comparison
-        const itemId = String(item._id)
-        const itemVariantId = String(item.variantId)
-
         const existingItem = aggregatedItems.find(
-          (i) => String(i._id) === itemId && String(i.variantId) === itemVariantId,
+          (i) =>
+            String(i._id).trim() === String(item._id).trim() &&
+            String(i.variantId).trim() === String(item.variantId).trim(),
         )
 
         if (existingItem) {
@@ -61,12 +60,9 @@ const cartSlice = createSlice({
       const item = action.payload
       console.log("🛒 Adding to cart (Redux):", item)
       // Ensure _id and variantId are treated as strings for consistent comparison
-      const itemId = String(item._id)
-      const itemVariantId = String(item.variantId)
-
       const existingItem = state.items.find((i) => {
-        const isSameProduct = String(i._id) === itemId
-        const isSameVariant = String(i.variantId) === itemVariantId
+        const isSameProduct = String(i._id).trim() === String(item._id).trim()
+        const isSameVariant = String(i.variantId).trim() === String(item.variantId).trim()
         console.log("Redux: Comparing items:", {
           existing: { _id: i._id, variantId: i.variantId, size: i.size },
           new: { _id: item._id, variantId: item.variantId, size: item.size },
@@ -94,7 +90,8 @@ const cartSlice = createSlice({
       }
       const { _id, variantId } = action.payload
       const item = state.items.find(
-        (item) => String(item._id) === String(_id) && String(item.variantId) === String(variantId),
+        (item) =>
+          String(item._id).trim() === String(_id).trim() && String(item.variantId).trim() === String(variantId).trim(),
       )
       if (item) {
         item.quantity += 1
@@ -108,7 +105,8 @@ const cartSlice = createSlice({
       }
       const { _id, variantId } = action.payload
       const item = state.items.find(
-        (item) => String(item._id) === String(_id) && String(item.variantId) === String(variantId),
+        (item) =>
+          String(item._id).trim() === String(_id).trim() && String(item.variantId).trim() === String(variantId).trim(),
       )
       if (item && item.quantity > 1) {
         item.quantity -= 1
@@ -124,7 +122,10 @@ const cartSlice = createSlice({
       const initialLength = state.items.length
       // ✅ FIXED: Remove by both _id and variantId
       state.items = state.items.filter(
-        (item) => !(String(item._id) === String(_id) && String(item.variantId) === String(variantId)),
+        (item) =>
+          !(
+            String(item._id).trim() === String(_id).trim() && String(item.variantId).trim() === String(variantId).trim()
+          ),
       )
       console.log("✅ Redux: Removed item, cart size:", initialLength, "→", state.items.length)
     },
