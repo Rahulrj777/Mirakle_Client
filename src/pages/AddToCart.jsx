@@ -1,3 +1,5 @@
+"use client"
+
 import { useSelector, useDispatch } from "react-redux"
 import { useEffect, useState, useRef, useCallback } from "react"
 import {
@@ -36,6 +38,7 @@ const AddToCart = () => {
 
   useEffect(() => {
     if (!cartReady) return
+
     if (token && !addressesLoaded) {
       setAddressesLoading(true)
       fetch(`${API_BASE}/api/users/address`, {
@@ -62,6 +65,7 @@ const AddToCart = () => {
               } catch (error) {
                 console.error("Error parsing saved address:", error)
                 localStorage.removeItem("deliveryAddress")
+                dispatch(selectAddress(null))
               }
             }
           }
@@ -77,7 +81,6 @@ const AddToCart = () => {
 
   const cleanCorruptedCart = useCallback(async () => {
     if (!token) return
-
     try {
       console.log("🧹 Attempting to clean corrupted cart data via API...")
       const response = await axiosWithToken().post("/cart/migrate-clean")
@@ -99,27 +102,29 @@ const AddToCart = () => {
   }, [cleanCorruptedCart, token, cartReady])
 
   useEffect(() => {
-  if (user && cartReady && Array.isArray(cartItems)) {
-    const key = `cart_${user._id}`
-    localStorage.setItem(key, JSON.stringify(cartItems))
+    if (user && cartReady && Array.isArray(cartItems)) {
+      const key = `cart_${user._id}`
+      localStorage.setItem(key, JSON.stringify(cartItems))
 
-    const prevCart = prevCartRef.current
-    const hasChanged = JSON.stringify(prevCart) !== JSON.stringify(cartItems)
-    if (hasChanged && cartItems.length > 0) {
-      axiosWithToken().post("/cart", { items: cartItems })
-        .then(() => {
-          console.log("✅ Synced cart to backend")
-          prevCartRef.current = cartItems
-        })
-        .catch((error) => {
-          console.error("❌ Sync failed:", error)
-          if (error.response?.status === 500) {
-            localStorage.setItem("cartErrors", "true")
-          }
-        })
+      const prevCart = prevCartRef.current
+      const hasChanged = JSON.stringify(prevCart) !== JSON.stringify(cartItems)
+
+      if (hasChanged && cartItems.length > 0) {
+        axiosWithToken()
+          .post("/cart", { items: cartItems })
+          .then(() => {
+            console.log("✅ Synced cart to backend")
+            prevCartRef.current = cartItems
+          })
+          .catch((error) => {
+            console.error("❌ Sync failed:", error)
+            if (error.response?.status === 500) {
+              localStorage.setItem("cartErrors", "true")
+            }
+          })
+      }
     }
-  }
-}, [cartItems, cartReady, user])
+  }, [cartItems, cartReady, user])
 
   const handleAddressSelect = (address) => {
     dispatch(selectAddress(address))

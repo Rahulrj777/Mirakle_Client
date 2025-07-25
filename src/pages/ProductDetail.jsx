@@ -1,3 +1,5 @@
+"use client"
+
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -24,7 +26,6 @@ const ProductDetail = () => {
   const [reviewError, setReviewError] = useState("")
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
-
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
@@ -118,17 +119,14 @@ const ProductDetail = () => {
     setSelectedVariantIndex(index)
   }, [])
 
-  // ✅ FIXED: Remove alert and add proper success feedback
   const handleAddToCart = useCallback(
     async (product) => {
       if (addingToCart) return
-
       if (!user?.token) {
         alert("Please login to add items to cart")
         navigate("/login_signup")
         return
       }
-
       if (!selectedVariant) {
         alert("Please select a variant")
         return
@@ -136,17 +134,26 @@ const ProductDetail = () => {
 
       console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
       console.log("🛒 Variant Index:", selectedVariantIndex)
-
       setAddingToCart(true)
 
-      const variantId = `${product._id}_variant_${selectedVariantIndex}_${selectedVariant.size}`
+      // ✅ FIXED: Generate a more robust and globally unique variantId
+      // Use selectedVariant._id if available, otherwise combine product._id with size/weight
+      const variantKey =
+        selectedVariant._id ||
+        selectedVariant.size ||
+        (selectedVariant.weight
+          ? `${selectedVariant.weight.value}_${selectedVariant.weight.unit}`
+          : selectedVariantIndex)
+      const variantId = `${product._id}_${variantKey}`
 
       const productToAdd = {
         _id: product._id,
         title: product.title,
         images: product.images,
-        variantId: variantId,
-        size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
+        variantId: variantId, // Use the globally unique variant ID
+        size:
+          selectedVariant.size ||
+          (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"), // Ensure size is always a string
         weight: {
           value: selectedVariant?.weight?.value || selectedVariant?.size,
           unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
@@ -165,13 +172,12 @@ const ProductDetail = () => {
 
         const backendPayload = {
           productId: product._id,
-          variantIndex: selectedVariantIndex,
-          variantId: variantId,
+          variantIndex: selectedVariantIndex, // Keep this for backend if needed
+          variantId: variantId, // Use the consistent variantId for backend
           quantity: 1,
         }
 
         console.log("🔄 Syncing to backend with payload:", backendPayload)
-
         // Sync to backend
         const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", backendPayload))
 
@@ -180,9 +186,7 @@ const ProductDetail = () => {
         } else {
           console.warn("⚠️ Backend sync failed, but item added to local cart")
         }
-
-        // ✅ REMOVED: No more alert message
-        console.log(`✅ Added ${selectedVariant.size} to cart successfully`)
+        console.log(`✅ Added ${productToAdd.size} to cart successfully`)
       } catch (err) {
         console.error("❌ Add to cart failed:", err)
         alert("Something went wrong while adding to cart")
@@ -241,6 +245,7 @@ const ProductDetail = () => {
         reviewImages.forEach((image) => {
           formData.append("images", image)
         })
+
         const result = await safeApiCall(async (api) => {
           return await api.post(`/products/${id}/review`, formData, {
             headers: {
@@ -248,6 +253,7 @@ const ProductDetail = () => {
             },
           })
         })
+
         if (result) {
           setReviewRating(0)
           setReviewComment("")
@@ -388,7 +394,6 @@ const ProductDetail = () => {
             ))}
           </div>
         </div>
-
         {/* Product Info */}
         <div>
           <h1 className="text-2xl font-bold">{product.title}</h1>
@@ -460,7 +465,6 @@ const ProductDetail = () => {
       {/* Ratings & Reviews Section */}
       <div className="mt-10">
         <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
-
         {/* Review Statistics */}
         {product.reviews && product.reviews.length > 0 && (
           <div className="mb-6 p-4 bg-gray-50 rounded">
@@ -497,7 +501,6 @@ const ProductDetail = () => {
         {token && !currentUserReview ? (
           <form onSubmit={handleReviewSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Write a Review</h3>
-
             {/* Rating */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Rating:</label>
@@ -525,7 +528,6 @@ const ProductDetail = () => {
                 </span>
               </div>
             </div>
-
             {/* Comment */}
             <div>
               <label className="block text-sm font-medium mb-1">Your Review:</label>
@@ -542,7 +544,6 @@ const ProductDetail = () => {
                 {reviewComment.length < 10 && reviewComment.length > 0 && "(minimum 10 required)"}
               </div>
             </div>
-
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium mb-1">Add Photos (Optional):</label>
@@ -555,7 +556,6 @@ const ProductDetail = () => {
               />
               <div className="text-xs text-gray-500 mt-1">You can upload up to 5 images (max 5MB each)</div>
             </div>
-
             {/* Image Previews */}
             {reviewImagePreviews.length > 0 && (
               <div>
@@ -581,9 +581,7 @@ const ProductDetail = () => {
                 </div>
               </div>
             )}
-
             {reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
-
             <button
               type="submit"
               disabled={submittingReview || !reviewRating || !reviewComment.trim() || reviewComment.trim().length < 10}
@@ -625,7 +623,6 @@ const ProductDetail = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-700 mb-3">{currentUserReview.comment}</p>
-
               {/* Review Images */}
               {currentUserReview.images && currentUserReview.images.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -644,7 +641,6 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {/* Other Reviews */}
           {reviewsToShow.length === 0 && !currentUserReview && (
             <div className="text-center py-8">
               <p className="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
@@ -662,7 +658,6 @@ const ProductDetail = () => {
                   <p className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>
                 </div>
                 <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
-
                 {/* Review Images */}
                 {review.images && review.images.length > 0 && (
                   <div className="mb-3">
@@ -711,7 +706,6 @@ const ProductDetail = () => {
               const price = firstVariant?.price || 0
               const discount = firstVariant?.discountPercent || 0
               const finalPrice = (price - (price * discount) / 100).toFixed(2)
-
               return (
                 <div
                   key={p._id}

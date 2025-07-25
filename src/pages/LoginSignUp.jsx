@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
@@ -32,7 +34,6 @@ const LoginSignUp = () => {
       alert("❌ Passwords do not match!")
       return
     }
-
     if (!name.trim() || !email.trim() || !password.trim()) {
       alert("❌ Please fill all fields!")
       return
@@ -67,13 +68,10 @@ const LoginSignUp = () => {
 
     try {
       setLoading(true)
-
       console.log("🔄 Clearing previous session...")
-      dispatch(clearUser())
-      dispatch(setCartReady(false))
-      dispatch(setCartItem([]))
-
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      dispatch(clearUser()) // Clear previous user's cart and ID
+      dispatch(setCartReady(false)) // Mark cart as not ready
+      await new Promise((resolve) => setTimeout(resolve, 100)) // Small delay for state update
 
       console.log("🔐 Attempting login...")
       const res = await axios.post(`${API_BASE}/api/users/login`, {
@@ -83,15 +81,13 @@ const LoginSignUp = () => {
 
       const user = res.data.user
       const token = res.data.token
-
       console.log("✅ Login successful for user:", user._id)
 
       localStorage.setItem("mirakleUser", JSON.stringify({ user, token }))
-      dispatch(setUserId(user._id))
+      dispatch(setUserId(user._id)) // Set new user ID in Redux
 
       try {
         console.log("📦 Loading cart for user:", user._id)
-
         const savedCart = localStorage.getItem(`cart_${user._id}`)
         let cartToLoad = []
 
@@ -101,15 +97,15 @@ const LoginSignUp = () => {
             if (Array.isArray(parsedCart) && parsedCart.length > 0) {
               console.log("📦 Found local cart with", parsedCart.length, "items")
               cartToLoad = parsedCart
-
               try {
+                // Attempt to sync local cart to server
                 await axiosWithToken(token).post("/cart", { items: parsedCart })
                 console.log("✅ Local cart synced to server")
               } catch (syncError) {
                 console.warn("⚠️ Failed to sync local cart to server:", syncError.message)
               }
             }
-          } catch{
+          } catch {
             console.warn("⚠️ Failed to parse local cart, will fetch from server")
           }
         }
@@ -119,7 +115,6 @@ const LoginSignUp = () => {
             console.log("📦 Fetching cart from server...")
             const cartRes = await axiosWithToken(token).get("/cart")
             const serverCart = cartRes.data?.items || cartRes.data || []
-
             if (Array.isArray(serverCart) && serverCart.length > 0) {
               console.log("📦 Found server cart with", serverCart.length, "items")
               cartToLoad = serverCart
@@ -141,7 +136,7 @@ const LoginSignUp = () => {
         dispatch(setCartItem([]))
       }
 
-      // 🔥 STEP 5: Mark cart as ready and navigate
+      // Mark cart as ready and navigate
       dispatch(setCartReady(true))
       console.log("✅ Login process completed")
       navigate("/")

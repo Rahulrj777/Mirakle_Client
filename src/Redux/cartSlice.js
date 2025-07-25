@@ -47,19 +47,16 @@ const cartSlice = createSlice({
     addToCart: (state, action) => {
       const item = action.payload
       console.log("🛒 Adding to cart:", item)
-
       // ✅ FIXED: More robust comparison using both _id and variantId
       const existingItem = state.items.find((i) => {
         const isSameProduct = i._id.toString() === item._id.toString()
         const isSameVariant = i.variantId?.toString() === item.variantId?.toString()
-
         console.log("Comparing items:", {
           existing: { _id: i._id, variantId: i.variantId, size: i.size },
           new: { _id: item._id, variantId: item.variantId, size: item.size },
           isSameProduct,
           isSameVariant,
         })
-
         return isSameProduct && isSameVariant
       })
 
@@ -70,11 +67,9 @@ const cartSlice = createSlice({
         console.log("✅ Adding new item to cart")
         state.items.push({
           ...item,
-          // ✅ Ensure we have a unique identifier for each variant
-          cartItemId: `${item._id}_${item.variantId}`,
+          // ✅ REMOVED: cartItemId is redundant as _id and variantId are used for uniqueness
         })
       }
-
       console.log("Cart after addition:", state.items)
     },
     incrementQuantity: (state, action) => {
@@ -112,12 +107,10 @@ const cartSlice = createSlice({
       }
       const { _id, variantId } = action.payload
       const initialLength = state.items.length
-
       // ✅ FIXED: Remove by both _id and variantId
       state.items = state.items.filter(
         (item) => !(item._id.toString() === _id.toString() && item.variantId?.toString() === variantId?.toString()),
       )
-
       console.log("✅ Removed item, cart size:", initialLength, "→", state.items.length)
     },
     addAddress: (state, action) => {
