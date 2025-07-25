@@ -143,6 +143,7 @@ const Banners = () => {
     }
     localStorage.removeItem("mirakleUser")
     dispatch(setCartItem([])) 
+    localStorage.removeItem(`cart_${user._id}`);
     dispatch(clearUser())
     setShowDropdown(false)
     navigate("/login_signup")
