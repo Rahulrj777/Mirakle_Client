@@ -1,5 +1,3 @@
-"use client"
-
 import { useParams, useNavigate } from "react-router-dom"
 import { useEffect, useState, useCallback, useMemo } from "react"
 import axios from "axios"
@@ -12,7 +10,7 @@ const ProductDetail = () => {
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0) // ✅ FIXED: Ensure this state is present
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
   const [selectedImage, setSelectedImage] = useState("")
   const [error, setError] = useState("")
   const [relatedProducts, setRelatedProducts] = useState([])
@@ -60,11 +58,11 @@ const ProductDetail = () => {
       const found = res.data.find((p) => p._id === id)
       if (found) {
         setProduct(found)
-        setSelectedImage(found.images?.others?.[0]?.url || "/placeholder.svg") // ✅ Ensure default placeholder
+        setSelectedImage(found.images?.others?.[0]?.url || "")
         if (found.variants && found.variants.length > 0) {
           console.log("🔍 Product variants:", found.variants)
           setSelectedVariant(found.variants[0])
-          setSelectedVariantIndex(0) // ✅ FIXED: Initialize selectedVariantIndex
+          setSelectedVariantIndex(0)
         }
       } else {
         setError("Product not found")
@@ -114,13 +112,13 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
-  // ✅ FIXED: handleSizeClick now updates selectedVariantIndex
   const handleSizeClick = useCallback((variant, index) => {
     console.log("🎯 Selected variant:", variant, "at index:", index)
     setSelectedVariant(variant)
     setSelectedVariantIndex(index)
   }, [])
 
+  // ✅ FIXED: Remove alert and add proper success feedback
   const handleAddToCart = useCallback(
     async (product) => {
       if (addingToCart) return
@@ -141,14 +139,13 @@ const ProductDetail = () => {
 
       setAddingToCart(true)
 
-      // ✅ FIXED: Construct a robust variantId string for differentiation
-      const variantId = `${product._id}_variant_${selectedVariantIndex}_${selectedVariant.size || "unknown"}`
+      const variantId = `${product._id}_variant_${selectedVariantIndex}_${selectedVariant.size}`
 
       const productToAdd = {
         _id: product._id,
         title: product.title,
         images: product.images,
-        variantId: variantId, // ✅ FIXED: Use the constructed variantId string
+        variantId: variantId,
         size: selectedVariant.size || `${selectedVariant.weight?.value} ${selectedVariant.weight?.unit}`,
         weight: {
           value: selectedVariant?.weight?.value || selectedVariant?.size,
@@ -160,17 +157,16 @@ const ProductDetail = () => {
         quantity: 1,
       }
 
-      console.log("🛒 Product to add (local):", productToAdd)
+      console.log("🛒 Product to add:", productToAdd)
 
       try {
         // Add to Redux store first
         dispatch(addToCart(productToAdd))
 
-        // ✅ FIXED: Send the correct payload to the backend
         const backendPayload = {
           productId: product._id,
           variantIndex: selectedVariantIndex,
-          variantId: variantId, // ✅ FIXED: Send the constructed variantId
+          variantId: variantId,
           quantity: 1,
         }
 
@@ -185,6 +181,7 @@ const ProductDetail = () => {
           console.warn("⚠️ Backend sync failed, but item added to local cart")
         }
 
+        // ✅ REMOVED: No more alert message
         console.log(`✅ Added ${selectedVariant.size} to cart successfully`)
       } catch (err) {
         console.error("❌ Add to cart failed:", err)
@@ -328,7 +325,7 @@ const ProductDetail = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="1.5"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
             />
           </svg>
         ))}
@@ -416,7 +413,7 @@ const ProductDetail = () => {
               {product.variants?.map((v, i) => (
                 <button
                   key={`variant-${i}`}
-                  onClick={() => handleSizeClick(v, i)} 
+                  onClick={() => handleSizeClick(v, i)}
                   className={`px-4 py-2 border rounded-full cursor-pointer transition-all font-medium ${
                     i === selectedVariantIndex
                       ? "bg-green-600 text-white border-green-600 scale-105 shadow-md"
@@ -519,7 +516,7 @@ const ProductDetail = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="1.5"
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
                     />
                   </svg>
                 ))}
@@ -638,7 +635,7 @@ const ProductDetail = () => {
                       src={image.startsWith("http") ? image : `${API_BASE}${image}`}
                       alt={`Review image ${index + 1}`}
                       loading="lazy"
-                      className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform duration-200"
+                      className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
                     />
                   ))}
@@ -676,7 +673,7 @@ const ProductDetail = () => {
                           src={image.startsWith("http") ? image : `${API_BASE}${image}`}
                           loading="lazy"
                           alt={`Review image ${index + 1}`}
-                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform duration-200"
+                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                           onClick={() =>
                             window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")
                           }
