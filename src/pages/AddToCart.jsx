@@ -83,7 +83,7 @@ const AddToCart = () => {
     if (!token) return
     try {
       console.log("🧹 Attempting to clean corrupted cart data via API...")
-      const response = await axiosWithToken().post("/cart/migrate-clean")
+      const response = await axiosWithToken().post("/cart/migrate-clean") // This route might need to be implemented on backend
       if (response.data) {
         console.log("✅ Cart cleaned successfully via API")
         dispatch(setCartItem([]))
@@ -111,7 +111,7 @@ const AddToCart = () => {
 
       if (hasChanged && cartItems.length > 0) {
         axiosWithToken()
-          .post("/cart", { items: cartItems })
+          .post("/cart", { items: cartItems }) // This route now handles aggregation on backend
           .then(() => {
             console.log("✅ Synced cart to backend")
             prevCartRef.current = cartItems

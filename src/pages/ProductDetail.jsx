@@ -137,8 +137,9 @@ const ProductDetail = () => {
       console.log("🛒 Variant Index:", selectedVariantIndex)
       setAddingToCart(true)
 
-      // ✅ FIXED: Use the consistent generateVariantId utility
+      // ✅ CRITICAL FIX: Use the consistent generateVariantId utility
       const variantId = generateVariantId(product._id, selectedVariant, selectedVariantIndex)
+      console.log(`Frontend: Generated variantId for add to cart: ${variantId}`)
 
       const productToAdd = {
         _id: product._id,
@@ -158,7 +159,7 @@ const ProductDetail = () => {
         quantity: 1,
       }
 
-      console.log("🛒 Product to add:", productToAdd)
+      console.log("🛒 Product to add to Redux:", productToAdd)
 
       try {
         // Add to Redux store first
@@ -188,7 +189,7 @@ const ProductDetail = () => {
         setAddingToCart(false)
       }
     },
-    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice, product], // Added product to dependency array
+    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice, product],
   )
 
   const handleReviewImageChange = useCallback((e) => {
