@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import { setCartItem, setUserId, setCartReady } from "./Redux/cartSlice"

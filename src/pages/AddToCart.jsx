@@ -1,5 +1,7 @@
+"use client"
+
 import { useSelector, useDispatch } from "react-redux"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import {
   incrementQuantity,
   decrementQuantity,
@@ -7,6 +9,7 @@ import {
   selectAddress,
   setAddresses,
   initializeSelectedAddress,
+  setCartItem,
 } from "../Redux/cartSlice"
 import { useNavigate } from "react-router-dom"
 import { axiosWithToken } from "../utils/axiosWithToken"
@@ -19,6 +22,7 @@ const AddToCart = () => {
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(true)
   const modalRef = useRef()
+  const prevCartRef = useRef([])
 
   const cartItems = useSelector((state) => state.cart.items)
   const cartReady = useSelector((state) => state.cart.cartReady)
@@ -37,7 +41,6 @@ const AddToCart = () => {
 
     if (token && !addressesLoaded) {
       setAddressesLoading(true)
-
       fetch(`${API_BASE}/api/users/address`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -48,24 +51,21 @@ const AddToCart = () => {
           if (Array.isArray(data.addresses)) {
             dispatch(setAddresses(data.addresses))
             setAddressesLoaded(true)
-
-            // After addresses are loaded, check localStorage for selected address
             const savedAddress = localStorage.getItem("deliveryAddress")
             if (savedAddress) {
               try {
                 const parsed = JSON.parse(savedAddress)
-                // Verify the saved address still exists in the backend
                 const stillExists = data.addresses.some((a) => a._id === parsed._id)
                 if (stillExists) {
                   dispatch(initializeSelectedAddress(parsed))
                 } else {
-                  // Address was deleted, clear localStorage
                   localStorage.removeItem("deliveryAddress")
                   dispatch(selectAddress(null))
                 }
               } catch (error) {
                 console.error("Error parsing saved address:", error)
                 localStorage.removeItem("deliveryAddress")
+                dispatch(selectAddress(null))
               }
             }
           }
@@ -75,37 +75,72 @@ const AddToCart = () => {
           setAddressesLoading(false)
         })
     } else if (!token) {
-      // If no token, stop loading immediately
       setAddressesLoading(false)
     }
   }, [dispatch, addressesLoaded, cartReady, token])
 
+  const cleanCorruptedCart = useCallback(async () => {
+    if (!token) return
+    try {
+      console.log("🧹 Attempting to clean corrupted cart data via API...")
+      const response = await axiosWithToken().post("/cart/migrate-clean")
+      if (response.data) {
+        console.log("✅ Cart cleaned successfully via API")
+        dispatch(setCartItem([]))
+      }
+    } catch (error) {
+      console.error("❌ Failed to clean cart via API:", error)
+    }
+  }, [token, dispatch])
+
   useEffect(() => {
-    if (user && cartReady) {
-      localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems))
-      axiosWithToken().post("/cart", { items: cartItems }).catch(console.error)
+    const hasCartErrors = localStorage.getItem("cartErrors")
+    if (hasCartErrors && token && cartReady) {
+      cleanCorruptedCart()
+      localStorage.removeItem("cartErrors") // Clear the flag
+    }
+  }, [cleanCorruptedCart, token, cartReady])
+
+  useEffect(() => {
+    if (user && cartReady && Array.isArray(cartItems)) {
+      const key = `cart_${user._id}`
+      localStorage.setItem(key, JSON.stringify(cartItems))
+
+      const prevCart = prevCartRef.current
+      const hasChanged = JSON.stringify(prevCart) !== JSON.stringify(cartItems)
+
+      if (hasChanged && cartItems.length > 0) {
+        axiosWithToken()
+          .post("/cart", { items: cartItems })
+          .then(() => {
+            console.log("✅ Synced cart to backend")
+            prevCartRef.current = cartItems
+          })
+          .catch((error) => {
+            console.error("❌ Sync failed:", error)
+            if (error.response?.status === 500) {
+              localStorage.setItem("cartErrors", "true")
+            }
+          })
+      }
     }
   }, [cartItems, cartReady, user])
 
-  // Handle address selection and sync to localStorage
   const handleAddressSelect = (address) => {
     dispatch(selectAddress(address))
     localStorage.setItem("deliveryAddress", JSON.stringify(address))
     setShowAddressModal(false)
   }
 
-  // Close modal on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         setShowAddressModal(false)
       }
     }
-
     if (showAddressModal) {
       document.addEventListener("mousedown", handleClickOutside)
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
@@ -127,17 +162,13 @@ const AddToCart = () => {
           "Content-Type": "application/json",
         },
       })
-
       if (!res.ok) {
         const errorText = await res.text()
         throw new Error(`Failed to delete address: ${errorText}`)
       }
-
       const data = await res.json()
       if (data.addresses) {
         dispatch(setAddresses(data.addresses))
-
-        // Handle selected address after deletion
         if (selectedAddress?._id === id) {
           localStorage.removeItem("deliveryAddress")
           if (data.addresses.length > 0) {
@@ -200,7 +231,8 @@ const AddToCart = () => {
             <p className="text-center py-10 text-gray-600">Your cart is empty.</p>
           ) : (
             cartItems.map((item) => (
-              <div key={item._id} className="bg-white rounded shadow p-4 flex gap-4">
+              // ✅ FIXED: Use unique key combining _id and variantId
+              <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
                 <img
                   src={item.images?.others?.[0]?.url || "/placeholder.svg"}
                   alt={item.title}
@@ -209,7 +241,7 @@ const AddToCart = () => {
                 />
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{item.title}</h2>
-                  <p className="text-sm text-gray-600">Size: {item.weight.value}</p>
+                  <p className="text-sm text-gray-600">Size: {item.size}</p>
                   <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
                   <div className="flex items-center gap-3">
                     <span className="text-green-600 font-bold text-xl">₹{item.currentPrice.toFixed(2)}</span>
@@ -238,9 +270,10 @@ const AddToCart = () => {
                         +
                       </button>
                     </div>
+                    {/* ✅ FIXED: Pass both _id and variantId for removal */}
                     <button
                       className="text-red-500 text-sm hover:underline"
-                      onClick={() => dispatch(removeFromCart(item._id))}
+                      onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
                     >
                       Remove
                     </button>
