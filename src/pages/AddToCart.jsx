@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import {
   incrementQuantity,
@@ -7,7 +7,6 @@ import {
   selectAddress,
   setAddresses,
   initializeSelectedAddress,
-  setCartItem,
 } from "../Redux/cartSlice"
 import { useNavigate } from "react-router-dom"
 import { axiosWithToken } from "../utils/axiosWithToken"
@@ -165,8 +164,12 @@ const AddToCart = () => {
   }
 
   // Show loading state before cart is ready
-  if (!cartReady) {
-    return <div className="text-center py-10">Loading cart...</div>
+  if (!cartReady || cartItems === null) {
+    return (
+      <div className="text-center py-10">
+        Loading cart...
+      </div>
+    )
   }
 
   return (
