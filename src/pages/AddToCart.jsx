@@ -1,7 +1,5 @@
-"use client"
-
-import { useSelector, useDispatch } from "react-redux"
 import { useEffect, useState, useRef, useCallback } from "react"
+import { useSelector, useDispatch } from "react-redux"
 import {
   incrementQuantity,
   decrementQuantity,
@@ -18,9 +16,6 @@ import { API_BASE } from "../utils/api"
 const AddToCart = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const [showAddressModal, setShowAddressModal] = useState(false)
-  const [addressesLoaded, setAddressesLoaded] = useState(false)
-  const [addressesLoading, setAddressesLoading] = useState(true)
   const modalRef = useRef()
   const prevCartRef = useRef([])
 
@@ -29,109 +24,98 @@ const AddToCart = () => {
   const addresses = useSelector((state) => state.cart.addresses)
   const selectedAddress = useSelector((state) => state.cart.selectedAddress)
 
+  const [showAddressModal, setShowAddressModal] = useState(false)
+  const [addressesLoaded, setAddressesLoaded] = useState(false)
+  const [addressesLoading, setAddressesLoading] = useState(false)
+
+  const token = useSelector(() => {
+    try {
+      return JSON.parse(localStorage.getItem("mirakleUser"))?.token || null
+    } catch {
+      return null
+    }
+  })
+
+  const user = useSelector(() => {
+    try {
+      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
+    } catch {
+      return null
+    }
+  })
+
+  // Calculate totals
   const subtotal = cartItems.reduce((acc, item) => acc + item.currentPrice * item.quantity, 0)
   const originalTotal = cartItems.reduce((acc, item) => acc + item.originalPrice * item.quantity, 0)
   const discountAmount = originalTotal - subtotal
 
-  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token
-  const user = JSON.parse(localStorage.getItem("mirakleUser"))?.user
-
+  // Fetch saved addresses on first load
   useEffect(() => {
-    if (!cartReady) return
+    if (!cartReady || !token || addressesLoaded) return
 
-    if (token && !addressesLoaded) {
-      setAddressesLoading(true)
-      fetch(`${API_BASE}/api/users/address`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data.addresses)) {
-            dispatch(setAddresses(data.addresses))
-            setAddressesLoaded(true)
-            const savedAddress = localStorage.getItem("deliveryAddress")
-            if (savedAddress) {
-              try {
-                const parsed = JSON.parse(savedAddress)
-                const stillExists = data.addresses.some((a) => a._id === parsed._id)
-                if (stillExists) {
-                  dispatch(initializeSelectedAddress(parsed))
-                } else {
-                  localStorage.removeItem("deliveryAddress")
-                  dispatch(selectAddress(null))
-                }
-              } catch (error) {
-                console.error("Error parsing saved address:", error)
+    setAddressesLoading(true)
+
+    axiosWithToken(token)
+      .get(`${API_BASE}/api/users/address`)
+      .then((res) => {
+        if (Array.isArray(res.data.addresses)) {
+          dispatch(setAddresses(res.data.addresses))
+          setAddressesLoaded(true)
+          // Initialize selected address if saved in localStorage and still valid
+          const savedAddressStr = localStorage.getItem("deliveryAddress")
+          if (savedAddressStr) {
+            try {
+              const savedAddress = JSON.parse(savedAddressStr)
+              const exists = res.data.addresses.some((addr) => addr._id === savedAddress._id)
+              if (exists) {
+                dispatch(initializeSelectedAddress(savedAddress))
+              } else {
                 localStorage.removeItem("deliveryAddress")
                 dispatch(selectAddress(null))
               }
+            } catch {
+              localStorage.removeItem("deliveryAddress")
+              dispatch(selectAddress(null))
             }
           }
-        })
-        .catch(console.error)
-        .finally(() => {
-          setAddressesLoading(false)
-        })
-    } else if (!token) {
-      setAddressesLoading(false)
-    }
-  }, [dispatch, addressesLoaded, cartReady, token])
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load addresses:", err)
+      })
+      .finally(() => {
+        setAddressesLoading(false)
+      })
+  }, [cartReady, token, dispatch, addressesLoaded])
 
-  const cleanCorruptedCart = useCallback(async () => {
-    if (!token) return
-    try {
-      console.log("🧹 Attempting to clean corrupted cart data via API...")
-      const response = await axiosWithToken().post("/cart/migrate-clean")
-      if (response.data) {
-        console.log("✅ Cart cleaned successfully via API")
-        dispatch(setCartItem([]))
-      }
-    } catch (error) {
-      console.error("❌ Failed to clean cart via API:", error)
-    }
-  }, [token, dispatch])
-
+  // Sync cart to backend on every cart change
   useEffect(() => {
-    const hasCartErrors = localStorage.getItem("cartErrors")
-    if (hasCartErrors && token && cartReady) {
-      cleanCorruptedCart()
-      localStorage.removeItem("cartErrors") // Clear the flag
+    if (!cartReady || !token || !user) return
+    if (cartItems.length === 0) {
+      // Optionally sync empty cart if needed - depends on your backend logic
+      return
     }
-  }, [cleanCorruptedCart, token, cartReady])
 
-  useEffect(() => {
-    if (user && cartReady && Array.isArray(cartItems)) {
-      const key = `cart_${user._id}`
-      localStorage.setItem(key, JSON.stringify(cartItems))
+    // Compare previous cart to avoid redundant sync
+    if (JSON.stringify(prevCartRef.current) === JSON.stringify(cartItems)) return
 
-      const prevCart = prevCartRef.current
-      const hasChanged = JSON.stringify(prevCart) !== JSON.stringify(cartItems)
+    prevCartRef.current = cartItems
 
-      if (hasChanged && cartItems.length > 0) {
-        axiosWithToken()
-          .post("/cart", { items: cartItems })
-          .then(() => {
-            console.log("✅ Synced cart to backend")
-            prevCartRef.current = cartItems
-          })
-          .catch((error) => {
-            console.error("❌ Sync failed:", error)
-            if (error.response?.status === 500) {
-              localStorage.setItem("cartErrors", "true")
-            }
-          })
-      }
-    }
-  }, [cartItems, cartReady, user])
+    // Update localStorage cache
+    localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems))
 
-  const handleAddressSelect = (address) => {
-    dispatch(selectAddress(address))
-    localStorage.setItem("deliveryAddress", JSON.stringify(address))
-    setShowAddressModal(false)
-  }
+    axiosWithToken(token)
+      .post("/cart", { items: cartItems })
+      .then(() => {
+        console.log("✅ Cart synced successfully")
+      })
+      .catch((err) => {
+        console.error("❌ Cart sync failed:", err)
+        // Optionally: you can set a flag or show notification to user here
+      })
+  }, [cartItems, cartReady, token, user])
 
+  // Address modal outside click to close
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -146,33 +130,27 @@ const AddToCart = () => {
     }
   }, [showAddressModal])
 
+  const handleAddressSelect = (address) => {
+    dispatch(selectAddress(address))
+    localStorage.setItem("deliveryAddress", JSON.stringify(address))
+    setShowAddressModal(false)
+  }
+
   const confirmDelete = (addressId) => {
-    const confirm = window.confirm("Are you sure you want to delete this address?")
-    if (confirm) {
+    if (window.confirm("Are you sure you want to delete this address?")) {
       handleDeleteAddress(addressId)
     }
   }
 
   const handleDeleteAddress = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/users/address/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-      if (!res.ok) {
-        const errorText = await res.text()
-        throw new Error(`Failed to delete address: ${errorText}`)
-      }
-      const data = await res.json()
-      if (data.addresses) {
-        dispatch(setAddresses(data.addresses))
+      const res = await axiosWithToken(token).delete(`${API_BASE}/api/users/address/${id}`)
+      if (res.data.addresses) {
+        dispatch(setAddresses(res.data.addresses))
         if (selectedAddress?._id === id) {
           localStorage.removeItem("deliveryAddress")
-          if (data.addresses.length > 0) {
-            const newSelected = data.addresses[0]
+          if (res.data.addresses.length > 0) {
+            const newSelected = res.data.addresses[0]
             dispatch(selectAddress(newSelected))
             localStorage.setItem("deliveryAddress", JSON.stringify(newSelected))
           } else {
@@ -180,29 +158,30 @@ const AddToCart = () => {
           }
         }
       }
-    } catch (err) {
-      console.error("Failed to delete address", err)
-      alert("Could not delete address. Try again later.")
+    } catch (error) {
+      console.error("Failed to delete address:", error)
+      alert("Could not delete address. Please try again later.")
     }
   }
 
-  if (!cartReady) return <div className="text-center py-10">Loading cart...</div>
+  // Show loading state before cart is ready
+  if (!cartReady) {
+    return <div className="text-center py-10">Loading cart...</div>
+  }
 
   return (
     <div className="bg-gray-100 min-h-screen py-6">
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side */}
+        {/* Left side - Cart items and address */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Address */}
+          {/* Address Section */}
           <div className="bg-white p-4 rounded shadow flex justify-between items-center">
             {addressesLoading ? (
-              <div className="flex items-center">
-                <div className="animate-pulse flex space-x-4">
-                  <div className="rounded-full bg-gray-300 h-4 w-4"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-300 rounded w-48"></div>
-                    <div className="h-3 bg-gray-300 rounded w-32"></div>
-                  </div>
+              <div className="flex items-center animate-pulse space-x-4">
+                <div className="rounded-full bg-gray-300 h-4 w-4"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-300 rounded w-48"></div>
+                  <div className="h-3 bg-gray-300 rounded w-32"></div>
                 </div>
               </div>
             ) : selectedAddress ? (
@@ -231,7 +210,6 @@ const AddToCart = () => {
             <p className="text-center py-10 text-gray-600">Your cart is empty.</p>
           ) : (
             cartItems.map((item) => (
-              // ✅ FIXED: Use unique key combining _id and variantId
               <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
                 <img
                   src={item.images?.others?.[0]?.url || "/placeholder.svg"}
@@ -270,7 +248,6 @@ const AddToCart = () => {
                         +
                       </button>
                     </div>
-                    {/* ✅ FIXED: Pass both _id and variantId for removal */}
                     <button
                       className="text-red-500 text-sm hover:underline"
                       onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
@@ -284,8 +261,8 @@ const AddToCart = () => {
           )}
         </div>
 
-        {/* Right side: Price Details */}
-        <div className="bg-white p-6 rounded shadow h-fit sticky top-28">
+        {/* Right side - Price details */}
+        <div className="bg-white p-6 rounded shadow sticky top-28">
           <h3 className="text-xl font-bold mb-4">Price Details</h3>
           <div className="flex justify-between mb-2">
             <span>
@@ -320,6 +297,7 @@ const AddToCart = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
           <div ref={modalRef} className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
+
             {addresses.length === 0 ? (
               <p className="text-gray-500">No addresses saved yet.</p>
             ) : (
@@ -331,12 +309,8 @@ const AddToCart = () => {
                     checked={selectedAddress?._id === addr._id}
                     onChange={() => handleAddressSelect(addr)}
                   />
-                  <span className="ml-2 font-medium">
-                    {addr.name}, {addr.pincode}
-                  </span>
-                  <p className="text-sm text-gray-600">
-                    {addr.line1}, {addr.city}, {addr.landmark}
-                  </p>
+                  <span className="ml-2 font-medium">{addr.name}, {addr.pincode}</span>
+                  <p className="text-sm text-gray-600">{addr.line1}, {addr.city}, {addr.landmark}</p>
                   <button
                     onClick={() => confirmDelete(addr._id)}
                     className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
@@ -346,6 +320,7 @@ const AddToCart = () => {
                 </div>
               ))
             )}
+
             <button
               onClick={() => {
                 setShowAddressModal(false)

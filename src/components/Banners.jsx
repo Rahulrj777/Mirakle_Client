@@ -150,27 +150,23 @@ const Banners = () => {
     [searchTerm, navigate],
   )
 
-  const handleLogout = useCallback(() => {
-    const mirakleUser = localStorage.getItem("mirakleUser")
-    let userId = null
-    if (mirakleUser) {
+  const handleLogout = () => {
+    const userData = localStorage.getItem("mirakleUser");
+    let userId = null;
+    if (userData) {
       try {
-        userId = JSON.parse(mirakleUser)?.user?._id
+        userId = JSON.parse(userData)?.user?._id;
       } catch {
-        console.warn("⚠️ Failed to parse user from localStorage")
+        console.log("error");
+        
       }
     }
-    localStorage.removeItem("mirakleUser")
-    if (userId) {
-      localStorage.removeItem(`cart_${userId}`)
-    }
-    localStorage.removeItem("cartErrors") // optional cleanup
-    dispatch(setCartItem([]))
-    dispatch(setCartReady(false)) // ✅ Reset cart readiness
-    dispatch(clearUser())
-    setShowDropdown(false)
-    navigate("/login_signup")
-  }, [dispatch, navigate])
+    localStorage.removeItem("mirakleUser");
+    if (userId) localStorage.removeItem(`cart_${userId}`);
+    dispatch(clearUser());
+    dispatch(setCartReady(false));
+    navigate("/login_signup");
+  }
 
   const handleSelectSuggestion = useCallback(
     (id) => {
