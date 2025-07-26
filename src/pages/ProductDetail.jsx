@@ -106,6 +106,13 @@ const ProductDetail = () => {
     setSelectedVariant(variant)
   }, [])
 
+  const finalPrice = useMemo(() => {
+    if (!selectedVariant) return "0.00"
+    const price = selectedVariant.price
+    const discount = selectedVariant.discountPercent || 0
+    return (price - (price * discount) / 100).toFixed(2)
+  }, [selectedVariant])
+
  const handleAddToCart = useCallback(
   async (product) => {
     if (addingToCart) return;
@@ -151,7 +158,7 @@ const ProductDetail = () => {
       setAddingToCart(false);
     }
   },
-  [addingToCart, user, selectedVariant, navigate, dispatch],
+  [addingToCart, user, selectedVariant, navigate, dispatch,finalPrice],
 );
 
   const handleReviewImageChange = useCallback((e) => {
@@ -199,7 +206,7 @@ const ProductDetail = () => {
         const formData = new FormData()
         formData.append("rating", reviewRating)
         formData.append("comment", reviewComment.trim())
-        reviewImages.forEach((image, index) => {
+        reviewImages.forEach((image) => {
           formData.append("images", image)
         })
         const result = await safeApiCall(async (api) => {
@@ -255,13 +262,6 @@ const ProductDetail = () => {
     const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
     return (total / validRatings.length).toFixed(1)
   }, [product?.reviews])
-
-  const finalPrice = useMemo(() => {
-    if (!selectedVariant) return "0.00"
-    const price = selectedVariant.price
-    const discount = selectedVariant.discountPercent || 0
-    return (price - (price * discount) / 100).toFixed(2)
-  }, [selectedVariant])
 
   const currentUserReview = useMemo(() => {
     if (!Array.isArray(product?.reviews)) return null
