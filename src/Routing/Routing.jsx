@@ -3,7 +3,6 @@ import { useEffect } from "react"
 import Mirakle_Home_page from "../pages/Mirakle_Home_page"
 import ShopingPage from "../pages/ShopingPage"
 import AboutUs from "../pages/AboutUs"
-import ContectUs from "../pages/ContactUs"
 import Footer from "../components/Footer"
 import AddToCart from "../pages/AddToCart"
 import ProductDetail from "../pages/ProductDetail"
@@ -13,6 +12,7 @@ import ScrollToTop from "../pages/ScrollToTop"
 import Checkout from "../pages/Checkout"
 import Address from "../pages/Address"
 import Header from "../components/Header"
+import ContactUs from "../pages/ContactUs"
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -32,7 +32,7 @@ const AppRoutes = () => {
         <Route path="/shop/allproduct" element={<ShopingPage filterType="all" />} />
         <Route path="/shop/offerproduct" element={<ShopingPage filterType="offer" />} />
         <Route path="/About_Us" element={<AboutUs />} />
-        <Route path="/Contect_Us" element={<ContectUs />} />
+        <Route path="/Contect_Us" element={<ContactUs />} />
         <Route path="/login_signup" element={<LoginSignUp />} />
         <Route path="/AddToCart" element={<AddToCart />} />
         <Route path="/product/:id" element={<ProductDetail />} />
