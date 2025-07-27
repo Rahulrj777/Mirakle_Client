@@ -27,21 +27,20 @@ const AddToCart = () => {
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(false)
 
-  const token = useSelector(() => {
-    try {
-      return JSON.parse(localStorage.getItem("mirakleUser"))?.token || null
-    } catch {
-      return null
-    }
-  })
-
   const user = useSelector(() => {
     try {
-      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
+      return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null;
     } catch {
-      return null
+      return null;
     }
-  })
+  });
+  const token = useSelector(() => {
+    try {
+      return JSON.parse(localStorage.getItem("mirakleUser"))?.token || null;
+    } catch {
+      return null;
+    }
+  });
 
   // Calculate totals
   const subtotal = cartItems.reduce((acc, item) => acc + item.currentPrice * item.quantity, 0)
@@ -163,13 +162,8 @@ const AddToCart = () => {
     }
   }
 
-  // Show loading state before cart is ready
   if (!cartReady || cartItems === null) {
-    return (
-      <div className="text-center py-10">
-        Loading cart...
-      </div>
-    )
+    return <LoadingPlaceholder />; 
   }
 
   return (
