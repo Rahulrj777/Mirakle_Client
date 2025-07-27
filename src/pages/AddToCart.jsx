@@ -238,7 +238,7 @@ const AddToCart = () => {
             <div className="bg-white rounded shadow p-8 text-center">
               <p className="text-gray-600 text-lg">Your cart is empty.</p>
               <button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/shop/allproduct")}
                 className="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
               >
                 Continue Shopping
