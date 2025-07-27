@@ -32,7 +32,7 @@ const AppRoutes = () => {
         <Route path="/shop/allproduct" element={<ShopingPage filterType="all" />} />
         <Route path="/shop/offerproduct" element={<ShopingPage filterType="offer" />} />
         <Route path="/About_Us" element={<AboutUs />} />
-        <Route path="/Contect_Us" element={<ContactUs />} />
+        <Route path="/Contact_Us" element={<ContactUs />} />
         <Route path="/login_signup" element={<LoginSignUp />} />
         <Route path="/AddToCart" element={<AddToCart />} />
         <Route path="/product/:id" element={<ProductDetail />} />

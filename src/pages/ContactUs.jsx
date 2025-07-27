@@ -1,4 +1,3 @@
-// ContactUs.jsx
 import React from "react";
 
 const ContactUs = () => {
@@ -9,7 +8,7 @@ const ContactUs = () => {
       <p className="text-lg mb-4 text-center">
         We'd love to hear from you! Whether you have a question, feedback, or just want to say hello,
         reach out to us anytime.
-      </p>
+      </p>  
 
       <div className="bg-white shadow-lg rounded-2xl p-6 space-y-6">
         <div>
