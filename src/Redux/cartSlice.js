@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
-  items: null,
+  items: [],
   cartReady: false,
   userId: null,
   addresses: [],
@@ -38,8 +38,14 @@ const cartSlice = createSlice({
       state.cartReady = false
       state.addresses = []
       state.selectedAddress = null
-      localStorage.removeItem("deliveryAddress")
-      console.log("✅ User cleared")
+      // Clear all cart-related localStorage data
+      const keys = Object.keys(localStorage)
+      keys.forEach((key) => {
+        if (key.startsWith("cart_") || key === "deliveryAddress") {
+          localStorage.removeItem(key)
+        }
+      })
+      console.log("✅ User cleared and localStorage cleaned")
     },
     setCartReady: (state, action) => {
       state.cartReady = action.payload
@@ -47,16 +53,15 @@ const cartSlice = createSlice({
     addToCart: (state, action) => {
       const item = action.payload
       console.log("🛒 Adding to cart:", item)
-      // ✅ FIXED: More robust comparison using both _id and variantId
+
+      // Ensure items is always an array
+      if (!Array.isArray(state.items)) {
+        state.items = []
+      }
+
       const existingItem = state.items.find((i) => {
         const isSameProduct = i._id.toString() === item._id.toString()
         const isSameVariant = i.variantId?.toString() === item.variantId?.toString()
-        console.log("Comparing items:", {
-          existing: { _id: i._id, variantId: i.variantId, size: i.size },
-          new: { _id: item._id, variantId: item.variantId, size: item.size },
-          isSameProduct,
-          isSameVariant,
-        })
         return isSameProduct && isSameVariant
       })
 
@@ -67,7 +72,7 @@ const cartSlice = createSlice({
         console.log("✅ Adding new item to cart")
         state.items.push({
           ...item,
-          // ✅ REMOVED: cartItemId is redundant as _id and variantId are used for uniqueness
+          quantity: item.quantity || 1,
         })
       }
       console.log("Cart after addition:", state.items)
@@ -107,7 +112,6 @@ const cartSlice = createSlice({
       }
       const { _id, variantId } = action.payload
       const initialLength = state.items.length
-      // ✅ FIXED: Remove by both _id and variantId
       state.items = state.items.filter(
         (item) => !(item._id.toString() === _id.toString() && item.variantId?.toString() === variantId?.toString()),
       )
