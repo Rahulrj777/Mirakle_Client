@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import axios from "axios"
 
 const ContactUs = () => {
   const [form, setForm] = useState({ name: "", email: "", message: "" })
@@ -18,28 +17,26 @@ const ContactUs = () => {
     setStatus("Sending...")
 
     try {
-      // Updated axios configuration
-      const response = await axios.post("https://mirakle-server.vercel.app/api/contact", form, {
+      // ONLY CHANGE: Use local API instead of external server
+      const response = await fetch("/api/contact", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        withCredentials: true, // Include credentials if needed
-        timeout: 10000, // 10 second timeout
+        body: JSON.stringify(form),
       })
 
-      console.log("✅ Message sent successfully:", response.data)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("✅ Message sent successfully:", data)
       setStatus("Message sent successfully!")
       setForm({ name: "", email: "", message: "" })
     } catch (err) {
       console.error("❌ Error sending message:", err)
-
-      if (err.code === "ERR_NETWORK") {
-        setStatus("Network error. Please check your connection and try again.")
-      } else if (err.response) {
-        setStatus(`Failed to send message: ${err.response.data?.error || "Server error"}`)
-      } else {
-        setStatus("Failed to send message. Please try again.")
-      }
+      setStatus("Failed to send message. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -52,7 +49,6 @@ const ContactUs = () => {
         We'd love to hear from you! Whether you have a question, feedback, or just want to say hello, reach out to us
         anytime.
       </p>
-
       <div className="bg-white shadow-lg rounded-2xl p-6 space-y-6">
         <div>
           <h2 className="text-xl font-semibold">Email</h2>
@@ -84,7 +80,6 @@ const ContactUs = () => {
             </a>
           </div>
         </div>
-
         <form className="space-y-4 mt-6" onSubmit={handleSubmit}>
           <div>
             <label className="block text-lg font-medium">Name</label>
