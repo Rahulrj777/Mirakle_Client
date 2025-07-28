@@ -111,7 +111,7 @@ const ShopingPage = () => {
                     alt={product.title}
                     loading="lazy"
                     className={`w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t ${
-                      isOut ? "opacity-60" : "hover:shadow-lg"
+                      isOut ? "opacity-60" : ""
                     }`}
                   />
 
