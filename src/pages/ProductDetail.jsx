@@ -429,16 +429,28 @@ const ProductDetail = () => {
             </div>
           </div>
           <div className="mt-6 flex gap-4">
-            <button
-              onClick={() => handleAddToCart(product)}
-              disabled={addingToCart}
-              className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
-            >
-              {addingToCart ? "Adding..." : "Add to Cart"}
-            </button>
-            <button className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer hover:bg-green-700 transition-all transform hover:scale-105">
-              Buy Now
-            </button>
+            {selectedVariant?.isOutOfStock ? (
+              <button
+                disabled
+                className="bg-gray-400 text-white px-6 py-2 rounded cursor-not-allowed"
+                title="This variant is currently out of stock"
+              >
+                Available Soon...
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleAddToCart(product)}
+                  disabled={addingToCart}
+                  className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                >
+                  {addingToCart ? "Adding..." : "Add to Cart"}
+                </button>
+                <button className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer hover:bg-green-700 transition-all transform hover:scale-105">
+                  Buy Now
+                </button>
+              </>
+            )}
           </div>
           <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
         </div>
