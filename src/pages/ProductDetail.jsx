@@ -1,600 +1,811 @@
-"use client"
-
-import { useEffect, useState, useRef } from "react"
-import { useSelector, useDispatch } from "react-redux"
-import {
-  incrementQuantity,
-  decrementQuantity,
-  removeFromCart,
-  selectAddress,
-  setAddresses,
-  initializeSelectedAddress,
-} from "../Redux/cartSlice"
-import { useNavigate } from "react-router-dom"
-import { axiosWithToken } from "../utils/axiosWithToken"
+import { useParams, useNavigate } from "react-router-dom"
+import { useEffect, useState, useCallback, useMemo } from "react"
+import axios from "axios"
 import { API_BASE } from "../utils/api"
+import { useDispatch, useSelector } from "react-redux"
+import { addToCart, setCartItem } from "../Redux/cartSlice"
+import { safeApiCall } from "../utils/axiosWithToken"
 
-const LoadingPlaceholder = () => (
-  <div className="bg-gray-100 min-h-screen py-6">
-    <div className="max-w-6xl mx-auto px-4">
-      <div className="animate-pulse space-y-4">
-        <div className="h-20 bg-gray-300 rounded"></div>
-        <div className="h-32 bg-gray-300 rounded"></div>
-        <div className="h-32 bg-gray-300 rounded"></div>
-      </div>
-    </div>
-  </div>
-)
+const ProductDetail = () => {
+  const { id } = useParams()
+  const [product, setProduct] = useState(null)
+  const [selectedVariant, setSelectedVariant] = useState(null)
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
+  const [selectedImage, setSelectedImage] = useState("")
+  const [error, setError] = useState("")
+  const [relatedProducts, setRelatedProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState("")
+  const [reviewImages, setReviewImages] = useState([])
+  const [reviewImagePreviews, setReviewImagePreviews] = useState([])
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewError, setReviewError] = useState("")
+  const [showAllReviews, setShowAllReviews] = useState(false)
+  const [actionLoading, setActionLoading] = useState({})
 
-const AddToCart = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const modalRef = useRef()
-  const prevCartRef = useRef([])
-  const syncTimeoutRef = useRef(null)
-  const stockCheckIntervalRef = useRef(null)
 
-  // Redux state
-  const cartItems = useSelector((state) => state.cart.items)
-  const cartReady = useSelector((state) => state.cart.cartReady)
-  const userId = useSelector((state) => state.cart.userId)
-  const addresses = useSelector((state) => state.cart.addresses)
-  const selectedAddress = useSelector((state) => state.cart.selectedAddress)
-
-  // Local state
-  const [showAddressModal, setShowAddressModal] = useState(false)
-  const [addressesLoaded, setAddressesLoaded] = useState(false)
-  const [addressesLoading, setAddressesLoading] = useState(false)
-  const [outOfStockItems, setOutOfStockItems] = useState(new Set())
-  const [stockCheckLoading, setStockCheckLoading] = useState(false)
-
-  // Get user and token from localStorage
-  const getUserData = () => {
+  const user = useMemo(() => {
     try {
-      const userData = JSON.parse(localStorage.getItem("mirakleUser"))
-      return {
-        user: userData?.user || null,
-        token: userData?.token || null,
-      }
+      return JSON.parse(localStorage.getItem("mirakleUser"))
     } catch {
-      return { user: null, token: null }
+      return null
     }
-  }
+  }, [])
 
-  const { user, token } = getUserData()
-  const safeCartItems = Array.isArray(cartItems) ? cartItems : []
+  const cartItems = useSelector((state) => {
+    const items = state.cart?.items
+    return Array.isArray(items) ? items : []
+  })
 
-  // Stock checking function
-  const checkStockStatus = async () => {
-    if (!token || safeCartItems.length === 0) {
-      console.log("🔍 Stock check skipped - no token or empty cart")
-      return
-    }
+  const finalPrice = useMemo(() => {
+    if (!selectedVariant) return "0.00"
+    const price = selectedVariant.price
+    const discount = selectedVariant.discountPercent || 0
+    return (price - (price * discount) / 100).toFixed(2)
+  }, [selectedVariant])
 
-    setStockCheckLoading(true)
-    console.log("🔍 Starting stock check for", safeCartItems.length, "items")
+  // ✅ FIXED: Enhanced stock checking logic
+  const isOutOfStock = useMemo(() => {
+    if (!product || !selectedVariant) return false
 
+    console.log("🔍 Stock Check Debug:")
+    console.log("- Product isOutOfStock:", product.isOutOfStock)
+    console.log("- Selected variant:", selectedVariant)
+    console.log("- Variant stock:", selectedVariant.stock)
+    console.log("- Variant isOutOfStock:", selectedVariant.isOutOfStock)
+
+    // Check multiple conditions for out of stock
+    const conditions = [
+      // 1. Product-level out of stock flag
+      product.isOutOfStock === true,
+
+      // 2. Variant-level out of stock flag
+      selectedVariant.isOutOfStock === true,
+
+      // 3. Stock quantity is 0 or less
+      typeof selectedVariant.stock === "number" && selectedVariant.stock <= 0,
+
+      // 4. Stock is explicitly set to 0 as string
+      selectedVariant.stock === "0" || selectedVariant.stock === 0,
+    ]
+
+    const isOOS = conditions.some((condition) => condition)
+    console.log("- Final out of stock status:", isOOS)
+    console.log("- Conditions checked:", conditions)
+
+    return isOOS
+  }, [product, selectedVariant])
+
+  const token = user?.token
+
+  const fetchProduct = useCallback(async () => {
     try {
-      const productIds = safeCartItems.map((item) => ({
-        productId: item._id,
-        variantId: item.variantId,
-      }))
-
-      console.log("🔍 Checking stock for items:", productIds)
-      console.log("🔍 API URL:", `${API_BASE}/api/products/check-stock`)
-
-      const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
-        items: productIds,
-      })
-
-      console.log("✅ Stock check response:", response.data)
-
-      const stockData = response.data.stockStatus || []
-      const newOutOfStockItems = new Set()
-
-      stockData.forEach((item) => {
-        console.log(
-          `📊 Item ${item.productId}_${item.variantId}: inStock=${item.inStock}, quantity=${item.availableQuantity}`,
-        )
-
-        if (!item.inStock || item.availableQuantity === 0) {
-          newOutOfStockItems.add(`${item.productId}_${item.variantId}`)
+      setLoading(true)
+      setError("")
+      const res = await axios.get(`${API_BASE}/api/products/all-products`)
+      const found = res.data.find((p) => p._id === id)
+      if (found) {
+        console.log("🔍 Fetched product:", found)
+        setProduct(found)
+        setSelectedImage(found.images?.others?.[0]?.url || "")
+        if (found.variants && found.variants.length > 0) {
+          console.log("🔍 Product variants:", found.variants)
+          setSelectedVariant(found.variants[0])
+          setSelectedVariantIndex(0)
         }
-      })
-
-      console.log("📋 Out of stock items:", Array.from(newOutOfStockItems))
-
-      // Check for newly out of stock items
-      const previouslyInStock = Array.from(outOfStockItems)
-      const newlyOutOfStock = Array.from(newOutOfStockItems).filter((item) => !previouslyInStock.includes(item))
-
-      if (newlyOutOfStock.length > 0) {
-        const outOfStockProducts = safeCartItems.filter((item) =>
-          newlyOutOfStock.includes(`${item._id}_${item.variantId}`),
-        )
-        const productNames = outOfStockProducts.map((item) => item.title).join(", ")
-        console.log("🚨 Newly out of stock products:", productNames)
-
-        // Show notification
-        alert(`⚠️ The following items in your cart are now out of stock: ${productNames}`)
+      } else {
+        setError("Product not found")
       }
-
-      setOutOfStockItems(newOutOfStockItems)
-    } catch (error) {
-      console.error("❌ Stock check failed:", error)
-      console.error("❌ Error response:", error.response?.data)
-      console.error("❌ Error status:", error.response?.status)
-
-      // Show user-friendly error
-      if (error.response?.status === 404) {
-        console.error("❌ Stock check API endpoint not found")
-      } else if (error.response?.status === 401) {
-        console.error("❌ Authentication failed for stock check")
-      }
+    } catch (err) {
+      console.error("Error fetching product:", err)
+      setError("Failed to load product")
     } finally {
-      setStockCheckLoading(false)
+      setLoading(false)
     }
-  }
+  }, [id])
 
-  // Initial stock check and interval setup
-  useEffect(() => {
-    if (!token || safeCartItems.length === 0) {
-      console.log("❌ Stock check conditions not met:", {
-        hasToken: !!token,
-        hasItems: safeCartItems.length > 0,
-      })
-      return
-    }
-
-    console.log("🚀 Setting up stock check...")
-
-    // Initial check
-    checkStockStatus()
-
-    // Set up interval for periodic checks (every 30 seconds)
-    if (stockCheckIntervalRef.current) {
-      clearInterval(stockCheckIntervalRef.current)
-    }
-
-    stockCheckIntervalRef.current = setInterval(() => {
-      console.log("⏰ Periodic stock check triggered")
-      checkStockStatus()
-    }, 30000)
-
-    return () => {
-      if (stockCheckIntervalRef.current) {
-        console.log("🧹 Cleaning up stock check interval")
-        clearInterval(stockCheckIntervalRef.current)
-      }
-    }
-  }, [token, safeCartItems.length])
-
-  // Calculate totals (excluding out of stock items)
-  const availableItems = safeCartItems.filter((item) => !outOfStockItems.has(`${item._id}_${item.variantId}`))
-  const subtotal = availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
-  const originalTotal = availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
-  const discountAmount = originalTotal - subtotal
-
-  // Address loading
-  useEffect(() => {
-    if (!cartReady || !token || !userId || addressesLoaded) return
-
-    setAddressesLoading(true)
-    axiosWithToken(token)
-      .get(`${API_BASE}/api/users/address`)
-      .then((res) => {
-        if (Array.isArray(res.data.addresses)) {
-          dispatch(setAddresses(res.data.addresses))
-          setAddressesLoaded(true)
-
-          // Initialize selected address from localStorage
-          const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
-          if (savedAddressStr) {
-            try {
-              const savedAddress = JSON.parse(savedAddressStr)
-              const exists = res.data.addresses.some((addr) => addr._id === savedAddress._id)
-              if (exists) {
-                dispatch(initializeSelectedAddress(savedAddress))
-              } else {
-                localStorage.removeItem(`deliveryAddress_${userId}`)
-                dispatch(selectAddress(null))
-              }
-            } catch {
-              localStorage.removeItem(`deliveryAddress_${userId}`)
-              dispatch(selectAddress(null))
-            }
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load addresses:", err)
-      })
-      .finally(() => {
-        setAddressesLoading(false)
-      })
-  }, [cartReady, token, userId, dispatch, addressesLoaded])
-
-  // Cart sync to backend
-  useEffect(() => {
-    if (!cartReady || !token || !user || !userId) return
-
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current)
-    }
-
-    if (JSON.stringify(prevCartRef.current) === JSON.stringify(safeCartItems)) return
-
-    syncTimeoutRef.current = setTimeout(() => {
-      prevCartRef.current = [...safeCartItems]
-      localStorage.setItem(`cart_${userId}`, JSON.stringify(safeCartItems))
-
-      axiosWithToken(token)
-        .post("/cart", { items: safeCartItems })
-        .then(() => {
-          console.log("✅ Cart synced successfully")
-        })
-        .catch((err) => {
-          console.error("❌ Cart sync failed:", err)
-        })
-    }, 500)
-
-    return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current)
-      }
-    }
-  }, [safeCartItems, cartReady, token, user, userId])
-
-  // Modal click outside handler
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setShowAddressModal(false)
-      }
-    }
-
-    if (showAddressModal) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [showAddressModal])
-
-  // Address handlers
-  const handleAddressSelect = (address) => {
-    dispatch(selectAddress(address))
-    localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(address))
-    setShowAddressModal(false)
-  }
-
-  const confirmDelete = (addressId) => {
-    if (window.confirm("Are you sure you want to delete this address?")) {
-      handleDeleteAddress(addressId)
-    }
-  }
-
-  const handleDeleteAddress = async (id) => {
+  const fetchRelated = useCallback(async () => {
     try {
-      const res = await axiosWithToken(token).delete(`${API_BASE}/api/users/address/${id}`)
-      if (res.data.addresses) {
-        dispatch(setAddresses(res.data.addresses))
-        if (selectedAddress?._id === id) {
-          localStorage.removeItem(`deliveryAddress_${userId}`)
-          if (res.data.addresses.length > 0) {
-            const newSelected = res.data.addresses[0]
-            dispatch(selectAddress(newSelected))
-            localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(newSelected))
-          } else {
-            dispatch(selectAddress(null))
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Failed to delete address:", error)
-      alert("Could not delete address. Please try again later.")
+      const res = await axios.get(`${API_BASE}/api/products/related/${id}`)
+      setRelatedProducts(Array.isArray(res.data) ? res.data : [])
+    } catch (err) {
+      console.error("Failed to fetch related products", err)
+      setRelatedProducts([])
     }
-  }
+  }, [id])
 
-  // Quantity change handler
-  const handleQuantityChange = (item, action) => {
-    const itemKey = `${item._id}_${item.variantId}`
-    if (outOfStockItems.has(itemKey)) {
-      alert("This item is currently out of stock and cannot be modified.")
+  const loadCartSafely = useCallback(async () => {
+    if (!token || cartItems.length > 0) return
+    const cartData = await safeApiCall(async (api) => await api.get("/cart"), { items: [] })
+    if (cartData && Array.isArray(cartData.items)) {
+      dispatch(setCartItem(cartData.items))
+    } else if (Array.isArray(cartData)) {
+      dispatch(setCartItem(cartData))
+    } else {
+      dispatch(setCartItem([]))
+    }
+  }, [token, cartItems.length, dispatch])
+
+  useEffect(() => {
+    if (id) {
+      fetchProduct()
+      fetchRelated()
+    }
+  }, [id, fetchProduct, fetchRelated])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [id])
+
+  useEffect(() => {
+    loadCartSafely()
+  }, [loadCartSafely])
+
+  const handleSizeClick = useCallback((variant, index) => {
+    console.log("🎯 Selected variant:", variant, "at index:", index)
+    setSelectedVariant(variant)
+    setSelectedVariantIndex(index)
+  }, [])
+
+  const handleAddToCart = useCallback(
+    async (product) => {
+      if (addingToCart) return
+      if (!user?.token) {
+        alert("Please login to add items to cart")
+        navigate("/login_signup")
+        return
+      }
+      if (!selectedVariant) {
+        alert("Please select a variant")
+        return
+      }
+
+      // ✅ FIXED: Check stock before adding to cart
+      if (isOutOfStock) {
+        alert("This product variant is currently out of stock")
+        return
+      }
+
+      console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
+      console.log("🛒 Variant Index:", selectedVariantIndex)
+      setAddingToCart(true)
+
+      const variantKey =
+        selectedVariant._id ||
+        selectedVariant.size ||
+        (selectedVariant.weight
+          ? `${selectedVariant.weight.value}_${selectedVariant.weight.unit}`
+          : selectedVariantIndex)
+      const variantId = `${product._id}_${variantKey}`
+
+      const productToAdd = {
+        _id: product._id,
+        title: product.title,
+        images: product.images,
+        variantId: variantId,
+        size:
+          selectedVariant.size ||
+          (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"),
+        weight: {
+          value: selectedVariant?.weight?.value || selectedVariant?.size,
+          unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
+        },
+        originalPrice: Number.parseFloat(selectedVariant.price),
+        discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0,
+        currentPrice: Number.parseFloat(finalPrice),
+        quantity: 1,
+      }
+
+      console.log("🛒 Product to add:", productToAdd)
+
+      try {
+        dispatch(addToCart(productToAdd))
+        const backendPayload = {
+          productId: product._id,
+          variantIndex: selectedVariantIndex,
+          variantId: variantId,
+          quantity: 1,
+        }
+
+        console.log("🔄 Syncing to backend with payload:", backendPayload)
+
+        const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", backendPayload))
+        if (syncResult) {
+          console.log("✅ Cart synced to backend successfully")
+        } else {
+          console.warn("⚠️ Backend sync failed, but item added to local cart")
+        }
+        console.log(`✅ Added ${productToAdd.size} to cart successfully`)
+      } catch (err) {
+        console.error("❌ Add to cart failed:", err)
+        alert("Something went wrong while adding to cart")
+      } finally {
+        setAddingToCart(false)
+      }
+    },
+    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice, isOutOfStock],
+  )
+
+  const handleReviewImageChange = useCallback((e) => {
+    const files = Array.from(e.target.files)
+    if (files.length > 5) {
+      setReviewError("You can upload maximum 5 images")
       return
     }
-
-    if (action === "increment") {
-      dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))
-    } else {
-      dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))
+    const oversizedFiles = files.filter((file) => file.size > 5 * 1024 * 1024)
+    if (oversizedFiles.length > 0) {
+      setReviewError("Each image must be less than 5MB")
+      return
     }
+    setReviewImages(files)
+    setReviewError("")
+    const previews = files.map((file) => URL.createObjectURL(file))
+    setReviewImagePreviews(previews)
+  }, [])
+
+  const removeReviewImage = useCallback(
+    (index) => {
+      const newImages = reviewImages.filter((_, i) => i !== index)
+      const newPreviews = reviewImagePreviews.filter((_, i) => i !== index)
+      URL.revokeObjectURL(reviewImagePreviews[index])
+      setReviewImages(newImages)
+      setReviewImagePreviews(newPreviews)
+    },
+    [reviewImages, reviewImagePreviews],
+  )
+
+  const handleReviewSubmit = useCallback(
+    async (e) => {
+      e.preventDefault()
+      if (!reviewRating || !reviewComment.trim()) {
+        setReviewError("Please provide both rating and review.")
+        return
+      }
+      if (reviewComment.trim().length < 10) {
+        setReviewError("Review must be at least 10 characters long.")
+        return
+      }
+      setSubmittingReview(true)
+      setReviewError("")
+      try {
+        const formData = new FormData()
+        formData.append("rating", reviewRating)
+        formData.append("comment", reviewComment.trim())
+        reviewImages.forEach((image) => {
+          formData.append("images", image)
+        })
+        const result = await safeApiCall(async (api) => {
+          return await api.post(`/products/${id}/review`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+        })
+        if (result) {
+          setReviewRating(0)
+          setReviewComment("")
+          setReviewImages([])
+          setReviewImagePreviews([])
+          setReviewError("")
+          fetchProduct()
+          alert("Review submitted successfully!")
+        } else {
+          setReviewError("Failed to submit review. Please try again.")
+        }
+      } catch (err) {
+        console.error("Review submission error:", err)
+        setReviewError(err.message || "Failed to submit review")
+      } finally {
+        setSubmittingReview(false)
+      }
+    },
+    [reviewRating, reviewComment, reviewImages, id, fetchProduct],
+  )
+
+  const handleDeleteReview = useCallback(
+    async (reviewId) => {
+      if (!confirm("Are you sure you want to delete your review?")) return
+      setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: true }))
+      const result = await safeApiCall(async (api) => {
+        return await api.delete(`/products/${id}/review/${reviewId}`)
+      })
+      if (result) {
+        fetchProduct()
+        alert("Review deleted successfully!")
+      } else {
+        alert("Failed to delete review. Please try again.")
+      }
+      setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: false }))
+    },
+    [id, fetchProduct],
+  )
+
+  const avgRating = useMemo(() => {
+    if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
+    const validRatings = product.reviews.filter((r) => r && typeof r.rating === "number")
+    if (validRatings.length === 0) return 0
+    const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
+    return (total / validRatings.length).toFixed(1)
+  }, [product?.reviews])
+
+  const currentUserReview = useMemo(() => {
+    if (!Array.isArray(product?.reviews)) return null
+    const currentUserId = user?.user?.userId || user?.user?._id
+    if (!currentUserId) return null
+    return product.reviews.find((r) => r?.user === currentUserId)
+  }, [product?.reviews, user])
+
+  const otherReviews = useMemo(() => {
+    if (!Array.isArray(product?.reviews)) return []
+    const currentUserId = user?.user?.userId || user?.user?._id
+    if (!currentUserId) return product.reviews
+    return product.reviews.filter((r) => r?.user !== currentUserId)
+  }, [product?.reviews, user])
+
+  const renderStars = useCallback((rating) => {
+    return (
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <svg
+            key={star}
+            xmlns="http://www.w3.org/2000/svg"
+            fill={rating >= star ? "#facc15" : "none"}
+            viewBox="0 0 24 24"
+            stroke="#facc15"
+            className="w-4 h-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+            />
+          </svg>
+        ))}
+      </div>
+    )
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="grid md:grid-cols-2 gap-8 animate-pulse">
+          <div className="h-96 bg-gray-200 rounded"></div>
+          <div className="space-y-4">
+            <div className="h-8 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-10 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  // Manual stock check for testing
-  const testStockCheck = () => {
-    console.log("🧪 Manual stock check triggered")
-    checkStockStatus()
+  if (error && !product) {
+    return <div className="text-center mt-20 text-red-500">{error}</div>
   }
 
-  if (!cartReady) {
-    return <LoadingPlaceholder />
+  if (!product || !selectedVariant) {
+    return <div className="text-center mt-20">Product not found</div>
   }
+
+  const price = selectedVariant.price
+  const discount = selectedVariant.discountPercent || 0
+  const reviewsToShow = showAllReviews ? otherReviews : otherReviews.slice(0, 3)
 
   return (
-    <div className="bg-gray-100 min-h-screen py-6">
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side - Cart items and address */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Debug Section - Remove in production */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
-            <h3 className="font-bold text-yellow-800 mb-2">Debug Info</h3>
-            <div className="text-sm text-yellow-700 space-y-1">
-              <p>API_BASE: {API_BASE}</p>
-              <p>Token exists: {token ? "✅ Yes" : "❌ No"}</p>
-              <p>Cart items: {safeCartItems.length}</p>
-              <p>Out of stock items: {outOfStockItems.size}</p>
-              <p>Cart ready: {cartReady ? "✅ Yes" : "❌ No"}</p>
-              <p>Stock check loading: {stockCheckLoading ? "🔄 Yes" : "✅ No"}</p>
-            </div>
-            <div className="mt-2 space-x-2">
-              <button
-                onClick={testStockCheck}
-                disabled={stockCheckLoading}
-                className="bg-yellow-500 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
-              >
-                {stockCheckLoading ? "Checking..." : "Test Stock Check"}
-              </button>
-            </div>
+    <div className="max-w-6xl mx-auto p-6">
+      {/* Product Images and Info */}
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Image Preview */}
+        <div>
+          <img
+            src={selectedImage || "/placeholder.svg"}
+            className="w-full h-[400px] object-contain rounded"
+            alt={product.title}
+            loading="lazy"
+          />
+          <div className="flex gap-2 mt-2">
+            {product.images?.others?.map((img, i) => (
+              <img
+                key={i}
+                src={img.url || "/placeholder.svg"}
+                onClick={() => setSelectedImage(img.url)}
+                className={`w-20 h-20 object-cover border cursor-pointer transition-all ${
+                  selectedImage === img.url ? "border-blue-500 scale-105" : "hover:scale-105"
+                }`}
+                alt={`${product.title} ${i + 1}`}
+                loading="lazy"
+              />
+            ))}
           </div>
-
-          {/* Address Section */}
-          <div className="bg-white p-4 rounded shadow flex justify-between items-center">
-            {addressesLoading ? (
-              <div className="flex items-center animate-pulse space-x-4">
-                <div className="rounded-full bg-gray-300 h-4 w-4"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-300 rounded w-48"></div>
-                  <div className="h-3 bg-gray-300 rounded w-32"></div>
-                </div>
-              </div>
-            ) : selectedAddress ? (
+        </div>
+        {/* Product Info */}
+        <div>
+          <h1 className="text-2xl font-bold">{product.title}</h1>
+          <div className="flex items-center gap-2 my-2">
+            {renderStars(Number.parseFloat(avgRating))}
+            <span className="text-sm text-gray-700">
+              {avgRating} / 5 ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? "s" : ""})
+            </span>
+          </div>
+          <div className="text-3xl font-bold text-green-600 mb-2">
+            ₹{finalPrice}
+            {discount > 0 && (
               <>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Deliver to: {selectedAddress.name}, {selectedAddress.pincode}
-                  </p>
-                  <p className="text-md">
-                    {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.landmark}
-                  </p>
-                </div>
-                <button onClick={() => setShowAddressModal(true)} className="text-blue-600 hover:underline text-sm">
-                  Change
-                </button>
+                <span className="text-gray-400 line-through text-sm ml-3">₹{price}</span>
+                <span className="text-sm text-red-500 ml-2">{discount}% OFF</span>
               </>
-            ) : (
-              <button onClick={() => setShowAddressModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded">
-                Select Address
-              </button>
             )}
           </div>
 
-          {/* Out of Stock Notification */}
-          {outOfStockItems.size > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded p-4">
-              <div className="flex items-center">
-                <div className="text-red-600">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          {/* ✅ FIXED: Enhanced stock status display */}
+          {isOutOfStock && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 font-medium text-sm">⚠️ This variant is currently out of stock</p>
+              <p className="text-red-500 text-xs mt-1">Please select a different size or check back later</p>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <p className="font-medium mb-1">Select Size:</p>
+            <div className="flex gap-2 flex-wrap">
+              {product.variants?.map((v, i) => {
+                // Check if this specific variant is out of stock
+                const variantOutOfStock =
+                  v.isOutOfStock === true ||
+                  (typeof v.stock === "number" && v.stock <= 0) ||
+                  v.stock === "0" ||
+                  v.stock === 0
+
+                return (
+                  <button
+                    key={`variant-${i}`}
+                    onClick={() => handleSizeClick(v, i)}
+                    disabled={variantOutOfStock}
+                    className={`px-4 py-2 border rounded-full cursor-pointer transition-all font-medium relative ${
+                      i === selectedVariantIndex
+                        ? variantOutOfStock
+                          ? "bg-red-100 text-red-600 border-red-300 cursor-not-allowed"
+                          : "bg-green-600 text-white border-green-600 scale-105 shadow-md"
+                        : variantOutOfStock
+                          ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:scale-105"
+                    }`}
+                  >
+                    {v.size}
+                    {variantOutOfStock && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                        ✕
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-4">
+            {/* ✅ FIXED: Enhanced button logic with better styling */}
+            {isOutOfStock ? (
+              <div className="flex flex-col gap-2">
+                <button
+                  disabled
+                  className="bg-gray-400 text-white px-6 py-3 rounded cursor-not-allowed opacity-75 font-medium"
+                  title="This variant is currently out of stock"
+                >
+                  📦 Available Soon...
+                </button>
+                <p className="text-xs text-gray-500 text-center">This size is temporarily unavailable</p>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleAddToCart(product)}
+                  disabled={addingToCart}
+                  className="bg-orange-500 text-white px-6 py-3 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 font-medium"
+                >
+                  {addingToCart ? "Adding..." : "🛒 Add to Cart"}
+                </button>
+                <button className="bg-green-600 text-white px-6 py-3 rounded cursor-pointer hover:bg-green-700 transition-all transform hover:scale-105 font-medium">
+                  ⚡ Buy Now
+                </button>
+              </>
+            )}
+          </div>
+          <div className="mt-6 text-sm text-gray-800 whitespace-pre-line">{product.description}</div>
+        </div>
+      </div>
+
+      {/* Product Details Section */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold mb-2">Product Details</h2>
+        {product.details && typeof product.details === "object" ? (
+          <ul className="text-gray-700 text-sm list-disc pl-5">
+            {Object.entries(product.details).map(([key, value]) => (
+              <li key={key}>
+                <strong className="capitalize">{key}</strong>: {value}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-sm">No additional info</p>
+        )}
+      </div>
+
+      {/* Ratings & Reviews Section */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold mb-4">Ratings & Reviews</h2>
+        {/* Review Statistics */}
+        {product.reviews && product.reviews.length > 0 && (
+          <div className="mb-6 p-4 bg-gray-50 rounded">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-yellow-600">{avgRating}</div>
+                <div className="flex justify-center mb-1">{renderStars(Number.parseFloat(avgRating))}</div>
+                <div className="text-sm text-gray-600">
+                  {product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+              <div className="flex-1">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = product.reviews.filter(
+                    (r) => r && typeof r.rating === "number" && r.rating === star,
+                  ).length
+                  const percentage = product.reviews.length > 0 ? (count / product.reviews.length) * 100 : 0
+                  return (
+                    <div key={star} className="flex items-center gap-2 mb-1">
+                      <span className="text-sm w-8">{star}★</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div className="bg-yellow-400 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                      </div>
+                      <span className="text-sm text-gray-600 w-8">{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Review Form - Only show if user hasn't reviewed yet */}
+        {token && !currentUserReview ? (
+          <form onSubmit={handleReviewSubmit} className="space-y-4 mb-6 bg-gray-50 p-4 rounded shadow">
+            <h3 className="text-lg font-semibold">Write a Review</h3>
+            {/* Rating */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Your Rating:</label>
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg
+                    key={star}
+                    onClick={() => setReviewRating(star)}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill={reviewRating >= star ? "#facc15" : "none"}
+                    viewBox="0 0 24 24"
+                    stroke="#facc15"
+                    className="w-8 h-8 cursor-pointer transition hover:scale-110"
+                  >
                     <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
                     />
                   </svg>
-                </div>
-                <p className="ml-2 text-red-800 text-sm">
-                  ⚠️ Some items in your cart are currently out of stock and cannot be ordered.
-                </p>
+                ))}
+                <span className="ml-2 text-sm text-gray-600">
+                  {reviewRating > 0 ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}` : "Click to rate"}
+                </span>
               </div>
             </div>
-          )}
-
-          {/* Stock Check Loading */}
-          {stockCheckLoading && (
-            <div className="bg-blue-50 border border-blue-200 rounded p-4">
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <p className="ml-2 text-blue-800 text-sm">🔄 Checking stock availability...</p>
+            {/* Comment */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Your Review:</label>
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                rows={4}
+                className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Share your experience with this product... (minimum 10 characters)"
+                maxLength={1000}
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                {reviewComment.length}/1000 characters{" "}
+                {reviewComment.length < 10 && reviewComment.length > 0 && "(minimum 10 required)"}
               </div>
             </div>
-          )}
-
-          {/* Cart Items */}
-          {safeCartItems.length === 0 ? (
-            <div className="bg-white rounded shadow p-8 text-center">
-              <p className="text-gray-600 text-lg">Your cart is empty.</p>
-              <button
-                onClick={() => navigate("/shop/allproduct")}
-                className="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-              >
-                Continue Shopping
-              </button>
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Add Photos (Optional):</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleReviewImageChange}
+                className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="text-xs text-gray-500 mt-1">You can upload up to 5 images (max 5MB each)</div>
             </div>
-          ) : (
-            safeCartItems.map((item) => {
-              const itemKey = `${item._id}_${item.variantId}`
-              const isOutOfStock = outOfStockItems.has(itemKey)
-
-              return (
-                <div
-                  key={itemKey}
-                  className={`bg-white rounded shadow p-4 flex gap-4 transition-all ${
-                    isOutOfStock ? "opacity-60 border-2 border-red-200 bg-red-50" : ""
-                  }`}
-                >
-                  <div className="relative">
-                    <img
-                      src={item.images?.others?.[0]?.url || "/placeholder.svg?height=112&width=112"}
-                      alt={item.title || "Product"}
-                      loading="lazy"
-                      className="w-28 h-28 object-cover border rounded"
-                    />
-                    {isOutOfStock && (
-                      <div className="absolute inset-0 bg-red-500 bg-opacity-20 flex items-center justify-center rounded">
-                        <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-semibold">
-                          OUT OF STOCK
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h2 className={`text-lg font-semibold ${isOutOfStock ? "text-gray-500" : ""}`}>
-                      {item.title || "Unknown Product"}
-                    </h2>
-                    <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
-                    <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
-                    <p className="text-xs text-gray-400">
-                      ID: {item._id} | Variant: {item.variantId}
-                    </p>
-
-                    {isOutOfStock && (
-                      <p className="text-red-600 text-sm font-medium mb-2">⚠️ This item is currently out of stock</p>
-                    )}
-
-                    <div className="flex items-center gap-3">
-                      <span className={`font-bold text-xl ${isOutOfStock ? "text-gray-500" : "text-green-600"}`}>
-                        ₹{(item.currentPrice || 0).toFixed(2)}
-                      </span>
-                      {(item.originalPrice || 0) > (item.currentPrice || 0) && (
-                        <>
-                          <span className="line-through text-sm text-gray-500">
-                            ₹{(item.originalPrice || 0).toFixed(2)}
-                          </span>
-                          <span className="text-red-500 text-sm font-medium">
-                            {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center gap-4">
-                      <div className={`flex items-center border rounded ${isOutOfStock ? "opacity-50" : ""}`}>
-                        <button
-                          className="px-3 py-1 text-lg hover:bg-gray-100 disabled:cursor-not-allowed"
-                          onClick={() => handleQuantityChange(item, "decrement")}
-                          disabled={isOutOfStock}
-                        >
-                          −
-                        </button>
-                        <span className="px-4">{item.quantity || 0}</span>
-                        <button
-                          className="px-3 py-1 text-lg hover:bg-gray-100 disabled:cursor-not-allowed"
-                          onClick={() => handleQuantityChange(item, "increment")}
-                          disabled={isOutOfStock}
-                        >
-                          +
-                        </button>
-                      </div>
+            {/* Image Previews */}
+            {reviewImagePreviews.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Photo Previews:</label>
+                <div className="flex flex-wrap gap-2">
+                  {reviewImagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={preview || "/placeholder.svg"}
+                        alt={`Preview ${index + 1}`}
+                        loading="lazy"
+                        className="w-20 h-20 object-cover rounded border"
+                      />
                       <button
-                        className="text-red-500 text-sm hover:underline"
-                        onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
+                        type="button"
+                        onClick={() => removeReviewImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                       >
-                        Remove
+                        ×
                       </button>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              )
-            })
-          )}
-        </div>
+              </div>
+            )}
+            {reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
+            <button
+              type="submit"
+              disabled={submittingReview || !reviewRating || !reviewComment.trim() || reviewComment.trim().length < 10}
+              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submittingReview ? "Submitting..." : "Submit Review"}
+            </button>
+          </form>
+        ) : token && currentUserReview ? (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded">
+            <p className="text-green-700 font-medium">✅ You have already reviewed this product.</p>
+            <p className="text-sm text-green-600">You can delete your review and write a new one if needed.</p>
+          </div>
+        ) : (
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded">
+            <p className="text-gray-600">Please login to write a review.</p>
+          </div>
+        )}
 
-        {/* Right side - Price details */}
-        <div className="bg-white p-6 rounded shadow sticky top-28">
-          <h3 className="text-xl font-bold mb-4">Price Details</h3>
-          <div className="flex justify-between mb-2">
-            <span>
-              Price ({availableItems.length} available item{availableItems.length > 1 ? "s" : ""})
-            </span>
-            <span>₹{originalTotal.toFixed(2)}</span>
-          </div>
-          {outOfStockItems.size > 0 && (
-            <div className="flex justify-between mb-2 text-red-600 text-sm">
-              <span>
-                ({outOfStockItems.size} out of stock item{outOfStockItems.size > 1 ? "s" : ""} excluded)
-              </span>
+        {/* Reviews List */}
+        <div className="space-y-4">
+          {/* Current User's Review */}
+          {currentUserReview && (
+            <div className="border p-4 rounded shadow-sm bg-blue-50 border-blue-200">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex gap-2 items-center">
+                  <p className="text-sm font-semibold text-blue-800">Your Review</p>
+                  {renderStars(currentUserReview.rating)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gray-400">{new Date(currentUserReview.createdAt).toLocaleDateString()}</p>
+                  <button
+                    onClick={() => handleDeleteReview(currentUserReview._id)}
+                    disabled={actionLoading[`delete-${currentUserReview._id}`]}
+                    className="text-xs text-red-500 hover:underline disabled:opacity-50"
+                  >
+                    {actionLoading[`delete-${currentUserReview._id}`] ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+              <p className="text-sm text-gray-700 mb-3">{currentUserReview.comment}</p>
+              {/* Review Images */}
+              {currentUserReview.images && currentUserReview.images.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {currentUserReview.images.map((image, index) => (
+                    <img
+                      key={index}
+                      src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                      alt={`Review image ${index + 1}`}
+                      loading="lazy"
+                      className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
-          {discountAmount > 0 && (
-            <div className="flex justify-between mb-2">
-              <span>Discount</span>
-              <span className="text-green-600">− ₹{discountAmount.toFixed(2)}</span>
+
+          {reviewsToShow.length === 0 && !currentUserReview && (
+            <div className="text-center py-8">
+              <p className="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
             </div>
           )}
-          <div className="flex justify-between mb-2">
-            <span>Delivery Charges</span>
-            <span className="text-green-600">Free</span>
-          </div>
-          <hr className="my-4" />
-          <div className="flex justify-between font-bold text-lg">
-            <span>Total Amount</span>
-            <span>₹{subtotal.toFixed(2)}</span>
-          </div>
-          <button
-            onClick={() => navigate("/checkout")}
-            disabled={availableItems.length === 0}
-            className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold transition-colors"
-          >
-            PLACE ORDER ({availableItems.length} items)
-          </button>
-          {outOfStockItems.size > 0 && (
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Out of stock items will not be included in your order
-            </p>
+
+          {reviewsToShow.map((review) => {
+            return (
+              <div key={review._id} className="border p-4 rounded shadow-sm bg-white">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex gap-2 items-center">
+                    <p className="text-sm font-semibold text-gray-800">{review.name || "User"}</p>
+                    {renderStars(review.rating)}
+                  </div>
+                  <p className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>
+                </div>
+                <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
+                {/* Review Images */}
+                {review.images && review.images.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {review.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                          loading="lazy"
+                          alt={`Review image ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() =>
+                            window.open(image.startsWith("http") ? image : `${API_BASE}${image}`, "_blank")
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Show More/Less Button */}
+          {otherReviews.length > 3 && (
+            <div className="text-center">
+              <button
+                onClick={() => setShowAllReviews(!showAllReviews)}
+                className="text-blue-600 text-sm hover:underline"
+              >
+                {showAllReviews ? `Show Less` : `Show ${otherReviews.length - 3} More Reviews`}
+              </button>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Address Modal */}
-      {showAddressModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
-          <div ref={modalRef} className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
-            {addresses.length === 0 ? (
-              <p className="text-gray-500">No addresses saved yet.</p>
-            ) : (
-              addresses.map((addr, idx) => (
-                <div key={addr._id || idx} className="border p-3 rounded mb-2 relative">
-                  <input
-                    type="radio"
-                    name="selectedAddress"
-                    checked={selectedAddress?._id === addr._id}
-                    onChange={() => handleAddressSelect(addr)}
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Related Products</h2>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+            {relatedProducts.map((p) => {
+              const mainImage = p.images?.others?.[0]?.url || "/placeholder.jpg"
+              const firstVariant = p.variants?.[0]
+              const price = firstVariant?.price || 0
+              const discount = firstVariant?.discountPercent || 0
+              const finalPrice = (price - (price * discount) / 100).toFixed(2)
+              return (
+                <div
+                  key={p._id}
+                  onClick={() => navigate(`/product/${p._id}`)}
+                  className="cursor-pointer border rounded shadow-sm p-3 hover:shadow-md transition duration-200 relative"
+                >
+                  {/* Discount Badge */}
+                  {discount > 0 && (
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
+                      {discount}% OFF
+                    </div>
+                  )}
+                  <img
+                    src={mainImage || "/placeholder.svg"}
+                    alt={p.title}
+                    className="w-full h-48 object-cover rounded mb-2 hover:scale-105 transition-transform duration-200"
+                    loading="lazy"
                   />
-                  <span className="ml-2 font-medium">
-                    {addr.name}, {addr.pincode}
-                  </span>
-                  <p className="text-sm text-gray-600">
-                    {addr.line1}, {addr.city}, {addr.landmark}
-                  </p>
-                  <button
-                    onClick={() => confirmDelete(addr._id)}
-                    className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
-                  >
-                    Delete
-                  </button>
+                  <h4 className="text-sm font-semibold">{p.title}</h4>
+                  <p className="text-green-600 font-bold">₹{finalPrice}</p>
+                  {discount > 0 && <p className="text-xs text-gray-400 line-through">₹{price}</p>}
                 </div>
-              ))
-            )}
-            <button
-              onClick={() => {
-                setShowAddressModal(false)
-                navigate("/address")
-              }}
-              className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
-            >
-              Add New Address
-            </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -602,4 +813,4 @@ const AddToCart = () => {
   )
 }
 
-export default AddToCart
+export default ProductDetail

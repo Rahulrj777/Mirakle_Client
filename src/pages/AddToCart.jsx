@@ -32,20 +32,23 @@ const AddToCart = () => {
   const modalRef = useRef()
   const prevCartRef = useRef([])
   const syncTimeoutRef = useRef(null)
+  const stockCheckIntervalRef = useRef(null)
 
+  // Redux state
   const cartItems = useSelector((state) => state.cart.items)
   const cartReady = useSelector((state) => state.cart.cartReady)
   const userId = useSelector((state) => state.cart.userId)
   const addresses = useSelector((state) => state.cart.addresses)
   const selectedAddress = useSelector((state) => state.cart.selectedAddress)
 
+  // Local state
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(false)
   const [outOfStockItems, setOutOfStockItems] = useState(new Set())
-  const stockCheckIntervalRef = useRef(null)
+  const [stockCheckLoading, setStockCheckLoading] = useState(false)
 
-  // Get user and token from localStorage with error handling
+  // Get user and token from localStorage
   const getUserData = () => {
     try {
       const userData = JSON.parse(localStorage.getItem("mirakleUser"))
@@ -59,27 +62,17 @@ const AddToCart = () => {
   }
 
   const { user, token } = getUserData()
-
-  // Ensure cartItems is always an array
   const safeCartItems = Array.isArray(cartItems) ? cartItems : []
 
-  // Function to check stock status for all cart items
+  // Stock checking function
   const checkStockStatus = async () => {
-    console.log("🔍 Starting stock check...")
-    console.log("🔍 Token exists:", !!token)
-    console.log("🔍 Cart items count:", safeCartItems.length)
-    console.log("🔍 API_BASE:", API_BASE)
-    console.log("🔍 Cart items:", safeCartItems)
-
-    if (!token) {
-      console.log("❌ No token found")
+    if (!token || safeCartItems.length === 0) {
+      console.log("🔍 Stock check skipped - no token or empty cart")
       return
     }
 
-    if (safeCartItems.length === 0) {
-      console.log("❌ No items in cart")
-      return
-    }
+    setStockCheckLoading(true)
+    console.log("🔍 Starting stock check for", safeCartItems.length, "items")
 
     try {
       const productIds = safeCartItems.map((item) => ({
@@ -88,7 +81,7 @@ const AddToCart = () => {
       }))
 
       console.log("🔍 Checking stock for items:", productIds)
-      console.log("🔍 Making request to:", `${API_BASE}/api/products/check-stock`)
+      console.log("🔍 API URL:", `${API_BASE}/api/products/check-stock`)
 
       const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
         items: productIds,
@@ -110,9 +103,8 @@ const AddToCart = () => {
       })
 
       console.log("📋 Out of stock items:", Array.from(newOutOfStockItems))
-      setOutOfStockItems(newOutOfStockItems)
 
-      // Show notification if items went out of stock
+      // Check for newly out of stock items
       const previouslyInStock = Array.from(outOfStockItems)
       const newlyOutOfStock = Array.from(newOutOfStockItems).filter((item) => !previouslyInStock.includes(item))
 
@@ -120,42 +112,54 @@ const AddToCart = () => {
         const outOfStockProducts = safeCartItems.filter((item) =>
           newlyOutOfStock.includes(`${item._id}_${item.variantId}`),
         )
-
         const productNames = outOfStockProducts.map((item) => item.title).join(", ")
         console.log("🚨 Newly out of stock products:", productNames)
-        alert(`The following items in your cart are now out of stock: ${productNames}`)
+
+        // Show notification
+        alert(`⚠️ The following items in your cart are now out of stock: ${productNames}`)
       }
+
+      setOutOfStockItems(newOutOfStockItems)
     } catch (error) {
-      console.error("❌ Failed to check stock status:", error)
+      console.error("❌ Stock check failed:", error)
       console.error("❌ Error response:", error.response?.data)
       console.error("❌ Error status:", error.response?.status)
+
+      // Show user-friendly error
+      if (error.response?.status === 404) {
+        console.error("❌ Stock check API endpoint not found")
+      } else if (error.response?.status === 401) {
+        console.error("❌ Authentication failed for stock check")
+      }
+    } finally {
+      setStockCheckLoading(false)
     }
   }
 
-  // Check stock status on component mount and set up interval
+  // Initial stock check and interval setup
   useEffect(() => {
-    console.log("🔄 Stock check useEffect triggered")
-    console.log("🔄 cartReady:", cartReady)
-    console.log("🔄 token exists:", !!token)
-    console.log("🔄 safeCartItems.length:", safeCartItems.length)
-
-    // Run stock check regardless of cartReady status for debugging
-    if (token && safeCartItems.length > 0) {
-      console.log("🚀 Running initial stock check...")
-      checkStockStatus()
-
-      // Set up interval to check stock every 10 seconds for testing
-      console.log("⏰ Setting up 10-second interval for stock checks")
-      if (stockCheckIntervalRef.current) {
-        clearInterval(stockCheckIntervalRef.current)
-      }
-      stockCheckIntervalRef.current = setInterval(checkStockStatus, 10000)
-    } else {
+    if (!token || safeCartItems.length === 0) {
       console.log("❌ Stock check conditions not met:", {
         hasToken: !!token,
         hasItems: safeCartItems.length > 0,
       })
+      return
     }
+
+    console.log("🚀 Setting up stock check...")
+
+    // Initial check
+    checkStockStatus()
+
+    // Set up interval for periodic checks (every 30 seconds)
+    if (stockCheckIntervalRef.current) {
+      clearInterval(stockCheckIntervalRef.current)
+    }
+
+    stockCheckIntervalRef.current = setInterval(() => {
+      console.log("⏰ Periodic stock check triggered")
+      checkStockStatus()
+    }, 30000)
 
     return () => {
       if (stockCheckIntervalRef.current) {
@@ -163,16 +167,15 @@ const AddToCart = () => {
         clearInterval(stockCheckIntervalRef.current)
       }
     }
-  }, [safeCartItems.length, token]) // Simplified dependencies
+  }, [token, safeCartItems.length])
 
-  // Calculate totals (excluding out of stock items from total)
+  // Calculate totals (excluding out of stock items)
   const availableItems = safeCartItems.filter((item) => !outOfStockItems.has(`${item._id}_${item.variantId}`))
-
   const subtotal = availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
   const originalTotal = availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   const discountAmount = originalTotal - subtotal
 
-  // Fetch saved addresses on first load
+  // Address loading
   useEffect(() => {
     if (!cartReady || !token || !userId || addressesLoaded) return
 
@@ -183,6 +186,8 @@ const AddToCart = () => {
         if (Array.isArray(res.data.addresses)) {
           dispatch(setAddresses(res.data.addresses))
           setAddressesLoaded(true)
+
+          // Initialize selected address from localStorage
           const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
           if (savedAddressStr) {
             try {
@@ -209,7 +214,7 @@ const AddToCart = () => {
       })
   }, [cartReady, token, userId, dispatch, addressesLoaded])
 
-  // Debounced cart sync to backend
+  // Cart sync to backend
   useEffect(() => {
     if (!cartReady || !token || !user || !userId) return
 
@@ -240,7 +245,7 @@ const AddToCart = () => {
     }
   }, [safeCartItems, cartReady, token, user, userId])
 
-  // Address modal outside click to close
+  // Modal click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -257,6 +262,7 @@ const AddToCart = () => {
     }
   }, [showAddressModal])
 
+  // Address handlers
   const handleAddressSelect = (address) => {
     dispatch(selectAddress(address))
     localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(address))
@@ -291,6 +297,7 @@ const AddToCart = () => {
     }
   }
 
+  // Quantity change handler
   const handleQuantityChange = (item, action) => {
     const itemKey = `${item._id}_${item.variantId}`
     if (outOfStockItems.has(itemKey)) {
@@ -305,7 +312,7 @@ const AddToCart = () => {
     }
   }
 
-  // Add a manual test button for debugging
+  // Manual stock check for testing
   const testStockCheck = () => {
     console.log("🧪 Manual stock check triggered")
     checkStockStatus()
@@ -320,17 +327,26 @@ const AddToCart = () => {
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left side - Cart items and address */}
         <div className="lg:col-span-2 space-y-4">
-          {/* DEBUG SECTION - Remove this after testing */}
+          {/* Debug Section - Remove in production */}
           <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
             <h3 className="font-bold text-yellow-800 mb-2">Debug Info</h3>
-            <p className="text-sm text-yellow-700">API_BASE: {API_BASE}</p>
-            <p className="text-sm text-yellow-700">Token exists: {token ? "Yes" : "No"}</p>
-            <p className="text-sm text-yellow-700">Cart items: {safeCartItems.length}</p>
-            <p className="text-sm text-yellow-700">Out of stock items: {outOfStockItems.size}</p>
-            <p className="text-sm text-yellow-700">Cart ready: {cartReady ? "Yes" : "No"}</p>
-            <button onClick={testStockCheck} className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded text-sm">
-              Test Stock Check Now
-            </button>
+            <div className="text-sm text-yellow-700 space-y-1">
+              <p>API_BASE: {API_BASE}</p>
+              <p>Token exists: {token ? "✅ Yes" : "❌ No"}</p>
+              <p>Cart items: {safeCartItems.length}</p>
+              <p>Out of stock items: {outOfStockItems.size}</p>
+              <p>Cart ready: {cartReady ? "✅ Yes" : "❌ No"}</p>
+              <p>Stock check loading: {stockCheckLoading ? "🔄 Yes" : "✅ No"}</p>
+            </div>
+            <div className="mt-2 space-x-2">
+              <button
+                onClick={testStockCheck}
+                disabled={stockCheckLoading}
+                className="bg-yellow-500 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+              >
+                {stockCheckLoading ? "Checking..." : "Test Stock Check"}
+              </button>
+            </div>
           </div>
 
           {/* Address Section */}
@@ -364,7 +380,7 @@ const AddToCart = () => {
             )}
           </div>
 
-          {/* Out of Stock Items Notification */}
+          {/* Out of Stock Notification */}
           {outOfStockItems.size > 0 && (
             <div className="bg-red-50 border border-red-200 rounded p-4">
               <div className="flex items-center">
@@ -378,8 +394,18 @@ const AddToCart = () => {
                   </svg>
                 </div>
                 <p className="ml-2 text-red-800 text-sm">
-                  Some items in your cart are currently out of stock and cannot be ordered.
+                  ⚠️ Some items in your cart are currently out of stock and cannot be ordered.
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Stock Check Loading */}
+          {stockCheckLoading && (
+            <div className="bg-blue-50 border border-blue-200 rounded p-4">
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <p className="ml-2 text-blue-800 text-sm">🔄 Checking stock availability...</p>
               </div>
             </div>
           )}
@@ -403,11 +429,13 @@ const AddToCart = () => {
               return (
                 <div
                   key={itemKey}
-                  className={`bg-white rounded shadow p-4 flex gap-4 ${isOutOfStock ? "opacity-60 border-2 border-red-200" : ""}`}
+                  className={`bg-white rounded shadow p-4 flex gap-4 transition-all ${
+                    isOutOfStock ? "opacity-60 border-2 border-red-200 bg-red-50" : ""
+                  }`}
                 >
                   <div className="relative">
                     <img
-                      src={item.images?.others?.[0]?.url || "/placeholder.svg"}
+                      src={item.images?.others?.[0]?.url || "/placeholder.svg?height=112&width=112"}
                       alt={item.title || "Product"}
                       loading="lazy"
                       className="w-28 h-28 object-cover border rounded"
@@ -431,7 +459,7 @@ const AddToCart = () => {
                     </p>
 
                     {isOutOfStock && (
-                      <p className="text-red-600 text-sm font-medium mb-2">This item is currently out of stock</p>
+                      <p className="text-red-600 text-sm font-medium mb-2">⚠️ This item is currently out of stock</p>
                     )}
 
                     <div className="flex items-center gap-3">
@@ -515,7 +543,7 @@ const AddToCart = () => {
           <button
             onClick={() => navigate("/checkout")}
             disabled={availableItems.length === 0}
-            className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold"
+            className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold transition-colors"
           >
             PLACE ORDER ({availableItems.length} items)
           </button>
