@@ -60,9 +60,20 @@ const AddToCart = () => {
 
   const { user, token } = getUserData()
 
+  // Ensure cartItems is always an array
+  const safeCartItems = Array.isArray(cartItems) ? cartItems : []
+
   // Function to check stock status for all cart items
   const checkStockStatus = async () => {
-    if (!token || safeCartItems.length === 0) return
+    console.log("🔍 Starting stock check...")
+    console.log("🔍 Token exists:", !!token)
+    console.log("🔍 Cart items count:", safeCartItems.length)
+    console.log("🔍 API_BASE:", API_BASE)
+
+    if (!token || safeCartItems.length === 0) {
+      console.log("❌ Stock check skipped - no token or empty cart")
+      return
+    }
 
     try {
       const productIds = safeCartItems.map((item) => ({
@@ -70,19 +81,29 @@ const AddToCart = () => {
         variantId: item.variantId,
       }))
 
+      console.log("🔍 Checking stock for items:", productIds)
+      console.log("🔍 Making request to:", `${API_BASE}/api/products/check-stock`)
+
       const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
         items: productIds,
       })
+
+      console.log("✅ Stock check response:", response.data)
 
       const stockData = response.data.stockStatus || []
       const newOutOfStockItems = new Set()
 
       stockData.forEach((item) => {
+        console.log(
+          `📊 Item ${item.productId}_${item.variantId}: inStock=${item.inStock}, quantity=${item.availableQuantity}`,
+        )
+
         if (!item.inStock || item.availableQuantity === 0) {
           newOutOfStockItems.add(`${item.productId}_${item.variantId}`)
         }
       })
 
+      console.log("📋 Out of stock items:", Array.from(newOutOfStockItems))
       setOutOfStockItems(newOutOfStockItems)
 
       // Show notification if items went out of stock
@@ -95,28 +116,39 @@ const AddToCart = () => {
         )
 
         const productNames = outOfStockProducts.map((item) => item.title).join(", ")
+        console.log("🚨 Newly out of stock products:", productNames)
         alert(`The following items in your cart are now out of stock: ${productNames}`)
       }
     } catch (error) {
-      console.error("Failed to check stock status:", error)
+      console.error("❌ Failed to check stock status:", error)
+      console.error("❌ Error response:", error.response?.data)
+      console.error("❌ Error status:", error.response?.status)
     }
   }
 
-  // Ensure cartItems is always an array
-  const safeCartItems = Array.isArray(cartItems) ? cartItems : []
-
   // Check stock status on component mount and set up interval
   useEffect(() => {
-    if (!cartReady || !token || safeCartItems.length === 0) return
+    console.log("🔄 Stock check useEffect triggered")
+    console.log("🔄 cartReady:", cartReady)
+    console.log("🔄 token exists:", !!token)
+    console.log("🔄 safeCartItems.length:", safeCartItems.length)
+
+    if (!cartReady || !token || safeCartItems.length === 0) {
+      console.log("❌ Stock check useEffect conditions not met")
+      return
+    }
 
     // Initial stock check
+    console.log("🚀 Running initial stock check...")
     checkStockStatus()
 
     // Set up interval to check stock every 30 seconds
+    console.log("⏰ Setting up 30-second interval for stock checks")
     stockCheckIntervalRef.current = setInterval(checkStockStatus, 30000)
 
     return () => {
       if (stockCheckIntervalRef.current) {
+        console.log("🧹 Cleaning up stock check interval")
         clearInterval(stockCheckIntervalRef.current)
       }
     }
@@ -270,6 +302,12 @@ const AddToCart = () => {
     }
   }
 
+  // Add a manual test button for debugging
+  const testStockCheck = () => {
+    console.log("🧪 Manual stock check triggered")
+    checkStockStatus()
+  }
+
   if (!cartReady) {
     return <LoadingPlaceholder />
   }
@@ -279,6 +317,18 @@ const AddToCart = () => {
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left side - Cart items and address */}
         <div className="lg:col-span-2 space-y-4">
+          {/* DEBUG SECTION - Remove this after testing */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
+            <h3 className="font-bold text-yellow-800 mb-2">Debug Info</h3>
+            <p className="text-sm text-yellow-700">API_BASE: {API_BASE}</p>
+            <p className="text-sm text-yellow-700">Token exists: {token ? "Yes" : "No"}</p>
+            <p className="text-sm text-yellow-700">Cart items: {safeCartItems.length}</p>
+            <p className="text-sm text-yellow-700">Out of stock items: {outOfStockItems.size}</p>
+            <button onClick={testStockCheck} className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded text-sm">
+              Test Stock Check
+            </button>
+          </div>
+
           {/* Address Section */}
           <div className="bg-white p-4 rounded shadow flex justify-between items-center">
             {addressesLoading ? (
@@ -372,6 +422,9 @@ const AddToCart = () => {
                     </h2>
                     <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
                     <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
+                    <p className="text-xs text-gray-400">
+                      ID: {item._id} | Variant: {item.variantId}
+                    </p>
 
                     {isOutOfStock && (
                       <p className="text-red-600 text-sm font-medium mb-2">This item is currently out of stock</p>
