@@ -24,6 +24,7 @@ const ProductDetail = () => {
   const [reviewError, setReviewError] = useState("")
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
+
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
@@ -47,6 +48,38 @@ const ProductDetail = () => {
     return (price - (price * discount) / 100).toFixed(2)
   }, [selectedVariant])
 
+  // ✅ FIXED: Enhanced stock checking logic
+  const isOutOfStock = useMemo(() => {
+    if (!product || !selectedVariant) return false
+
+    console.log("🔍 Stock Check Debug:")
+    console.log("- Product isOutOfStock:", product.isOutOfStock)
+    console.log("- Selected variant:", selectedVariant)
+    console.log("- Variant stock:", selectedVariant.stock)
+    console.log("- Variant isOutOfStock:", selectedVariant.isOutOfStock)
+
+    // Check multiple conditions for out of stock
+    const conditions = [
+      // 1. Product-level out of stock flag
+      product.isOutOfStock === true,
+
+      // 2. Variant-level out of stock flag
+      selectedVariant.isOutOfStock === true,
+
+      // 3. Stock quantity is 0 or less
+      typeof selectedVariant.stock === "number" && selectedVariant.stock <= 0,
+
+      // 4. Stock is explicitly set to 0 as string
+      selectedVariant.stock === "0" || selectedVariant.stock === 0,
+    ]
+
+    const isOOS = conditions.some((condition) => condition)
+    console.log("- Final out of stock status:", isOOS)
+    console.log("- Conditions checked:", conditions)
+
+    return isOOS
+  }, [product, selectedVariant])
+
   const token = user?.token
 
   const fetchProduct = useCallback(async () => {
@@ -56,6 +89,7 @@ const ProductDetail = () => {
       const res = await axios.get(`${API_BASE}/api/products/all-products`)
       const found = res.data.find((p) => p._id === id)
       if (found) {
+        console.log("🔍 Fetched product:", found)
         setProduct(found)
         setSelectedImage(found.images?.others?.[0]?.url || "")
         if (found.variants && found.variants.length > 0) {
@@ -130,12 +164,16 @@ const ProductDetail = () => {
         return
       }
 
+      // ✅ FIXED: Check stock before adding to cart
+      if (isOutOfStock) {
+        alert("This product variant is currently out of stock")
+        return
+      }
+
       console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
       console.log("🛒 Variant Index:", selectedVariantIndex)
       setAddingToCart(true)
 
-      // ✅ FIXED: Generate a more robust and globally unique variantId
-      // Use selectedVariant._id if available, otherwise combine product._id with size/weight
       const variantKey =
         selectedVariant._id ||
         selectedVariant.size ||
@@ -148,10 +186,10 @@ const ProductDetail = () => {
         _id: product._id,
         title: product.title,
         images: product.images,
-        variantId: variantId, // Use the globally unique variant ID
+        variantId: variantId,
         size:
           selectedVariant.size ||
-          (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"), // Ensure size is always a string
+          (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"),
         weight: {
           value: selectedVariant?.weight?.value || selectedVariant?.size,
           unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
@@ -165,20 +203,17 @@ const ProductDetail = () => {
       console.log("🛒 Product to add:", productToAdd)
 
       try {
-        // Add to Redux store first
         dispatch(addToCart(productToAdd))
-
         const backendPayload = {
           productId: product._id,
-          variantIndex: selectedVariantIndex, // Keep this for backend if needed
-          variantId: variantId, // Use the consistent variantId for backend
+          variantIndex: selectedVariantIndex,
+          variantId: variantId,
           quantity: 1,
         }
 
         console.log("🔄 Syncing to backend with payload:", backendPayload)
-        // Sync to backend
-        const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", backendPayload))
 
+        const syncResult = await safeApiCall(async (api) => await api.post("/cart/add", backendPayload))
         if (syncResult) {
           console.log("✅ Cart synced to backend successfully")
         } else {
@@ -192,7 +227,7 @@ const ProductDetail = () => {
         setAddingToCart(false)
       }
     },
-    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice],
+    [addingToCart, user, selectedVariant, selectedVariantIndex, navigate, dispatch, finalPrice, isOutOfStock],
   )
 
   const handleReviewImageChange = useCallback((e) => {
@@ -243,7 +278,6 @@ const ProductDetail = () => {
         reviewImages.forEach((image) => {
           formData.append("images", image)
         })
-
         const result = await safeApiCall(async (api) => {
           return await api.post(`/products/${id}/review`, formData, {
             headers: {
@@ -251,7 +285,6 @@ const ProductDetail = () => {
             },
           })
         })
-
         if (result) {
           setReviewRating(0)
           setReviewComment("")
@@ -410,44 +443,77 @@ const ProductDetail = () => {
               </>
             )}
           </div>
+
+          {/* ✅ FIXED: Enhanced stock status display */}
+          {isOutOfStock && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 font-medium text-sm">⚠️ This variant is currently out of stock</p>
+              <p className="text-red-500 text-xs mt-1">Please select a different size or check back later</p>
+            </div>
+          )}
+
           <div className="mt-4">
             <p className="font-medium mb-1">Select Size:</p>
             <div className="flex gap-2 flex-wrap">
-              {product.variants?.map((v, i) => (
-                <button
-                  key={`variant-${i}`}
-                  onClick={() => handleSizeClick(v, i)}
-                  className={`px-4 py-2 border rounded-full cursor-pointer transition-all font-medium ${
-                    i === selectedVariantIndex
-                      ? "bg-green-600 text-white border-green-600 scale-105 shadow-md"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:scale-105"
-                  }`}
-                >
-                  {v.size}
-                </button>
-              ))}
+              {product.variants?.map((v, i) => {
+                // Check if this specific variant is out of stock
+                const variantOutOfStock =
+                  v.isOutOfStock === true ||
+                  (typeof v.stock === "number" && v.stock <= 0) ||
+                  v.stock === "0" ||
+                  v.stock === 0
+
+                return (
+                  <button
+                    key={`variant-${i}`}
+                    onClick={() => handleSizeClick(v, i)}
+                    disabled={variantOutOfStock}
+                    className={`px-4 py-2 border rounded-full cursor-pointer transition-all font-medium relative ${
+                      i === selectedVariantIndex
+                        ? variantOutOfStock
+                          ? "bg-red-100 text-red-600 border-red-300 cursor-not-allowed"
+                          : "bg-green-600 text-white border-green-600 scale-105 shadow-md"
+                        : variantOutOfStock
+                          ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:scale-105"
+                    }`}
+                  >
+                    {v.size}
+                    {variantOutOfStock && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                        ✕
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
+
           <div className="mt-6 flex gap-4">
-            {selectedVariant?.isOutOfStock ? (
-              <button
-                disabled
-                className="bg-gray-400 text-white px-6 py-2 rounded cursor-not-allowed"
-                title="This variant is currently out of stock"
-              >
-                Available Soon...
-              </button>
+            {/* ✅ FIXED: Enhanced button logic with better styling */}
+            {isOutOfStock ? (
+              <div className="flex flex-col gap-2">
+                <button
+                  disabled
+                  className="bg-gray-400 text-white px-6 py-3 rounded cursor-not-allowed opacity-75 font-medium"
+                  title="This variant is currently out of stock"
+                >
+                  📦 Available Soon...
+                </button>
+                <p className="text-xs text-gray-500 text-center">This size is temporarily unavailable</p>
+              </div>
             ) : (
               <>
                 <button
                   onClick={() => handleAddToCart(product)}
                   disabled={addingToCart}
-                  className="bg-orange-500 text-white px-6 py-2 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                  className="bg-orange-500 text-white px-6 py-3 rounded cursor-pointer hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 font-medium"
                 >
-                  {addingToCart ? "Adding..." : "Add to Cart"}
+                  {addingToCart ? "Adding..." : "🛒 Add to Cart"}
                 </button>
-                <button className="bg-green-600 text-white px-6 py-2 rounded cursor-pointer hover:bg-green-700 transition-all transform hover:scale-105">
-                  Buy Now
+                <button className="bg-green-600 text-white px-6 py-3 rounded cursor-pointer hover:bg-green-700 transition-all transform hover:scale-105 font-medium">
+                  ⚡ Buy Now
                 </button>
               </>
             )}
