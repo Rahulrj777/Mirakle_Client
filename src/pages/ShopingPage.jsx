@@ -78,13 +78,13 @@ const ShopingPage = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {displayedProducts.map((product) => {
-            // ✅ MODIFIED: Access image URL from the object
             const frontImage = product.images?.others?.[0]?.url || ""
             const isOut = product.isOutOfStock
             const variant = product.variants?.[0]
             const discount = variant?.discountPercent || 0
             const originalPrice = variant?.price || 0
             const finalPrice = originalPrice - (originalPrice * discount) / 100
+
             return (
               <Link to={`/product/${product._id}`} key={product._id} className="block">
                 <div
@@ -92,18 +92,29 @@ const ShopingPage = () => {
                     isOut ? "opacity-60" : "hover:shadow-lg"
                   }`}
                 >
+                  {/* Discount badge */}
                   {discount > 0 && !isOut && (
-                    <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-5">
+                    <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
                       {discount}% OFF
                     </div>
                   )}
+
+                  {/* Out of Stock badge */}
+                  {isOut && (
+                    <div className="absolute top-3 right-3 bg-gray-700 bg-opacity-80 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                      OUT OF STOCK
+                    </div>
+                  )}
+
                   <img
-                    // ✅ MODIFIED: Use frontImage directly (it's already a full URL)
                     src={frontImage || "/placeholder.svg?height=150&width=150"}
                     alt={product.title}
                     loading="lazy"
-                    className="w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t"
+                    className={`w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t ${
+                      isOut ? "filter blur-sm" : ""
+                    }`}
                   />
+
                   <div className="p-3">
                     <h2 className="text-base font-semibold truncate" title={product.title}>
                       {product.title}
