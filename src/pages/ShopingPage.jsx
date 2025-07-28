@@ -88,19 +88,10 @@ const ShopingPage = () => {
             return (
               <Link to={`/product/${product._id}`} key={product._id} className="block">
                 <div
-                  className={`relative border rounded-lg shadow transition overflow-hidden cursor-pointer group ${
-                    isOut ? "bg-gray-100" : "hover:shadow-lg"
+                  className={`relative border rounded-lg shadow transition overflow-hidden cursor-pointer ${
+                    isOut ? "opacity-60" : "hover:shadow-lg"
                   }`}
                 >
-                  {/* Out of Stock Overlay */}
-                  {isOut && (
-                    <div className="absolute inset-0 bg-white bg-opacity-70 z-20 flex items-center justify-center">
-                      <span className="text-red-600 font-bold text-xs sm:text-sm bg-white px-3 py-1 rounded-full border border-red-500 shadow">
-                        OUT OF STOCK
-                      </span>
-                    </div>
-                  )}
-
                   {/* Discount badge */}
                   {discount > 0 && !isOut && (
                     <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
@@ -108,18 +99,23 @@ const ShopingPage = () => {
                     </div>
                   )}
 
-                  {/* Product Image */}
+                  {/* Out of Stock badge */}
+                  {isOut && (
+                    <div className="absolute top-3 right-3 bg-gray-700 bg-opacity-80 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                      OUT OF STOCK
+                    </div>
+                  )}
+
                   <img
                     src={frontImage || "/placeholder.svg?height=150&width=150"}
                     alt={product.title}
                     loading="lazy"
-                    className={`w-full h-40 object-cover transition-transform duration-300 rounded-t group-hover:scale-105 ${
-                      isOut ? "filter blur-[2px] grayscale" : ""
+                    className={`w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t ${
+                      isOut ? "filter blur-sm" : ""
                     }`}
                   />
 
-                  {/* Product Info */}
-                  <div className={`p-3 ${isOut ? "opacity-60" : ""}`}>
+                  <div className="p-3">
                     <h2 className="text-base font-semibold truncate" title={product.title}>
                       {product.title}
                     </h2>
