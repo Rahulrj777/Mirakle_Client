@@ -17,8 +17,9 @@ const ContactUs = () => {
     setStatus("Sending...")
 
     try {
-      // ONLY CHANGE: Use local API instead of external server
+      // 🔥 CHANGE THIS LINE - Use local API instead of external server
       const response = await fetch("/api/contact", {
+        // ← Changed from external URL
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -27,7 +28,8 @@ const ContactUs = () => {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()

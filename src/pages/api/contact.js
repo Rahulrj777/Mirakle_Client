@@ -1,11 +1,14 @@
 import nodemailer from "nodemailer"
 
 export default async function handler(req, res) {
+  console.log("📧 Contact API called:", req.method)
+
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" })
   }
 
   const { name, email, message } = req.body
+  console.log("📧 Form data received:", { name, email, message: message?.substring(0, 50) + "..." })
 
   // Validate required fields
   if (!name || !email || !message) {
@@ -16,6 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log("📧 Creating email transporter...")
     const transporter = nodemailer.createTransporter({
       service: "gmail",
       auth: {
@@ -44,8 +48,9 @@ export default async function handler(req, res) {
       `,
     }
 
+    console.log("📧 Sending email...")
     await transporter.sendMail(mailOptions)
-    console.log("📧 Email sent successfully")
+    console.log("📧 Email sent successfully!")
 
     res.status(200).json({
       message: "Message sent successfully!",
