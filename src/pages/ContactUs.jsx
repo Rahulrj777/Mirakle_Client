@@ -1,34 +1,56 @@
-import React, { useState } from "react";
-import axios from "axios";
+"use client"
+
+import { useState } from "react"
+import axios from "axios"
 
 const ContactUs = () => {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState("");
+  const [form, setForm] = useState({ name: "", email: "", message: "" })
+  const [status, setStatus] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setStatus("Sending...");
+    e.preventDefault()
+    setIsLoading(true)
+    setStatus("Sending...")
+
     try {
-      await axios.post("https://mirakle-server.vercel.app/api/contact", form);
-      setStatus("Message sent successfully!");
-      setForm({ name: "", email: "", message: "" });
+      // Updated axios configuration
+      const response = await axios.post("https://mirakle-server.vercel.app/api/contact", form, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true, // Include credentials if needed
+        timeout: 10000, // 10 second timeout
+      })
+
+      console.log("✅ Message sent successfully:", response.data)
+      setStatus("Message sent successfully!")
+      setForm({ name: "", email: "", message: "" })
     } catch (err) {
-      console.error("Error sending message:", err);
-      setStatus("Failed to send message.");
+      console.error("❌ Error sending message:", err)
+
+      if (err.code === "ERR_NETWORK") {
+        setStatus("Network error. Please check your connection and try again.")
+      } else if (err.response) {
+        setStatus(`Failed to send message: ${err.response.data?.error || "Server error"}`)
+      } else {
+        setStatus("Failed to send message. Please try again.")
+      }
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 text-gray-800">
       <h1 className="text-4xl font-bold mb-6 text-center">Contact Us</h1>
-
       <p className="text-lg mb-4 text-center">
-        We'd love to hear from you! Whether you have a question, feedback, or just want to say hello,
-        reach out to us anytime.
+        We'd love to hear from you! Whether you have a question, feedback, or just want to say hello, reach out to us
+        anytime.
       </p>
 
       <div className="bg-white shadow-lg rounded-2xl p-6 space-y-6">
@@ -36,28 +58,30 @@ const ContactUs = () => {
           <h2 className="text-xl font-semibold">Email</h2>
           <p className="text-lg">miraklefoodproducts@gmail.com</p>
         </div>
-
         <div>
           <h2 className="text-xl font-semibold">Phone</h2>
           <p className="text-lg">+91 63838 42861</p>
         </div>
-
         <div>
           <h2 className="text-xl font-semibold">Support Hours</h2>
           <p className="text-lg">24×7 Available</p>
         </div>
-
         <div>
           <h2 className="text-xl font-semibold">Expected Response Time</h2>
           <p className="text-lg">Within 24 hours</p>
         </div>
-
         <div>
           <h2 className="text-xl font-semibold">Follow Us</h2>
           <div className="flex space-x-4 mt-2">
-            <a href="#" className="text-blue-500 hover:underline">Instagram</a>
-            <a href="#" className="text-blue-500 hover:underline">Facebook</a>
-            <a href="#" className="text-blue-500 hover:underline">YouTube</a>
+            <a href="#" className="text-blue-500 hover:underline">
+              Instagram
+            </a>
+            <a href="#" className="text-blue-500 hover:underline">
+              Facebook
+            </a>
+            <a href="#" className="text-blue-500 hover:underline">
+              YouTube
+            </a>
           </div>
         </div>
 
@@ -70,11 +94,11 @@ const ContactUs = () => {
               value={form.name}
               onChange={handleChange}
               required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+              disabled={isLoading}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:opacity-50"
               placeholder="Your name"
             />
           </div>
-
           <div>
             <label className="block text-lg font-medium">Email</label>
             <input
@@ -83,11 +107,11 @@ const ContactUs = () => {
               value={form.email}
               onChange={handleChange}
               required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+              disabled={isLoading}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:opacity-50"
               placeholder="you@example.com"
             />
           </div>
-
           <div>
             <label className="block text-lg font-medium">Message</label>
             <textarea
@@ -96,23 +120,27 @@ const ContactUs = () => {
               value={form.message}
               onChange={handleChange}
               required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+              disabled={isLoading}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 disabled:opacity-50"
               placeholder="Your message..."
             ></textarea>
           </div>
-
           <button
             type="submit"
-            className="bg-green-600 text-white px-6 py-2 rounded-xl hover:bg-green-700"
+            disabled={isLoading}
+            className="bg-green-600 text-white px-6 py-2 rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Send Message
+            {isLoading ? "Sending..." : "Send Message"}
           </button>
-
-          {status && <p className="text-sm mt-2">{status}</p>}
+          {status && (
+            <p className={`text-sm mt-2 ${status.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
+              {status}
+            </p>
+          )}
         </form>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ContactUs;
+export default ContactUs
