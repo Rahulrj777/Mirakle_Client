@@ -133,7 +133,7 @@ const ContactUs = () => {
             <p className={`text-sm mt-2 ${status.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
               {status}
             </p>
-          )}
+          )}  
         </form>
       </div>
     </div>
