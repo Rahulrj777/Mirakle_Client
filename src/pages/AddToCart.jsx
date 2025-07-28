@@ -42,6 +42,8 @@ const AddToCart = () => {
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(false)
+  const [outOfStockItems, setOutOfStockItems] = useState(new Set())
+  const stockCheckIntervalRef = useRef(null)
 
   // Get user and token from localStorage with error handling
   const getUserData = () => {
@@ -58,12 +60,73 @@ const AddToCart = () => {
 
   const { user, token } = getUserData()
 
+  // Function to check stock status for all cart items
+  const checkStockStatus = async () => {
+    if (!token || safeCartItems.length === 0) return
+
+    try {
+      const productIds = safeCartItems.map((item) => ({
+        productId: item._id,
+        variantId: item.variantId,
+      }))
+
+      const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
+        items: productIds,
+      })
+
+      const stockData = response.data.stockStatus || []
+      const newOutOfStockItems = new Set()
+
+      stockData.forEach((item) => {
+        if (!item.inStock || item.availableQuantity === 0) {
+          newOutOfStockItems.add(`${item.productId}_${item.variantId}`)
+        }
+      })
+
+      setOutOfStockItems(newOutOfStockItems)
+
+      // Show notification if items went out of stock
+      const previouslyInStock = Array.from(outOfStockItems)
+      const newlyOutOfStock = Array.from(newOutOfStockItems).filter((item) => !previouslyInStock.includes(item))
+
+      if (newlyOutOfStock.length > 0) {
+        const outOfStockProducts = safeCartItems.filter((item) =>
+          newlyOutOfStock.includes(`${item._id}_${item.variantId}`),
+        )
+
+        const productNames = outOfStockProducts.map((item) => item.title).join(", ")
+        alert(`The following items in your cart are now out of stock: ${productNames}`)
+      }
+    } catch (error) {
+      console.error("Failed to check stock status:", error)
+    }
+  }
+
   // Ensure cartItems is always an array
   const safeCartItems = Array.isArray(cartItems) ? cartItems : []
 
-  // Calculate totals
-  const subtotal = safeCartItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
-  const originalTotal = safeCartItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
+  // Check stock status on component mount and set up interval
+  useEffect(() => {
+    if (!cartReady || !token || safeCartItems.length === 0) return
+
+    // Initial stock check
+    checkStockStatus()
+
+    // Set up interval to check stock every 30 seconds
+    stockCheckIntervalRef.current = setInterval(checkStockStatus, 30000)
+
+    return () => {
+      if (stockCheckIntervalRef.current) {
+        clearInterval(stockCheckIntervalRef.current)
+      }
+    }
+  }, [cartReady, token, safeCartItems.length])
+
+  // Calculate totals (excluding out of stock items from total)
+  const availableItems = safeCartItems.filter((item) => !outOfStockItems.has(`${item._id}_${item.variantId}`))
+
+  const subtotal = availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
+  const originalTotal = availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   const discountAmount = originalTotal - subtotal
 
   // Fetch saved addresses on first load
@@ -77,7 +140,6 @@ const AddToCart = () => {
         if (Array.isArray(res.data.addresses)) {
           dispatch(setAddresses(res.data.addresses))
           setAddressesLoaded(true)
-
           // Initialize selected address if saved in localStorage and still valid
           const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
           if (savedAddressStr) {
@@ -120,7 +182,6 @@ const AddToCart = () => {
     // Debounce the sync operation
     syncTimeoutRef.current = setTimeout(() => {
       prevCartRef.current = [...safeCartItems]
-
       // Update localStorage cache for this specific user
       localStorage.setItem(`cart_${userId}`, JSON.stringify(safeCartItems))
 
@@ -151,9 +212,11 @@ const AddToCart = () => {
         setShowAddressModal(false)
       }
     }
+
     if (showAddressModal) {
       document.addEventListener("mousedown", handleClickOutside)
     }
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
@@ -190,6 +253,20 @@ const AddToCart = () => {
     } catch (error) {
       console.error("Failed to delete address:", error)
       alert("Could not delete address. Please try again later.")
+    }
+  }
+
+  const handleQuantityChange = (item, action) => {
+    const itemKey = `${item._id}_${item.variantId}`
+    if (outOfStockItems.has(itemKey)) {
+      alert("This item is currently out of stock and cannot be modified.")
+      return
+    }
+
+    if (action === "increment") {
+      dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))
+    } else {
+      dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))
     }
   }
 
@@ -233,6 +310,26 @@ const AddToCart = () => {
             )}
           </div>
 
+          {/* Out of Stock Items Notification */}
+          {outOfStockItems.size > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded p-4">
+              <div className="flex items-center">
+                <div className="text-red-600">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <p className="ml-2 text-red-800 text-sm">
+                  Some items in your cart are currently out of stock and cannot be ordered.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Cart Items */}
           {safeCartItems.length === 0 ? (
             <div className="bg-white rounded shadow p-8 text-center">
@@ -245,57 +342,85 @@ const AddToCart = () => {
               </button>
             </div>
           ) : (
-            safeCartItems.map((item) => (
-              <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
-                <img
-                  src={item.images?.others?.[0]?.url || "/placeholder.svg"}
-                  alt={item.title || "Product"}
-                  loading="lazy"
-                  className="w-28 h-28 object-cover border rounded"
-                />
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold">{item.title || "Unknown Product"}</h2>
-                  <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
-                  <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-600 font-bold text-xl">₹{(item.currentPrice || 0).toFixed(2)}</span>
-                    {(item.originalPrice || 0) > (item.currentPrice || 0) && (
-                      <>
-                        <span className="line-through text-sm text-gray-500">
-                          ₹{(item.originalPrice || 0).toFixed(2)}
+            safeCartItems.map((item) => {
+              const itemKey = `${item._id}_${item.variantId}`
+              const isOutOfStock = outOfStockItems.has(itemKey)
+
+              return (
+                <div
+                  key={itemKey}
+                  className={`bg-white rounded shadow p-4 flex gap-4 ${isOutOfStock ? "opacity-60 border-2 border-red-200" : ""}`}
+                >
+                  <div className="relative">
+                    <img
+                      src={item.images?.others?.[0]?.url || "/placeholder.svg"}
+                      alt={item.title || "Product"}
+                      loading="lazy"
+                      className="w-28 h-28 object-cover border rounded"
+                    />
+                    {isOutOfStock && (
+                      <div className="absolute inset-0 bg-red-500 bg-opacity-20 flex items-center justify-center rounded">
+                        <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-semibold">
+                          OUT OF STOCK
                         </span>
-                        <span className="text-red-500 text-sm font-medium">
-                          {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
-                        </span>
-                      </>
+                      </div>
                     )}
                   </div>
-                  <div className="mt-3 flex items-center gap-4">
-                    <div className="flex items-center border rounded">
+                  <div className="flex-1">
+                    <h2 className={`text-lg font-semibold ${isOutOfStock ? "text-gray-500" : ""}`}>
+                      {item.title || "Unknown Product"}
+                    </h2>
+                    <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
+                    <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
+
+                    {isOutOfStock && (
+                      <p className="text-red-600 text-sm font-medium mb-2">This item is currently out of stock</p>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      <span className={`font-bold text-xl ${isOutOfStock ? "text-gray-500" : "text-green-600"}`}>
+                        ₹{(item.currentPrice || 0).toFixed(2)}
+                      </span>
+                      {(item.originalPrice || 0) > (item.currentPrice || 0) && (
+                        <>
+                          <span className="line-through text-sm text-gray-500">
+                            ₹{(item.originalPrice || 0).toFixed(2)}
+                          </span>
+                          <span className="text-red-500 text-sm font-medium">
+                            {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center gap-4">
+                      <div className={`flex items-center border rounded ${isOutOfStock ? "opacity-50" : ""}`}>
+                        <button
+                          className="px-3 py-1 text-lg hover:bg-gray-100 disabled:cursor-not-allowed"
+                          onClick={() => handleQuantityChange(item, "decrement")}
+                          disabled={isOutOfStock}
+                        >
+                          −
+                        </button>
+                        <span className="px-4">{item.quantity || 0}</span>
+                        <button
+                          className="px-3 py-1 text-lg hover:bg-gray-100 disabled:cursor-not-allowed"
+                          onClick={() => handleQuantityChange(item, "increment")}
+                          disabled={isOutOfStock}
+                        >
+                          +
+                        </button>
+                      </div>
                       <button
-                        className="px-3 py-1 text-lg hover:bg-gray-100"
-                        onClick={() => dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))}
+                        className="text-red-500 text-sm hover:underline"
+                        onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
                       >
-                        −
-                      </button>
-                      <span className="px-4">{item.quantity || 0}</span>
-                      <button
-                        className="px-3 py-1 text-lg hover:bg-gray-100"
-                        onClick={() => dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))}
-                      >
-                        +
+                        Remove
                       </button>
                     </div>
-                    <button
-                      className="text-red-500 text-sm hover:underline"
-                      onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
-                    >
-                      Remove
-                    </button>
                   </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
 
@@ -304,14 +429,23 @@ const AddToCart = () => {
           <h3 className="text-xl font-bold mb-4">Price Details</h3>
           <div className="flex justify-between mb-2">
             <span>
-              Price ({safeCartItems.length} item{safeCartItems.length > 1 ? "s" : ""})
+              Price ({availableItems.length} available item{availableItems.length > 1 ? "s" : ""})
             </span>
             <span>₹{originalTotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between mb-2">
-            <span>Discount</span>
-            <span className="text-green-600">− ₹{discountAmount.toFixed(2)}</span>
-          </div>
+          {outOfStockItems.size > 0 && (
+            <div className="flex justify-between mb-2 text-red-600 text-sm">
+              <span>
+                ({outOfStockItems.size} out of stock item{outOfStockItems.size > 1 ? "s" : ""} excluded)
+              </span>
+            </div>
+          )}
+          {discountAmount > 0 && (
+            <div className="flex justify-between mb-2">
+              <span>Discount</span>
+              <span className="text-green-600">− ₹{discountAmount.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between mb-2">
             <span>Delivery Charges</span>
             <span className="text-green-600">Free</span>
@@ -323,11 +457,16 @@ const AddToCart = () => {
           </div>
           <button
             onClick={() => navigate("/checkout")}
-            disabled={safeCartItems.length === 0}
+            disabled={availableItems.length === 0}
             className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold"
           >
-            PLACE ORDER
+            PLACE ORDER ({availableItems.length} items)
           </button>
+          {outOfStockItems.size > 0 && (
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Out of stock items will not be included in your order
+            </p>
+          )}
         </div>
       </div>
 
