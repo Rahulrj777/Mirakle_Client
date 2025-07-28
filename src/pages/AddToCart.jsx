@@ -69,9 +69,15 @@ const AddToCart = () => {
     console.log("🔍 Token exists:", !!token)
     console.log("🔍 Cart items count:", safeCartItems.length)
     console.log("🔍 API_BASE:", API_BASE)
+    console.log("🔍 Cart items:", safeCartItems)
 
-    if (!token || safeCartItems.length === 0) {
-      console.log("❌ Stock check skipped - no token or empty cart")
+    if (!token) {
+      console.log("❌ No token found")
+      return
+    }
+
+    if (safeCartItems.length === 0) {
+      console.log("❌ No items in cart")
       return
     }
 
@@ -133,18 +139,23 @@ const AddToCart = () => {
     console.log("🔄 token exists:", !!token)
     console.log("🔄 safeCartItems.length:", safeCartItems.length)
 
-    if (!cartReady || !token || safeCartItems.length === 0) {
-      console.log("❌ Stock check useEffect conditions not met")
-      return
+    // Run stock check regardless of cartReady status for debugging
+    if (token && safeCartItems.length > 0) {
+      console.log("🚀 Running initial stock check...")
+      checkStockStatus()
+
+      // Set up interval to check stock every 10 seconds for testing
+      console.log("⏰ Setting up 10-second interval for stock checks")
+      if (stockCheckIntervalRef.current) {
+        clearInterval(stockCheckIntervalRef.current)
+      }
+      stockCheckIntervalRef.current = setInterval(checkStockStatus, 10000)
+    } else {
+      console.log("❌ Stock check conditions not met:", {
+        hasToken: !!token,
+        hasItems: safeCartItems.length > 0,
+      })
     }
-
-    // Initial stock check
-    console.log("🚀 Running initial stock check...")
-    checkStockStatus()
-
-    // Set up interval to check stock every 30 seconds
-    console.log("⏰ Setting up 30-second interval for stock checks")
-    stockCheckIntervalRef.current = setInterval(checkStockStatus, 30000)
 
     return () => {
       if (stockCheckIntervalRef.current) {
@@ -152,7 +163,7 @@ const AddToCart = () => {
         clearInterval(stockCheckIntervalRef.current)
       }
     }
-  }, [cartReady, token, safeCartItems.length])
+  }, [safeCartItems.length, token]) // Simplified dependencies
 
   // Calculate totals (excluding out of stock items from total)
   const availableItems = safeCartItems.filter((item) => !outOfStockItems.has(`${item._id}_${item.variantId}`))
@@ -172,7 +183,6 @@ const AddToCart = () => {
         if (Array.isArray(res.data.addresses)) {
           dispatch(setAddresses(res.data.addresses))
           setAddressesLoaded(true)
-          // Initialize selected address if saved in localStorage and still valid
           const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
           if (savedAddressStr) {
             try {
@@ -203,21 +213,16 @@ const AddToCart = () => {
   useEffect(() => {
     if (!cartReady || !token || !user || !userId) return
 
-    // Clear any existing timeout
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current)
     }
 
-    // Compare previous cart to avoid redundant sync
     if (JSON.stringify(prevCartRef.current) === JSON.stringify(safeCartItems)) return
 
-    // Debounce the sync operation
     syncTimeoutRef.current = setTimeout(() => {
       prevCartRef.current = [...safeCartItems]
-      // Update localStorage cache for this specific user
       localStorage.setItem(`cart_${userId}`, JSON.stringify(safeCartItems))
 
-      // Sync to backend
       axiosWithToken(token)
         .post("/cart", { items: safeCartItems })
         .then(() => {
@@ -225,11 +230,9 @@ const AddToCart = () => {
         })
         .catch((err) => {
           console.error("❌ Cart sync failed:", err)
-          // Optionally show user notification here
         })
-    }, 500) // 500ms debounce
+    }, 500)
 
-    // Cleanup timeout on unmount
     return () => {
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current)
@@ -324,8 +327,9 @@ const AddToCart = () => {
             <p className="text-sm text-yellow-700">Token exists: {token ? "Yes" : "No"}</p>
             <p className="text-sm text-yellow-700">Cart items: {safeCartItems.length}</p>
             <p className="text-sm text-yellow-700">Out of stock items: {outOfStockItems.size}</p>
+            <p className="text-sm text-yellow-700">Cart ready: {cartReady ? "Yes" : "No"}</p>
             <button onClick={testStockCheck} className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded text-sm">
-              Test Stock Check
+              Test Stock Check Now
             </button>
           </div>
 
