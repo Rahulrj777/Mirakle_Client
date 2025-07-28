@@ -101,7 +101,7 @@ const ShopingPage = () => {
 
                   {/* Out of Stock badge */}
                   {isOut && (
-                    <div className="absolute top-3 right-3 bg-gray-700 bg-opacity-80 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                    <div className="absolute top-3 right-3 bg-red-500 bg-opacity-80 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
                       OUT OF STOCK
                     </div>
                   )}
