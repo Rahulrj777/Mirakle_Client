@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
@@ -211,15 +209,15 @@ const AddToCart = () => {
 
       // Update localStorage
       const updatedCart = cartItems.filter(
-        (cartItem) => !(cartItem._id === item._id && cartItem.variantId === item.variantId),
+        (cartItem) => !(cartItem._id === item._id && cartItem.variantId === item.variantId)
       )
       localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCart))
 
-      // Sync with backend
+      // Sync with backend using correct endpoint and parameter names
       if (token) {
         try {
-          await axiosWithToken(token).delete(`${API_BASE}/api/cart/remove`, {
-            data: { productId: item._id, variantId: item.variantId },
+          await axiosWithToken(token).delete(`${API_BASE}/api/cart/item`, {
+            data: { _id: item._id, variantId: item.variantId }
           })
         } catch (syncError) {
           console.warn("Failed to sync removal with backend:", syncError)
