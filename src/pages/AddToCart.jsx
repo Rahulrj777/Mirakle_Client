@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
@@ -21,6 +19,7 @@ const AddToCart = () => {
     const items = state.cart?.items
     return Array.isArray(items) ? items : []
   })
+
   const [cartReady, setCartReady] = useState(false)
   const [stockSyncLoading, setStockSyncLoading] = useState(false)
 
@@ -35,31 +34,18 @@ const AddToCart = () => {
   const userId = user?.user?.userId || user?.user?._id
   const token = user?.token
 
-  // Enhanced stock checking function that works with existing data
+  // Enhanced stock checking function
   const isItemOutOfStock = (item) => {
     if (!item) return true
-
-    // Check all possible out-of-stock conditions
     const outOfStockConditions = [
       item.isOutOfStock === true,
       item.stock === 0,
       item.stock === "0",
       typeof item.stock === "number" && item.stock <= 0,
       item.stockMessage && item.stockMessage.toLowerCase().includes("out of stock"),
-      // Additional check: if stock is undefined but we have other indicators
       item.isOutOfStock !== false && (item.stock === undefined || item.stock === null),
     ]
-
-    const isOOS = outOfStockConditions.some(Boolean)
-
-    console.log(`Stock check for ${item.title}:`, {
-      isOutOfStock: item.isOutOfStock,
-      stock: item.stock,
-      stockMessage: item.stockMessage,
-      result: isOOS ? "OUT OF STOCK" : "IN STOCK",
-    })
-
-    return isOOS
+    return outOfStockConditions.some(Boolean)
   }
 
   // Separate available and out-of-stock items
@@ -81,15 +67,12 @@ const AddToCart = () => {
     return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   }, [availableItems])
 
-  // Simplified getUserData function
   useEffect(() => {
     const getUserData = async () => {
       if (!user || !userId || !token) return
-
       try {
         const response = await axiosWithToken(token).get(`${API_BASE}/api/users/address`)
         const userData = response.data
-
         if (userData && userData.addresses) {
           dispatch(setAddresses(userData.addresses))
           const storedSelectedAddress = localStorage.getItem(`deliveryAddress_${userId}`)
@@ -119,26 +102,17 @@ const AddToCart = () => {
     }
   }, [user, userId, token, dispatch])
 
-  // Fallback stock sync using existing product API
+  // Stock sync using existing product API
   const syncCartWithStock = async () => {
     if (!cartReady || !token || !userId || cartItems.length === 0) return
-
     try {
       setStockSyncLoading(true)
-      console.log("🔄 Syncing cart with current stock status (fallback method)...")
-
-      // Use existing products API to get current product data
       const response = await axiosWithToken(token).get(`${API_BASE}/api/products/all-products`)
       const allProducts = response.data
 
-      console.log("📦 Fetched all products for stock check")
-
-      // Check each cart item against current product data
       const updatedCartItems = cartItems.map((cartItem) => {
         const currentProduct = allProducts.find((p) => p._id === cartItem._id)
-
         if (!currentProduct) {
-          console.log(`❌ Product ${cartItem._id} not found`)
           return {
             ...cartItem,
             isOutOfStock: true,
@@ -147,11 +121,8 @@ const AddToCart = () => {
           }
         }
 
-        // Find matching variant
         const currentVariant = currentProduct.variants?.find((v) => v.size === cartItem.size)
-
         if (!currentVariant) {
-          console.log(`❌ Variant ${cartItem.size} not found for ${cartItem.title}`)
           return {
             ...cartItem,
             isOutOfStock: true,
@@ -160,20 +131,12 @@ const AddToCart = () => {
           }
         }
 
-        // Check if out of stock
         const isOutOfStock =
           currentProduct.isOutOfStock === true ||
           currentVariant.isOutOfStock === true ||
           currentVariant.stock === 0 ||
           currentVariant.stock === "0" ||
           (typeof currentVariant.stock === "number" && currentVariant.stock <= 0)
-
-        console.log(`📊 Stock update for ${cartItem.title}:`, {
-          productOOS: currentProduct.isOutOfStock,
-          variantOOS: currentVariant.isOutOfStock,
-          variantStock: currentVariant.stock,
-          finalOOS: isOutOfStock,
-        })
 
         return {
           ...cartItem,
@@ -186,41 +149,33 @@ const AddToCart = () => {
         }
       })
 
-      // Update Redux store with new cart data
       dispatch({ type: "cart/setCartItem", payload: updatedCartItems })
-
-      const outOfStockCount = updatedCartItems.filter((item) => item.isOutOfStock).length
-      if (outOfStockCount > 0) {
-        console.log(`⚠️ ${outOfStockCount} items in cart are now out of stock`)
-      }
     } catch (error) {
-      console.error("❌ Failed to sync cart with stock:", error)
+      console.error("Failed to sync cart with stock:", error)
     } finally {
       setStockSyncLoading(false)
     }
   }
 
-  // Sync stock when cart is ready
   useEffect(() => {
     if (cartReady && token && userId && cartItems.length > 0) {
-      console.log("🚀 Initial stock sync...")
       syncCartWithStock()
     }
   }, [cartReady, token, userId, cartItems.length])
 
-  // Manual stock refresh
   const handleManualStockSync = () => {
-    console.log("🔄 Manual stock sync triggered")
     syncCartWithStock()
   }
 
   if (!cartReady) {
     return (
-      <div className="container mx-auto mt-10">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading cart...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading cart...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -228,275 +183,395 @@ const AddToCart = () => {
   }
 
   return (
-    <div className="container mx-auto mt-10">
-      <div className="flex shadow-md my-10">
-        <div className="w-3/4 bg-white px-10 py-10">
-          <div className="flex justify-between border-b pb-8">
-            <h1 className="font-semibold text-2xl">Shopping Cart</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+              <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
+            </div>
             <div className="flex items-center gap-4">
-              <h2 className="font-semibold text-2xl">{cartItems?.length} Items</h2>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
+                <p className="text-sm text-gray-500">Items</p>
+              </div>
               <button
                 onClick={handleManualStockSync}
                 disabled={stockSyncLoading}
-                className="text-blue-600 hover:underline text-sm disabled:opacity-50"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
                 title="Refresh stock status"
               >
-                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh"}
+                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
               </button>
             </div>
           </div>
-
-          {/* Stock Status Alert */}
-          {hasOutOfStockItem && (
-            <div className="bg-red-50 border border-red-200 rounded p-4 mt-4">
-              <h3 className="text-red-800 font-medium mb-2">⚠️ Some items are out of stock</h3>
-              <p className="text-red-600 text-sm">
-                {outOfStockItems.length} item{outOfStockItems.length > 1 ? "s" : ""} in your cart{" "}
-                {outOfStockItems.length > 1 ? "are" : "is"} currently unavailable. Remove them to continue with your
-                order.
-              </p>
-            </div>
-          )}
-
-          <div className="flex mt-10 mb-5">
-            <h3 className="font-semibold text-gray-600 text-xs uppercase w-2/5">Product Details</h3>
-            <h3 className="font-semibold text-gray-600 text-xs uppercase w-1/5 text-center">Quantity</h3>
-            <h3 className="font-semibold text-gray-600 text-xs uppercase w-1/5 text-center">Price</h3>
-            <h3 className="font-semibold text-gray-600 text-xs uppercase w-1/5 text-center">Total</h3>
-          </div>
-
-          {cartItems.length === 0 ? (
-            <div className="bg-white rounded shadow p-8 text-center">
-              <p className="text-gray-600 text-lg">Your cart is empty.</p>
-              <button
-                onClick={() => navigate("/shop/allproduct")}
-                className="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-              >
-                Continue Shopping
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Available Items */}
-              {availableItems.map((item) => (
-                <div
-                  key={`${item._id}_${item.variantId}`}
-                  className="flex items-center hover:bg-gray-100 -mx-8 px-6 py-5"
-                >
-                  <div className="flex w-2/5">
-                    <div className="w-20">
-                      <img
-                        className="h-24"
-                        src={item.images?.others?.[0]?.url || "/placeholder.svg"}
-                        alt={item.title || "Product"}
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="flex flex-col justify-between ml-4 flex-grow">
-                      <span className="font-bold text-sm">{item.title || "Unknown Product"}</span>
-                      <span className="text-red-500 text-xs">Size: {item.size || "N/A"}</span>
-                      <span className="text-gray-500 text-xs">Seller: Mirakle</span>
-
-                      {/* Stock warning for low stock */}
-                      {typeof item.stock === "number" && item.stock <= 10 && item.stock > 0 && (
-                        <span className="text-orange-600 text-xs">⚡ Only {item.stock} left in stock</span>
-                      )}
-
-                      <button
-                        className="font-semibold hover:text-red-500 text-gray-500 text-xs"
-                        onClick={() =>
-                          dispatch(
-                            removeFromCart({
-                              _id: item._id,
-                              variantId: item.variantId,
-                            }),
-                          )
-                        }
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex justify-center w-1/5">
-                    <svg
-                      className="fill-current text-gray-600 w-3 cursor-pointer"
-                      viewBox="0 0 448 512"
-                      onClick={() =>
-                        dispatch(
-                          decrementQuantity({
-                            _id: item._id,
-                            variantId: item.variantId,
-                          }),
-                        )
-                      }
-                    >
-                      <path d="M416 208H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h384c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z" />
-                    </svg>
-                    <input className="mx-2 border text-center w-8" type="text" value={item.quantity || 0} readOnly />
-                    <svg
-                      className={`fill-current w-3 cursor-pointer ${
-                        typeof item.stock === "number" && item.quantity >= item.stock
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600"
-                      }`}
-                      viewBox="0 0 448 512"
-                      onClick={() => {
-                        if (typeof item.stock === "number" && item.quantity >= item.stock) return
-                        dispatch(
-                          incrementQuantity({
-                            _id: item._id,
-                            variantId: item.variantId,
-                          }),
-                        )
-                      }}
-                    >
-                      <path d="M416 208H272V64c0-17.67-14.33-32-32-32h-32c-17.67 0-32 14.33-32 32v144H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h144v144c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32V304h144c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z" />
-                    </svg>
-                  </div>
-                  <span className="text-center w-1/5 font-semibold text-sm">
-                    ₹{(item.currentPrice || 0).toFixed(2)}
-                  </span>
-                  <span className="text-center w-1/5 font-semibold text-sm">
-                    ₹{((item.currentPrice || 0) * (item.quantity || 0)).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-
-              {/* Out of Stock Items Section */}
-              {outOfStockItems.length > 0 && (
-                <div className="mt-8 space-y-4">
-                  <div className="bg-red-50 border border-red-200 rounded p-4">
-                    <h3 className="text-red-800 font-medium mb-2">⚠️ Out of Stock Items</h3>
-                    <p className="text-red-600 text-sm">
-                      The following items are currently unavailable. Remove them to continue with your order.
-                    </p>
-                  </div>
-
-                  {outOfStockItems.map((item) => (
-                    <div
-                      key={`${item._id}_${item.variantId}_oos`}
-                      className="flex items-center bg-red-50 border border-red-200 -mx-8 px-6 py-5 rounded"
-                    >
-                      <div className="flex w-2/5">
-                        <div className="w-20">
-                          <img
-                            className="h-24 grayscale opacity-60"
-                            src={item.images?.others?.[0]?.url || "/placeholder.svg"}
-                            alt={item.title || "Product"}
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="flex flex-col justify-between ml-4 flex-grow">
-                          <span className="font-bold text-sm text-gray-700">{item.title || "Unknown Product"}</span>
-                          <span className="text-red-500 text-xs">Size: {item.size || "N/A"}</span>
-                          <span className="text-gray-500 text-xs">Seller: Mirakle</span>
-
-                          {/* Out of stock message */}
-                          <div className="bg-red-100 border border-red-300 rounded px-2 py-1 mt-1">
-                            <span className="text-red-700 text-xs font-medium">
-                              📦 {item.stockMessage || "Currently out of stock"}
-                            </span>
-                          </div>
-
-                          <button
-                            className="font-semibold hover:text-red-700 text-red-600 text-xs mt-2"
-                            onClick={() =>
-                              dispatch(
-                                removeFromCart({
-                                  _id: item._id,
-                                  variantId: item.variantId,
-                                }),
-                              )
-                            }
-                          >
-                            Remove from Cart
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex justify-center w-1/5">
-                        <span className="text-red-600 font-semibold text-sm bg-red-100 px-2 py-1 rounded">
-                          OUT OF STOCK
-                        </span>
-                      </div>
-                      <span className="text-center w-1/5 font-semibold text-sm text-gray-500 line-through">
-                        ₹{(item.currentPrice || 0).toFixed(2)}
-                      </span>
-                      <span className="text-center w-1/5 font-semibold text-sm text-red-600">Unavailable</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          <a href="/shop/allproduct" className="flex font-semibold text-indigo-600 text-sm mt-10">
-            <svg className="fill-current mr-2 text-indigo-600 w-4" viewBox="0 0 448 512">
-              <path d="M134.059 296H436c6.627 0 12-5.373 12-12v-56c0-6.627-5.373-12-12-12H134.059v-46.059c0-21.382-25.851-32.09-40.971-16.971L7.029 239.029c-9.373 9.373-9.373 24.569 0 33.941l86.059 86.059c15.119 15.119 40.971 4.411 40.971-16.971V296z" />
-            </svg>
-            Continue Shopping
-          </a>
         </div>
 
-        <div id="summary" className="w-1/4 px-8 py-10">
-          <h1 className="font-semibold text-2xl border-b pb-8">Price Details</h1>
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
+          <div className="lg:col-span-2">
+            {/* Stock Status Alert */}
+            {hasOutOfStockItem && (
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">!</span>
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-red-800 font-medium">Some items are out of stock</h3>
+                    <p className="text-red-600 text-sm mt-1">
+                      {outOfStockItems.length} item{outOfStockItems.length > 1 ? "s" : ""} in your cart{" "}
+                      {outOfStockItems.length > 1 ? "are" : "is"} currently unavailable. Remove them to continue.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          <div className="flex justify-between mt-10 mb-5">
-            <span className="font-semibold text-sm uppercase">
-              Price ({availableItems.length} available item{availableItems.length !== 1 ? "s" : ""})
-            </span>
-            <span className="font-semibold text-sm">₹{originalTotal.toFixed(2)}</span>
+            {cartItems.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                <div className="text-gray-400 text-6xl mb-4">🛒</div>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                <p className="text-gray-600 mb-6">Looks like you haven't added any items to your cart yet.</p>
+                <button
+                  onClick={() => navigate("/shop/allproduct")}
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-all font-medium"
+                >
+                  Continue Shopping
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Available Items */}
+                {availableItems.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="bg-green-50 border-b border-green-200 px-6 py-3">
+                      <h3 className="font-semibold text-green-800 flex items-center gap-2">
+                        <span>✅</span>
+                        Available Items ({availableItems.length})
+                      </h3>
+                    </div>
+                    <div className="divide-y divide-gray-200">
+                      {availableItems.map((item) => (
+                        <div key={`${item._id}_${item.variantId}`} className="p-6 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            {/* Product Image */}
+                            <div className="flex-shrink-0">
+                              <img
+                                className="w-20 h-20 object-cover rounded-lg border"
+                                src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
+                                alt={item.title || "Product"}
+                                loading="lazy"
+                              />
+                            </div>
+
+                            {/* Product Details */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 truncate">
+                                {item.title || "Unknown Product"}
+                              </h4>
+                              <div className="flex items-center gap-4 mt-1">
+                                <span className="text-sm text-gray-600">Size: {item.size || "N/A"}</span>
+                                <span className="text-sm text-gray-500">•</span>
+                                <span className="text-sm text-gray-500">Seller: Mirakle</span>
+                              </div>
+                              {typeof item.stock === "number" && item.stock <= 10 && item.stock > 0 && (
+                                <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                  ⚡ Only {item.stock} left in stock
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center border border-gray-300 rounded-lg">
+                                <button
+                                  className="p-2 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                                  onClick={() =>
+                                    dispatch(
+                                      decrementQuantity({
+                                        _id: item._id,
+                                        variantId: item.variantId,
+                                      }),
+                                    )
+                                  }
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                  </svg>
+                                </button>
+                                <span className="px-4 py-2 min-w-[60px] text-center font-medium">
+                                  {item.quantity || 0}
+                                </span>
+                                <button
+                                  className={`p-2 hover:bg-gray-100 transition-colors ${
+                                    typeof item.stock === "number" && item.quantity >= item.stock
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                  onClick={() => {
+                                    if (typeof item.stock === "number" && item.quantity >= item.stock) return
+                                    dispatch(
+                                      incrementQuantity({
+                                        _id: item._id,
+                                        variantId: item.variantId,
+                                      }),
+                                    )
+                                  }}
+                                  disabled={typeof item.stock === "number" && item.quantity >= item.stock}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 4v16m8-8H4"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Price */}
+                            <div className="text-right">
+                              <div className="font-bold text-lg text-gray-900">
+                                ₹{((item.currentPrice || 0) * (item.quantity || 0)).toFixed(2)}
+                              </div>
+                              <div className="text-sm text-gray-500">₹{(item.currentPrice || 0).toFixed(2)} each</div>
+                            </div>
+
+                            {/* Remove Button */}
+                            <button
+                              className="text-red-500 hover:text-red-700 p-2 transition-colors"
+                              onClick={() =>
+                                dispatch(
+                                  removeFromCart({
+                                    _id: item._id,
+                                    variantId: item.variantId,
+                                  }),
+                                )
+                              }
+                              title="Remove item"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Out of Stock Items */}
+                {outOfStockItems.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="bg-red-50 border-b border-red-200 px-6 py-3">
+                      <h3 className="font-semibold text-red-800 flex items-center gap-2">
+                        <span>⚠️</span>
+                        Out of Stock Items ({outOfStockItems.length})
+                      </h3>
+                    </div>
+                    <div className="divide-y divide-gray-200">
+                      {outOfStockItems.map((item) => (
+                        <div key={`${item._id}_${item.variantId}_oos`} className="p-6 bg-red-50">
+                          <div className="flex items-center gap-4">
+                            {/* Product Image */}
+                            <div className="flex-shrink-0">
+                              <img
+                                className="w-20 h-20 object-cover rounded-lg border grayscale opacity-60"
+                                src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
+                                alt={item.title || "Product"}
+                                loading="lazy"
+                              />
+                            </div>
+
+                            {/* Product Details */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-700 truncate">
+                                {item.title || "Unknown Product"}
+                              </h4>
+                              <div className="flex items-center gap-4 mt-1">
+                                <span className="text-sm text-gray-600">Size: {item.size || "N/A"}</span>
+                                <span className="text-sm text-gray-500">•</span>
+                                <span className="text-sm text-gray-500">Seller: Mirakle</span>
+                              </div>
+                              <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                📦 {item.stockMessage || "Currently out of stock"}
+                              </div>
+                            </div>
+
+                            {/* Out of Stock Badge */}
+                            <div className="text-center">
+                              <div className="bg-red-100 text-red-800 px-3 py-2 rounded-lg font-medium text-sm">
+                                OUT OF STOCK
+                              </div>
+                            </div>
+
+                            {/* Price (crossed out) */}
+                            <div className="text-right">
+                              <div className="font-bold text-lg text-gray-500 line-through">
+                                ₹{((item.currentPrice || 0) * (item.quantity || 0)).toFixed(2)}
+                              </div>
+                              <div className="text-sm text-red-600">Unavailable</div>
+                            </div>
+
+                            {/* Remove Button */}
+                            <button
+                              className="text-red-500 hover:text-red-700 p-2 transition-colors"
+                              onClick={() =>
+                                dispatch(
+                                  removeFromCart({
+                                    _id: item._id,
+                                    variantId: item.variantId,
+                                  }),
+                                )
+                              }
+                              title="Remove item"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Continue Shopping */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <button
+                    onClick={() => navigate("/shop/allproduct")}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Continue Shopping
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {outOfStockItems.length > 0 && (
-            <div className="flex justify-between mb-5">
-              <span className="font-semibold text-sm uppercase text-red-600">
-                Out of Stock ({outOfStockItems.length})
-              </span>
-              <span className="font-semibold text-sm text-red-600">Excluded</span>
-            </div>
-          )}
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
-          <div className="flex justify-between mb-5">
-            <span className="text-sm">Discount</span>
-            <span className="text-sm text-green-600">-₹{(originalTotal - subtotal).toFixed(2)}</span>
-          </div>
+              <div className="space-y-4">
+                {/* Price Breakdown */}
+                <div className="flex justify-between text-gray-600">
+                  <span>
+                    Price ({availableItems.length} available item{availableItems.length !== 1 ? "s" : ""})
+                  </span>
+                  <span>₹{originalTotal.toFixed(2)}</span>
+                </div>
 
-          <div className="flex justify-between mb-5">
-            <span className="text-sm">Delivery Charges</span>
-            <span className="text-sm text-green-600">Free</span>
-          </div>
+                {outOfStockItems.length > 0 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>Out of Stock ({outOfStockItems.length})</span>
+                    <span>Excluded</span>
+                  </div>
+                )}
 
-          <hr className="my-4" />
+                <div className="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-₹{(originalTotal - subtotal).toFixed(2)}</span>
+                </div>
 
-          <div className="flex font-semibold justify-between py-6 text-lg">
-            <span>Total Amount</span>
-            <span>₹{subtotal.toFixed(2)}</span>
-          </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Delivery Charges</span>
+                  <span className="text-green-600">Free</span>
+                </div>
 
-          {hasOutOfStockItem && (
-            <div className="text-red-500 text-sm mb-4 text-center bg-red-50 p-3 rounded border border-red-200">
-              <div className="font-medium mb-1">⚠️ Cannot proceed with checkout</div>
-              <div>
-                Remove {outOfStockItems.length} out of stock item{outOfStockItems.length > 1 ? "s" : ""} to continue
+                <hr className="border-gray-200" />
+
+                <div className="flex justify-between text-xl font-bold text-gray-900">
+                  <span>Total Amount</span>
+                  <span>₹{subtotal.toFixed(2)}</span>
+                </div>
+
+                {originalTotal - subtotal > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-green-800 text-sm font-medium">
+                      🎉 You saved ₹{(originalTotal - subtotal).toFixed(2)} on this order!
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Checkout Button */}
+              <div className="mt-6">
+                {hasOutOfStockItem && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <div className="text-red-800 text-sm font-medium mb-1">⚠️ Cannot proceed with checkout</div>
+                    <div className="text-red-600 text-sm">
+                      Remove {outOfStockItems.length} out of stock item{outOfStockItems.length > 1 ? "s" : ""} to
+                      continue
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => navigate("/checkout")}
+                  disabled={availableItems.length === 0 || hasOutOfStockItem}
+                  className={`w-full py-4 text-lg font-semibold rounded-lg transition-all ${
+                    hasOutOfStockItem || availableItems.length === 0
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl"
+                  }`}
+                >
+                  {hasOutOfStockItem
+                    ? "Remove Out of Stock Items"
+                    : availableItems.length === 0
+                      ? "Cart is Empty"
+                      : `Proceed to Checkout (${availableItems.length} items)`}
+                </button>
+              </div>
+
+              {/* Security Features */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-3">Why shop with us?</h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Secure payment processing</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>7-day easy returns</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Free shipping on orders above ₹499</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>24/7 customer support</span>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
-
-          <button
-            onClick={() => navigate("/checkout")}
-            disabled={availableItems.length === 0 || hasOutOfStockItem}
-            className={`w-full py-3 text-sm font-semibold uppercase rounded transition-colors ${
-              hasOutOfStockItem || availableItems.length === 0
-                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "bg-orange-500 hover:bg-orange-600 text-white"
-            }`}
-          >
-            {hasOutOfStockItem
-              ? "Remove Out of Stock Items"
-              : availableItems.length === 0
-                ? "Cart is Empty"
-                : `PLACE ORDER (${availableItems.length} items)`}
-          </button>
+          </div>
         </div>
       </div>
     </div>
