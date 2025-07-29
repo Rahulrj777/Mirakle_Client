@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import {
@@ -25,6 +25,7 @@ const AddToCart = () => {
   const [cartReady, setCartReady] = useState(false)
   const [safeCartItems, setSafeCartItems] = useState([])
   const [hasOutOfStockItem, setHasOutOfStockItem] = useState(false)
+  const [stockSyncLoading, setStockSyncLoading] = useState(false)
 
   const user = useMemo(() => {
     try {
@@ -43,9 +44,19 @@ const AddToCart = () => {
     }
   }, [cartItems])
 
-  // FIXED: Enhanced stock checking function
-  const isItemOutOfStock = (item) => {
-    if (!item) return true
+  // Enhanced stock checking function with detailed logging
+  const isItemOutOfStock = useCallback((item) => {
+    if (!item) {
+      console.log("🔍 Stock check: Item is null/undefined")
+      return true
+    }
+
+    console.log(`🔍 Stock check for "${item.title}":`, {
+      isOutOfStock: item.isOutOfStock,
+      stock: item.stock,
+      stockType: typeof item.stock,
+      stockMessage: item.stockMessage,
+    })
 
     // Check multiple conditions for out of stock
     const conditions = [
@@ -53,26 +64,24 @@ const AddToCart = () => {
       typeof item.stock === "number" && item.stock <= 0,
       item.stock === "0",
       item.stock === 0,
+      item.stockMessage && item.stockMessage.includes("out of stock"),
     ]
 
     const isOOS = conditions.some((condition) => condition)
-    console.log(`🔍 Stock check for ${item.title}:`, {
-      isOutOfStock: item.isOutOfStock,
-      stock: item.stock,
-      stockType: typeof item.stock,
-      finalResult: isOOS,
-    })
+    console.log(`📊 Final stock status for "${item.title}": ${isOOS ? "OUT OF STOCK" : "IN STOCK"}`)
 
     return isOOS
-  }
+  }, [])
 
   useEffect(() => {
     const outOfStock = safeCartItems.some((item) => isItemOutOfStock(item))
     setHasOutOfStockItem(outOfStock)
     console.log(
-      `📊 Cart analysis: ${safeCartItems.length} total items, ${outOfStock ? "has" : "no"} out of stock items`,
+      `📊 Cart analysis: ${safeCartItems.length} total items, ${
+        safeCartItems.filter((item) => isItemOutOfStock(item)).length
+      } out of stock`,
     )
-  }, [safeCartItems])
+  }, [safeCartItems, isItemOutOfStock])
 
   const getUserData = async () => {
     if (!user || !userId || !token) return
@@ -111,25 +120,32 @@ const AddToCart = () => {
     }
   }, [user, userId, token, dispatch])
 
-  const syncCartWithStock = async () => {
+  const syncCartWithStock = useCallback(async () => {
     if (!cartReady || !token || !userId || safeCartItems.length === 0) return
 
     try {
+      setStockSyncLoading(true)
       console.log("🔄 Syncing cart with current stock status...")
 
       const productIds = [...new Set(safeCartItems.map((item) => item._id))]
+      console.log("🔍 Checking stock for product IDs:", productIds)
 
       const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
         productIds,
       })
 
       const currentProducts = response.data.products
+      console.log("📦 Received stock data for products:", currentProducts.length)
+
       const stockUpdates = []
 
       safeCartItems.forEach((cartItem) => {
+        console.log(`🔍 Processing cart item: ${cartItem.title} (${cartItem._id})`)
+
         const currentProduct = currentProducts.find((p) => p._id === cartItem._id)
 
         if (!currentProduct) {
+          console.log(`❌ Product ${cartItem._id} not found in database`)
           stockUpdates.push({
             _id: cartItem._id,
             variantId: cartItem.variantId,
@@ -140,17 +156,25 @@ const AddToCart = () => {
           return
         }
 
+        console.log(`📦 Found product: ${currentProduct.title}`, {
+          productOutOfStock: currentProduct.isOutOfStock,
+          variantsCount: currentProduct.variants.length,
+        })
+
+        // Find matching variant by size or weight
         const currentVariant = currentProduct.variants.find((v) => {
-          return (
-            v.size === cartItem.size ||
-            (v.weight &&
-              cartItem.weight &&
-              v.weight.value === cartItem.weight.value &&
-              v.weight.unit === cartItem.weight.unit)
-          )
+          const sizeMatch = v.size === cartItem.size
+          const weightMatch =
+            v.weight &&
+            cartItem.weight &&
+            v.weight.value === cartItem.weight.value &&
+            v.weight.unit === cartItem.weight.unit
+
+          return sizeMatch || weightMatch
         })
 
         if (!currentVariant) {
+          console.log(`❌ Variant not found for cart item: ${cartItem.size}`)
           stockUpdates.push({
             _id: cartItem._id,
             variantId: cartItem.variantId,
@@ -161,13 +185,24 @@ const AddToCart = () => {
           return
         }
 
-        // FIXED: Enhanced stock checking logic
+        console.log(`📦 Found variant:`, {
+          size: currentVariant.size,
+          stock: currentVariant.stock,
+          isOutOfStock: currentVariant.isOutOfStock,
+          price: currentVariant.price,
+        })
+
+        // Enhanced stock checking logic
         const isOutOfStock =
           currentProduct.isOutOfStock === true ||
           currentVariant.isOutOfStock === true ||
           (typeof currentVariant.stock === "number" && currentVariant.stock <= 0) ||
           currentVariant.stock === "0" ||
           currentVariant.stock === 0
+
+        console.log(
+          `📊 Stock status for ${cartItem.title} (${cartItem.size}): ${isOutOfStock ? "OUT OF STOCK" : "IN STOCK"}`,
+        )
 
         stockUpdates.push({
           _id: cartItem._id,
@@ -181,6 +216,7 @@ const AddToCart = () => {
         })
       })
 
+      console.log("📊 Stock updates to apply:", stockUpdates)
       dispatch(updateCartItemsStock(stockUpdates))
 
       const outOfStockCount = stockUpdates.filter((update) => update.isOutOfStock).length
@@ -189,21 +225,32 @@ const AddToCart = () => {
       }
     } catch (error) {
       console.error("❌ Failed to sync cart with stock:", error)
+    } finally {
+      setStockSyncLoading(false)
     }
-  }
+  }, [cartReady, token, userId, safeCartItems, dispatch])
 
+  // Force sync on component mount and when cart changes
+  useEffect(() => {
+    if (cartReady && token && userId && safeCartItems.length > 0) {
+      console.log("🚀 Triggering initial stock sync...")
+      syncCartWithStock()
+    }
+  }, [cartReady, token, userId, safeCartItems.length, syncCartWithStock])
+
+  // Periodic sync
   useEffect(() => {
     if (cartReady && token && userId) {
-      syncCartWithStock()
-
       const interval = setInterval(() => {
         if (!document.hidden) {
+          console.log("⏰ Periodic stock sync...")
           syncCartWithStock()
         }
       }, 30000)
 
       const handleVisibilityChange = () => {
         if (!document.hidden) {
+          console.log("👁️ Tab visible - syncing stock...")
           syncCartWithStock()
         }
       }
@@ -215,15 +262,15 @@ const AddToCart = () => {
         document.removeEventListener("visibilitychange", handleVisibilityChange)
       }
     }
-  }, [cartReady, token, userId, safeCartItems.length])
+  }, [cartReady, token, userId, syncCartWithStock])
 
   const availableItems = useMemo(() => {
     return safeCartItems.filter((item) => !isItemOutOfStock(item))
-  }, [safeCartItems])
+  }, [safeCartItems, isItemOutOfStock])
 
   const outOfStockItems = useMemo(() => {
     return safeCartItems.filter((item) => isItemOutOfStock(item))
-  }, [safeCartItems])
+  }, [safeCartItems, isItemOutOfStock])
 
   const subtotal = useMemo(() => {
     return availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
@@ -233,13 +280,42 @@ const AddToCart = () => {
     return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   }, [availableItems])
 
+  // Manual stock refresh
+  const handleManualStockSync = () => {
+    console.log("🔄 Manual stock sync triggered")
+    syncCartWithStock()
+  }
+
+  if (!cartReady) {
+    return (
+      <div className="container mx-auto mt-10">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading cart...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto mt-10">
       <div className="flex shadow-md my-10">
         <div className="w-3/4 bg-white px-10 py-10">
           <div className="flex justify-between border-b pb-8">
             <h1 className="font-semibold text-2xl">Shopping Cart</h1>
-            <h2 className="font-semibold text-2xl">{safeCartItems?.length} Items</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="font-semibold text-2xl">{safeCartItems?.length} Items</h2>
+              <button
+                onClick={handleManualStockSync}
+                disabled={stockSyncLoading}
+                className="text-blue-600 hover:underline text-sm disabled:opacity-50"
+                title="Refresh stock status"
+              >
+                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh"}
+              </button>
+            </div>
           </div>
 
           {/* Stock Status Alert */}
@@ -294,7 +370,7 @@ const AddToCart = () => {
                       <span className="text-gray-500 text-xs">Seller: Mirakle</span>
 
                       {/* Stock warning for low stock */}
-                      {typeof item.stock === "number" && item.stock <= 10 && (
+                      {typeof item.stock === "number" && item.stock <= 10 && item.stock > 0 && (
                         <span className="text-orange-600 text-xs">⚡ Only {item.stock} left in stock</span>
                       )}
 
@@ -330,16 +406,21 @@ const AddToCart = () => {
                     </svg>
                     <input className="mx-2 border text-center w-8" type="text" value={item.quantity || 0} readOnly />
                     <svg
-                      className="fill-current text-gray-600 w-3 cursor-pointer"
+                      className={`fill-current w-3 cursor-pointer ${
+                        typeof item.stock === "number" && item.quantity >= item.stock
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "text-gray-600"
+                      }`}
                       viewBox="0 0 448 512"
-                      onClick={() =>
+                      onClick={() => {
+                        if (typeof item.stock === "number" && item.quantity >= item.stock) return
                         dispatch(
                           incrementQuantity({
                             _id: item._id,
                             variantId: item.variantId,
                           }),
                         )
-                      }
+                      }}
                     >
                       <path d="M416 208H272V64c0-17.67-14.33-32-32-32h-32c-17.67 0-32 14.33-32 32v144H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h144v144c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32V304h144c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z" />
                     </svg>
@@ -366,31 +447,31 @@ const AddToCart = () => {
                   {outOfStockItems.map((item) => (
                     <div
                       key={`${item._id}_${item.variantId}_oos`}
-                      className="flex items-center hover:bg-red-50 -mx-8 px-6 py-5 opacity-75"
+                      className="flex items-center bg-red-50 border border-red-200 -mx-8 px-6 py-5 rounded"
                     >
                       <div className="flex w-2/5">
                         <div className="w-20">
                           <img
-                            className="h-24 grayscale"
+                            className="h-24 grayscale opacity-60"
                             src={item.images?.others?.[0]?.url || "/placeholder.svg"}
                             alt={item.title || "Product"}
                             loading="lazy"
                           />
                         </div>
                         <div className="flex flex-col justify-between ml-4 flex-grow">
-                          <span className="font-bold text-sm text-gray-600">{item.title || "Unknown Product"}</span>
+                          <span className="font-bold text-sm text-gray-700">{item.title || "Unknown Product"}</span>
                           <span className="text-red-500 text-xs">Size: {item.size || "N/A"}</span>
                           <span className="text-gray-500 text-xs">Seller: Mirakle</span>
 
                           {/* Out of stock message */}
-                          <div className="bg-red-100 border border-red-200 rounded px-2 py-1 mt-1">
-                            <span className="text-red-600 text-xs font-medium">
+                          <div className="bg-red-100 border border-red-300 rounded px-2 py-1 mt-1">
+                            <span className="text-red-700 text-xs font-medium">
                               📦 {item.stockMessage || "Currently out of stock"}
                             </span>
                           </div>
 
                           <button
-                            className="font-semibold hover:text-red-700 text-red-500 text-xs mt-2"
+                            className="font-semibold hover:text-red-700 text-red-600 text-xs mt-2"
                             onClick={() =>
                               dispatch(
                                 removeFromCart({
@@ -405,12 +486,14 @@ const AddToCart = () => {
                         </div>
                       </div>
                       <div className="flex justify-center w-1/5">
-                        <span className="text-red-600 font-semibold text-sm">Out of Stock</span>
+                        <span className="text-red-600 font-semibold text-sm bg-red-100 px-2 py-1 rounded">
+                          OUT OF STOCK
+                        </span>
                       </div>
-                      <span className="text-center w-1/5 font-semibold text-sm text-gray-500">
+                      <span className="text-center w-1/5 font-semibold text-sm text-gray-500 line-through">
                         ₹{(item.currentPrice || 0).toFixed(2)}
                       </span>
-                      <span className="text-center w-1/5 font-semibold text-sm text-gray-500">-</span>
+                      <span className="text-center w-1/5 font-semibold text-sm text-red-600">Unavailable</span>
                     </div>
                   ))}
                 </div>
@@ -427,10 +510,12 @@ const AddToCart = () => {
         </div>
 
         <div id="summary" className="w-1/4 px-8 py-10">
-          <h1 className="font-semibold text-2xl border-b pb-8">Order Summary</h1>
+          <h1 className="font-semibold text-2xl border-b pb-8">Price Details</h1>
 
           <div className="flex justify-between mt-10 mb-5">
-            <span className="font-semibold text-sm uppercase">Available Items ({availableItems.length})</span>
+            <span className="font-semibold text-sm uppercase">
+              Price ({availableItems.length} available item{availableItems.length !== 1 ? "s" : ""})
+            </span>
             <span className="font-semibold text-sm">₹{originalTotal.toFixed(2)}</span>
           </div>
 
@@ -448,41 +533,42 @@ const AddToCart = () => {
             <span className="text-sm text-green-600">-₹{(originalTotal - subtotal).toFixed(2)}</span>
           </div>
 
-          <div>
-            <label className="font-medium inline-block mb-3 text-sm uppercase">Shipping</label>
-            <select className="block p-2 text-gray-600 w-full text-sm">
-              <option>Free shipping</option>
-            </select>
+          <div className="flex justify-between mb-5">
+            <span className="text-sm">Delivery Charges</span>
+            <span className="text-sm text-green-600">Free</span>
           </div>
 
-          <div className="py-10">
-            <label htmlFor="promo" className="font-semibold inline-block mb-3 text-sm uppercase">
-              Promo Code
-            </label>
-            <input type="text" id="promo" placeholder="Enter your code" className="p-2 text-sm w-full" />
+          <hr className="my-4" />
+
+          <div className="flex font-semibold justify-between py-6 text-lg">
+            <span>Total Amount</span>
+            <span>₹{subtotal.toFixed(2)}</span>
           </div>
-          <button className="bg-red-500 hover:bg-red-600 px-5 py-2 text-sm text-white uppercase">Apply</button>
 
-          <div className="border-t mt-8">
-            <div className="flex font-semibold justify-between py-6 text-sm uppercase">
-              <span>Total cost</span>
-              <span>₹{subtotal.toFixed(2)}</span>
-            </div>
-
-            {hasOutOfStockItem && (
-              <div className="text-red-500 text-sm mb-4 text-center bg-red-50 p-2 rounded">
-                Remove out of stock items to continue
+          {hasOutOfStockItem && (
+            <div className="text-red-500 text-sm mb-4 text-center bg-red-50 p-3 rounded border border-red-200">
+              <div className="font-medium mb-1">⚠️ Cannot proceed with checkout</div>
+              <div>
+                Remove {outOfStockItems.length} out of stock item{outOfStockItems.length > 1 ? "s" : ""} to continue
               </div>
-            )}
+            </div>
+          )}
 
-            <button
-              onClick={() => navigate("/checkout")}
-              disabled={availableItems.length === 0 || hasOutOfStockItem}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 text-sm font-semibold uppercase rounded transition-colors"
-            >
-              {hasOutOfStockItem ? "Remove Out of Stock Items" : `Place Order (${availableItems.length} items)`}
-            </button>
-          </div>
+          <button
+            onClick={() => navigate("/checkout")}
+            disabled={availableItems.length === 0 || hasOutOfStockItem}
+            className={`w-full py-3 text-sm font-semibold uppercase rounded transition-colors ${
+              hasOutOfStockItem || availableItems.length === 0
+                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                : "bg-orange-500 hover:bg-orange-600 text-white"
+            }`}
+          >
+            {hasOutOfStockItem
+              ? "Remove Out of Stock Items"
+              : availableItems.length === 0
+                ? "Cart is Empty"
+                : `PLACE ORDER (${availableItems.length} items)`}
+          </button>
         </div>
       </div>
     </div>
