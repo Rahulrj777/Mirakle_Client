@@ -38,9 +38,6 @@ const ProductDetail = () => {
   const [notifyEmail, setNotifyEmail] = useState("")
   const [notifyLoading, setNotifyLoading] = useState(false)
   const [productViews, setProductViews] = useState(0)
-  const [qaQuestion, setQaQuestion] = useState("")
-  const [qaLoading, setQaLoading] = useState(false)
-  const [productQuestions, setProductQuestions] = useState([])
   const [showBulkOrder, setShowBulkOrder] = useState(false)
   const [bulkQuantity, setBulkQuantity] = useState(10)
   const [bulkPrice, setBulkPrice] = useState(0)
@@ -124,16 +121,6 @@ const ProductDetail = () => {
     }
   }, [id])
 
-  const fetchProductQuestions = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/api/products/${id}/questions`)
-      setProductQuestions(Array.isArray(res.data) ? res.data : [])
-    } catch (err) {
-      console.error("Failed to fetch product questions", err)
-      setProductQuestions([])
-    }
-  }, [id])
-
   const loadCartSafely = useCallback(async () => {
     if (!token || cartItems.length > 0) return
     try {
@@ -166,14 +153,6 @@ const ProductDetail = () => {
     },
     [token],
   )
-
-  useEffect(() => {
-    if (id) {
-      fetchProduct()
-      fetchRelated()
-      fetchProductQuestions()
-    }
-  }, [id, fetchProduct, fetchRelated, fetchProductQuestions])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -472,32 +451,6 @@ const ProductDetail = () => {
     },
     [id, token, fetchProduct],
   )
-
-  const handleQuestionSubmit = useCallback(async () => {
-    if (!qaQuestion.trim()) {
-      alert("Please enter a question")
-      return
-    }
-    if (!user?.token) {
-      alert("Please login to ask a question")
-      navigate("/login_signup")
-      return
-    }
-    setQaLoading(true)
-    try {
-      await axiosWithToken(token).post(`${API_BASE}/api/products/${id}/question`, {
-        question: qaQuestion.trim(),
-      })
-      setQaQuestion("")
-      fetchProductQuestions()
-      alert("Question submitted successfully!")
-    } catch (error) {
-      console.error("Question submission failed:", error)
-      alert("Failed to submit question")
-    } finally {
-      setQaLoading(false)
-    }
-  }, [qaQuestion, user, token, id, navigate, fetchProductQuestions])
 
   const calculateBulkPrice = useCallback(
     (qty) => {
@@ -1179,85 +1132,6 @@ const ProductDetail = () => {
                   {showAllReviews ? "Show Less Reviews" : `Show ${otherReviews.length - 3} More Reviews`}
                 </button>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Q&A Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-2xl">❓</span>
-            <h3 className="text-xl font-semibold text-gray-900">Questions & Answers ({productQuestions.length})</h3>
-          </div>
-
-          {/* Ask Question Form */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
-            <h4 className="font-semibold mb-3 flex items-center gap-2">
-              <span>💭</span>
-              Ask a Question
-            </h4>
-            <div className="space-y-3">
-              <textarea
-                value={qaQuestion}
-                onChange={(e) => setQaQuestion(e.target.value)}
-                placeholder="Ask anything about this product..."
-                rows={3}
-                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                maxLength={500}
-              />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">{qaQuestion.length}/500 characters</span>
-                <button
-                  onClick={handleQuestionSubmit}
-                  disabled={qaLoading || !qaQuestion.trim()}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  {qaLoading ? "Submitting..." : "Ask Question"}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Questions List */}
-          <div className="space-y-4">
-            {productQuestions.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <div className="text-gray-400 text-6xl mb-4">❓</div>
-                <p className="text-gray-500 text-lg">No questions yet. Be the first to ask!</p>
-              </div>
-            ) : (
-              productQuestions.map((qa) => (
-                <div key={qa._id} className="border rounded-lg p-6 bg-white hover:shadow-md transition-shadow">
-                  <div className="mb-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold text-sm">Q</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-gray-800 font-medium">{qa.question}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Asked by {qa.userName || "Anonymous"} on {new Date(qa.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {qa.answer && (
-                    <div className="ml-11 pl-4 border-l-2 border-green-200 bg-green-50 rounded-r-lg p-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white font-bold text-sm">A</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-gray-700">{qa.answer}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Answered on {new Date(qa.answeredAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
             )}
           </div>
         </div>
