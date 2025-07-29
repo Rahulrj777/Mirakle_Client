@@ -482,7 +482,7 @@ const ProductDetail = () => {
           </li>
           <li>/</li>
           <li>
-            <a href="/products" className="hover:text-blue-600">
+            <a href="/products/all-products" className="hover:text-blue-600">
               Products
             </a>
           </li>
