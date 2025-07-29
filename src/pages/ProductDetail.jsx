@@ -5,6 +5,7 @@ import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
+import { FaShareAlt } from "react-icons/fa";
 
 const ProductDetail = () => {
   const { id } = useParams()
@@ -551,7 +552,7 @@ const ProductDetail = () => {
               className="text-gray-500 hover:text-blue-600 transition-colors"
               title="Share product"
             >
-              📤
+              <FaShareAlt />
             </button>
           </div>
 
