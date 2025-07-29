@@ -13,6 +13,7 @@ const ProductDetail = () => {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
   const [selectedImage, setSelectedImage] = useState("")
   const [error, setError] = useState("")
+  const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [addingToCart, setAddingToCart] = useState(false)
   const [reviewRating, setReviewRating] = useState(0)
@@ -107,6 +108,16 @@ const ProductDetail = () => {
       setLoading(false)
     }
   }, [id, user?.token])
+
+  const fetchRelated = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/products/related/${id}`)
+      setRelatedProducts(Array.isArray(res.data) ? res.data : [])
+    } catch (err) {
+      console.error("Failed to fetch related products", err)
+      setRelatedProducts([])
+    }
+  }, [id])
 
   const loadCartSafely = useCallback(async () => {
     if (!token || cartItems.length > 0) return
