@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo, useCallback } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import {
@@ -23,8 +23,6 @@ const AddToCart = () => {
     return Array.isArray(items) ? items : []
   })
   const [cartReady, setCartReady] = useState(false)
-  const [safeCartItems, setSafeCartItems] = useState([])
-  const [hasOutOfStockItem, setHasOutOfStockItem] = useState(false)
   const [stockSyncLoading, setStockSyncLoading] = useState(false)
 
   const user = useMemo(() => {
@@ -38,114 +36,112 @@ const AddToCart = () => {
   const userId = user?.user?.userId || user?.user?._id
   const token = user?.token
 
-  useEffect(() => {
-    if (cartItems) {
-      setSafeCartItems(cartItems)
-    }
-  }, [cartItems])
+  // Simple and direct stock checking function
+  const isItemOutOfStock = (item) => {
+    if (!item) return true
 
-  // Enhanced stock checking function with detailed logging
-  const isItemOutOfStock = useCallback((item) => {
-    if (!item) {
-      console.log("🔍 Stock check: Item is null/undefined")
-      return true
-    }
-
-    console.log(`🔍 Stock check for "${item.title}":`, {
-      isOutOfStock: item.isOutOfStock,
-      stock: item.stock,
-      stockType: typeof item.stock,
-      stockMessage: item.stockMessage,
-    })
-
-    // Check multiple conditions for out of stock
-    const conditions = [
+    // Check all possible out-of-stock conditions
+    const outOfStockConditions = [
       item.isOutOfStock === true,
-      typeof item.stock === "number" && item.stock <= 0,
-      item.stock === "0",
       item.stock === 0,
-      item.stockMessage && item.stockMessage.includes("out of stock"),
+      item.stock === "0",
+      typeof item.stock === "number" && item.stock <= 0,
+      item.stockMessage && item.stockMessage.toLowerCase().includes("out of stock"),
     ]
 
-    const isOOS = conditions.some((condition) => condition)
-    console.log(`📊 Final stock status for "${item.title}": ${isOOS ? "OUT OF STOCK" : "IN STOCK"}`)
+    const isOOS = outOfStockConditions.some(Boolean)
+
+    console.log(`Stock check for ${item.title}:`, {
+      isOutOfStock: item.isOutOfStock,
+      stock: item.stock,
+      stockMessage: item.stockMessage,
+      result: isOOS ? "OUT OF STOCK" : "IN STOCK",
+    })
 
     return isOOS
-  }, [])
+  }
 
+  // Separate available and out-of-stock items
+  const availableItems = useMemo(() => {
+    return cartItems.filter((item) => !isItemOutOfStock(item))
+  }, [cartItems])
+
+  const outOfStockItems = useMemo(() => {
+    return cartItems.filter((item) => isItemOutOfStock(item))
+  }, [cartItems])
+
+  const hasOutOfStockItem = outOfStockItems.length > 0
+
+  const subtotal = useMemo(() => {
+    return availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
+  }, [availableItems])
+
+  const originalTotal = useMemo(() => {
+    return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
+  }, [availableItems])
+
+  // Simplified getUserData function
   useEffect(() => {
-    const outOfStock = safeCartItems.some((item) => isItemOutOfStock(item))
-    setHasOutOfStockItem(outOfStock)
-    console.log(
-      `📊 Cart analysis: ${safeCartItems.length} total items, ${
-        safeCartItems.filter((item) => isItemOutOfStock(item)).length
-      } out of stock`,
-    )
-  }, [safeCartItems, isItemOutOfStock])
+    const getUserData = async () => {
+      if (!user || !userId || !token) return
 
-  const getUserData = async () => {
-    if (!user || !userId || !token) return
+      try {
+        const response = await axiosWithToken(token).get(`${API_BASE}/api/users/address`)
+        const userData = response.data
 
-    try {
-      const response = await axiosWithToken(token).get(`${API_BASE}/api/users/address`)
-      const userData = response.data
-
-      if (userData && userData.addresses) {
-        dispatch(setAddresses(userData.addresses))
-        const storedSelectedAddress = localStorage.getItem(`deliveryAddress_${userId}`)
-        if (storedSelectedAddress) {
-          try {
-            const parsedAddress = JSON.parse(storedSelectedAddress)
-            dispatch(selectAddress(parsedAddress))
-          } catch (error) {
-            console.error("Error parsing stored address:", error)
+        if (userData && userData.addresses) {
+          dispatch(setAddresses(userData.addresses))
+          const storedSelectedAddress = localStorage.getItem(`deliveryAddress_${userId}`)
+          if (storedSelectedAddress) {
+            try {
+              const parsedAddress = JSON.parse(storedSelectedAddress)
+              dispatch(selectAddress(parsedAddress))
+            } catch (error) {
+              console.error("Error parsing stored address:", error)
+              dispatch(initializeSelectedAddress())
+            }
+          } else {
             dispatch(initializeSelectedAddress())
           }
         } else {
           dispatch(initializeSelectedAddress())
         }
-      } else {
-        dispatch(initializeSelectedAddress())
+        setCartReady(true)
+      } catch (error) {
+        console.error("Error fetching user data:", error)
+        setCartReady(false)
       }
-      setCartReady(true)
-    } catch (error) {
-      console.error("Error fetching user data:", error)
-      setCartReady(false)
     }
-  }
 
-  useEffect(() => {
     if (user && userId && token) {
       getUserData()
     }
   }, [user, userId, token, dispatch])
 
-  const syncCartWithStock = useCallback(async () => {
-    if (!cartReady || !token || !userId || safeCartItems.length === 0) return
+  // Simplified stock sync function
+  const syncCartWithStock = async () => {
+    if (!cartReady || !token || !userId || cartItems.length === 0) return
 
     try {
       setStockSyncLoading(true)
       console.log("🔄 Syncing cart with current stock status...")
 
-      const productIds = [...new Set(safeCartItems.map((item) => item._id))]
-      console.log("🔍 Checking stock for product IDs:", productIds)
+      const productIds = [...new Set(cartItems.map((item) => item._id))]
+      console.log("Checking stock for products:", productIds)
 
       const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
         productIds,
       })
 
       const currentProducts = response.data.products
-      console.log("📦 Received stock data for products:", currentProducts.length)
+      console.log("Stock data received:", currentProducts)
 
       const stockUpdates = []
 
-      safeCartItems.forEach((cartItem) => {
-        console.log(`🔍 Processing cart item: ${cartItem.title} (${cartItem._id})`)
-
+      cartItems.forEach((cartItem) => {
         const currentProduct = currentProducts.find((p) => p._id === cartItem._id)
 
         if (!currentProduct) {
-          console.log(`❌ Product ${cartItem._id} not found in database`)
           stockUpdates.push({
             _id: cartItem._id,
             variantId: cartItem.variantId,
@@ -156,25 +152,12 @@ const AddToCart = () => {
           return
         }
 
-        console.log(`📦 Found product: ${currentProduct.title}`, {
-          productOutOfStock: currentProduct.isOutOfStock,
-          variantsCount: currentProduct.variants.length,
-        })
-
-        // Find matching variant by size or weight
+        // Find matching variant
         const currentVariant = currentProduct.variants.find((v) => {
-          const sizeMatch = v.size === cartItem.size
-          const weightMatch =
-            v.weight &&
-            cartItem.weight &&
-            v.weight.value === cartItem.weight.value &&
-            v.weight.unit === cartItem.weight.unit
-
-          return sizeMatch || weightMatch
+          return v.size === cartItem.size
         })
 
         if (!currentVariant) {
-          console.log(`❌ Variant not found for cart item: ${cartItem.size}`)
           stockUpdates.push({
             _id: cartItem._id,
             variantId: cartItem.variantId,
@@ -185,24 +168,20 @@ const AddToCart = () => {
           return
         }
 
-        console.log(`📦 Found variant:`, {
-          size: currentVariant.size,
-          stock: currentVariant.stock,
-          isOutOfStock: currentVariant.isOutOfStock,
-          price: currentVariant.price,
-        })
-
-        // Enhanced stock checking logic
+        // Check if out of stock
         const isOutOfStock =
           currentProduct.isOutOfStock === true ||
           currentVariant.isOutOfStock === true ||
-          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0) ||
+          currentVariant.stock === 0 ||
           currentVariant.stock === "0" ||
-          currentVariant.stock === 0
+          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0)
 
-        console.log(
-          `📊 Stock status for ${cartItem.title} (${cartItem.size}): ${isOutOfStock ? "OUT OF STOCK" : "IN STOCK"}`,
-        )
+        console.log(`Stock update for ${cartItem.title}:`, {
+          productOOS: currentProduct.isOutOfStock,
+          variantOOS: currentVariant.isOutOfStock,
+          variantStock: currentVariant.stock,
+          finalOOS: isOutOfStock,
+        })
 
         stockUpdates.push({
           _id: cartItem._id,
@@ -216,7 +195,7 @@ const AddToCart = () => {
         })
       })
 
-      console.log("📊 Stock updates to apply:", stockUpdates)
+      console.log("Applying stock updates:", stockUpdates)
       dispatch(updateCartItemsStock(stockUpdates))
 
       const outOfStockCount = stockUpdates.filter((update) => update.isOutOfStock).length
@@ -228,57 +207,15 @@ const AddToCart = () => {
     } finally {
       setStockSyncLoading(false)
     }
-  }, [cartReady, token, userId, safeCartItems, dispatch])
+  }
 
-  // Force sync on component mount and when cart changes
+  // Sync stock when cart is ready
   useEffect(() => {
-    if (cartReady && token && userId && safeCartItems.length > 0) {
-      console.log("🚀 Triggering initial stock sync...")
+    if (cartReady && token && userId && cartItems.length > 0) {
+      console.log("🚀 Initial stock sync...")
       syncCartWithStock()
     }
-  }, [cartReady, token, userId, safeCartItems.length, syncCartWithStock])
-
-  // Periodic sync
-  useEffect(() => {
-    if (cartReady && token && userId) {
-      const interval = setInterval(() => {
-        if (!document.hidden) {
-          console.log("⏰ Periodic stock sync...")
-          syncCartWithStock()
-        }
-      }, 30000)
-
-      const handleVisibilityChange = () => {
-        if (!document.hidden) {
-          console.log("👁️ Tab visible - syncing stock...")
-          syncCartWithStock()
-        }
-      }
-
-      document.addEventListener("visibilitychange", handleVisibilityChange)
-
-      return () => {
-        clearInterval(interval)
-        document.removeEventListener("visibilitychange", handleVisibilityChange)
-      }
-    }
-  }, [cartReady, token, userId, syncCartWithStock])
-
-  const availableItems = useMemo(() => {
-    return safeCartItems.filter((item) => !isItemOutOfStock(item))
-  }, [safeCartItems, isItemOutOfStock])
-
-  const outOfStockItems = useMemo(() => {
-    return safeCartItems.filter((item) => isItemOutOfStock(item))
-  }, [safeCartItems, isItemOutOfStock])
-
-  const subtotal = useMemo(() => {
-    return availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
-  }, [availableItems])
-
-  const originalTotal = useMemo(() => {
-    return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
-  }, [availableItems])
+  }, [cartReady, token, userId, cartItems.length])
 
   // Manual stock refresh
   const handleManualStockSync = () => {
@@ -306,7 +243,7 @@ const AddToCart = () => {
           <div className="flex justify-between border-b pb-8">
             <h1 className="font-semibold text-2xl">Shopping Cart</h1>
             <div className="flex items-center gap-4">
-              <h2 className="font-semibold text-2xl">{safeCartItems?.length} Items</h2>
+              <h2 className="font-semibold text-2xl">{cartItems?.length} Items</h2>
               <button
                 onClick={handleManualStockSync}
                 disabled={stockSyncLoading}
@@ -337,7 +274,7 @@ const AddToCart = () => {
             <h3 className="font-semibold text-gray-600 text-xs uppercase w-1/5 text-center">Total</h3>
           </div>
 
-          {safeCartItems.length === 0 ? (
+          {cartItems.length === 0 ? (
             <div className="bg-white rounded shadow p-8 text-center">
               <p className="text-gray-600 text-lg">Your cart is empty.</p>
               <button
@@ -567,7 +504,7 @@ const AddToCart = () => {
               ? "Remove Out of Stock Items"
               : availableItems.length === 0
                 ? "Cart is Empty"
-                : `PLACE ORDER (${availableItems.length} items)`}
+                : `PLACE ORDERs (${availableItems.length} items)`}
           </button>
         </div>
       </div>
