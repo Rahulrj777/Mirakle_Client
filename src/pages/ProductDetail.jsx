@@ -27,8 +27,6 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1)
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState("")
-  const [wishlistLoading, setWishlistLoading] = useState(false)
-  const [isInWishlist, setIsInWishlist] = useState(false)
   const [shareLoading, setShareLoading] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showSizeGuide, setShowSizeGuide] = useState(false)
@@ -95,9 +93,6 @@ const ProductDetail = () => {
           setSelectedVariantIndex(0)
         }
         setProductViews((prev) => prev + 1)
-        if (user?.token) {
-          checkWishlistStatus(found._id)
-        }
       } else {
         setError("Product not found")
       }
@@ -136,21 +131,6 @@ const ProductDetail = () => {
       dispatch(setCartItem([]))
     }
   }, [token, cartItems.length, dispatch])
-
-  const checkWishlistStatus = useCallback(
-    async (productId) => {
-      if (!token) return
-      try {
-        const response = await axiosWithToken(token).get(`${API_BASE}/api/wishlist`)
-        const wishlist = response.data.items || []
-        setIsInWishlist(wishlist.some((item) => item._id === productId))
-      } catch (error) {
-        console.error("Failed to check wishlist status:", error)
-        setIsInWishlist(false)
-      }
-    },
-    [token],
-  )
 
   useEffect(() => {
     if (id) {
@@ -261,34 +241,6 @@ const ProductDetail = () => {
       navigate("/cart")
     }
   }, [handleAddToCart, isOutOfStock, selectedVariant, navigate])
-
-  const handleWishlist = useCallback(async () => {
-    if (!user?.token) {
-      alert("Please login to add to wishlist")
-      navigate("/login_signup")
-      return
-    }
-    setWishlistLoading(true)
-    try {
-      if (isInWishlist) {
-        await axiosWithToken(token).delete(`${API_BASE}/api/wishlist/${product._id}`)
-        setIsInWishlist(false)
-        alert("Removed from wishlist")
-      } else {
-        await axiosWithToken(token).post(`${API_BASE}/api/wishlist/add`, {
-          productId: product._id,
-          variantId: selectedVariant._id,
-        })
-        setIsInWishlist(true)
-        alert("Added to wishlist")
-      }
-    } catch (error) {
-      console.error("Wishlist operation failed:", error)
-      alert("Failed to update wishlist")
-    } finally {
-      setWishlistLoading(false)
-    }
-  }, [user, token, isInWishlist, product, selectedVariant, navigate])
 
   const handleShare = useCallback(
     async (platform) => {
@@ -592,19 +544,6 @@ const ProductDetail = () => {
                   : {}
               }
             />
-            {/* Wishlist button */}
-            <button
-              onClick={handleWishlist}
-              disabled={wishlistLoading}
-              className={`absolute top-4 left-4 p-2 rounded-full shadow-md transition-all ${
-                isInWishlist
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-white/80 backdrop-blur-sm text-gray-600 hover:bg-white hover:text-red-500"
-              }`}
-              title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-            >
-              {wishlistLoading ? "⏳" : isInWishlist ? "❤️" : "🤍"}
-            </button>
           </div>
 
           {/* Thumbnail Images */}
