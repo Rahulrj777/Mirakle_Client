@@ -24,7 +24,6 @@ const ProductDetail = () => {
   const [reviewError, setReviewError] = useState("")
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [actionLoading, setActionLoading] = useState({})
-  const [quantity, setQuantity] = useState(1)
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState("")
   const [shareLoading, setShareLoading] = useState(false)
@@ -35,7 +34,6 @@ const ProductDetail = () => {
   const [notifyLoading, setNotifyLoading] = useState(false)
   const [productViews, setProductViews] = useState(0)
   const [showBulkOrder, setShowBulkOrder] = useState(false)
-  const [bulkQuantity, setBulkQuantity] = useState(10)
   const [bulkPrice, setBulkPrice] = useState(0)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [productVideo, setProductVideo] = useState("")
@@ -150,7 +148,6 @@ const ProductDetail = () => {
   const handleSizeClick = useCallback((variant, index) => {
     setSelectedVariant(variant)
     setSelectedVariantIndex(index)
-    setQuantity(1)
   }, [])
 
   const handleAddToCart = useCallback(async () => {
@@ -166,10 +163,6 @@ const ProductDetail = () => {
     }
     if (isOutOfStock) {
       alert("This product variant is currently out of stock")
-      return
-    }
-    if (quantity > selectedVariant.stock) {
-      alert(`Only ${selectedVariant.stock} items available in stock`)
       return
     }
 
@@ -195,7 +188,6 @@ const ProductDetail = () => {
       originalPrice: Number.parseFloat(selectedVariant.price),
       discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0,
       currentPrice: Number.parseFloat(finalPrice),
-      quantity: quantity,
       stock: selectedVariant.stock,
       isOutOfStock: selectedVariant.isOutOfStock || false,
       stockMessage: isOutOfStock ? "Currently out of stock" : null,
@@ -207,14 +199,12 @@ const ProductDetail = () => {
         productId: product._id,
         variantIndex: selectedVariantIndex,
         variantId: variantId,
-        quantity: quantity,
       }
       try {
         await axiosWithToken(token).post(`${API_BASE}/api/cart/add`, backendPayload)
       } catch (syncError) {
         console.warn("Backend sync failed, but item added to local cart:", syncError)
       }
-      alert(`✅ Added ${quantity} ${productToAdd.size} to cart successfully`)
     } catch (err) {
       console.error("Add to cart failed:", err)
       alert("Something went wrong while adding to cart")
@@ -230,7 +220,6 @@ const ProductDetail = () => {
     dispatch,
     finalPrice,
     isOutOfStock,
-    quantity,
     product,
     token,
   ])
@@ -421,10 +410,6 @@ const ProductDetail = () => {
     },
     [selectedVariant, finalPrice],
   )
-
-  useEffect(() => {
-    setBulkPrice(calculateBulkPrice(bulkQuantity))
-  }, [bulkQuantity, calculateBulkPrice])
 
   const avgRating = useMemo(() => {
     if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
@@ -705,33 +690,6 @@ const ProductDetail = () => {
               })}
             </div>
           </div>
-
-          {/* Quantity Selection */}
-          {!isOutOfStock && (
-            <div className="space-y-2">
-              <p className="font-medium text-gray-900">Quantity:</p>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center border rounded-lg">
-                  <button
-                    className="px-4 py-2 text-lg hover:bg-gray-100 disabled:opacity-50"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={quantity <= 1}
-                  >
-                    −
-                  </button>
-                  <span className="px-4 py-2 min-w-[60px] text-center">{quantity}</span>
-                  <button
-                    className="px-4 py-2 text-lg hover:bg-gray-100 disabled:opacity-50"
-                    onClick={() => setQuantity(Math.min(selectedVariant.stock, quantity + 1))}
-                    disabled={quantity >= selectedVariant.stock}
-                  >
-                    +
-                  </button>
-                </div>
-                <span className="text-sm text-gray-500">Max: {selectedVariant.stock} available</span>
-              </div>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="space-y-3">
@@ -1299,72 +1257,6 @@ const ProductDetail = () => {
                     </tr>
                   </tbody>
                 </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Order Modal */}
-      {showBulkOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Bulk Order</h3>
-            <p className="text-sm text-gray-600 mb-4">Get special discounts on bulk orders:</p>
-            <ul className="text-sm text-gray-600 mb-4 space-y-1">
-              <li>• 10-19 items: 5% discount</li>
-              <li>• 20-49 items: 10% discount</li>
-              <li>• 50+ items: 15% discount</li>
-            </ul>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Quantity:</label>
-                <input
-                  type="number"
-                  min="10"
-                  max="1000"
-                  value={bulkQuantity}
-                  onChange={(e) => setBulkQuantity(Number(e.target.value))}
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex justify-between text-sm">
-                  <span>Unit Price:</span>
-                  <span>₹{finalPrice}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Quantity:</span>
-                  <span>{bulkQuantity}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Discount:</span>
-                  <span className="text-green-600">
-                    {bulkQuantity >= 50 ? "15%" : bulkQuantity >= 20 ? "10%" : bulkQuantity >= 10 ? "5%" : "0%"}
-                  </span>
-                </div>
-                <hr className="my-2" />
-                <div className="flex justify-between font-semibold">
-                  <span>Total:</span>
-                  <span>₹{bulkPrice}</span>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setQuantity(bulkQuantity)
-                    setShowBulkOrder(false)
-                  }}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-all"
-                >
-                  Add to Cart
-                </button>
-                <button
-                  onClick={() => setShowBulkOrder(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-all"
-                >
-                  Cancel
-                </button>
               </div>
             </div>
           </div>
