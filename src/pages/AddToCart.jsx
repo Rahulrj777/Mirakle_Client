@@ -1,14 +1,9 @@
+"use client"
+
 import { useEffect, useState, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import {
-  incrementQuantity,
-  decrementQuantity,
-  removeFromCart,
-  selectAddress,
-  setAddresses,
-  initializeSelectedAddress,
-} from "../Redux/cartSlice"
+import { removeFromCart, selectAddress, setAddresses, initializeSelectedAddress, setCartItem } from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
 import { API_BASE } from "../utils/api"
 
@@ -67,6 +62,49 @@ const AddToCart = () => {
     return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   }, [availableItems])
 
+  // Fix cart persistence - sync with backend on load
+  useEffect(() => {
+    const syncCartFromBackend = async () => {
+      if (!token || !userId) {
+        setCartReady(true)
+        return
+      }
+
+      try {
+        const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
+        const backendCart = response.data
+
+        if (backendCart && Array.isArray(backendCart.items)) {
+          dispatch(setCartItem(backendCart.items))
+          // Update localStorage
+          localStorage.setItem(`cart_${userId}`, JSON.stringify(backendCart.items))
+        } else if (Array.isArray(backendCart)) {
+          dispatch(setCartItem(backendCart))
+          localStorage.setItem(`cart_${userId}`, JSON.stringify(backendCart))
+        }
+      } catch (error) {
+        console.error("Failed to sync cart from backend:", error)
+        // Load from localStorage as fallback
+        const localCart = localStorage.getItem(`cart_${userId}`)
+        if (localCart) {
+          try {
+            const parsedCart = JSON.parse(localCart)
+            if (Array.isArray(parsedCart)) {
+              dispatch(setCartItem(parsedCart))
+            }
+          } catch (parseError) {
+            console.error("Failed to parse local cart:", parseError)
+            dispatch(setCartItem([]))
+          }
+        }
+      } finally {
+        setCartReady(true)
+      }
+    }
+
+    syncCartFromBackend()
+  }, [token, userId, dispatch])
+
   useEffect(() => {
     const getUserData = async () => {
       if (!user || !userId || !token) return
@@ -90,17 +128,15 @@ const AddToCart = () => {
         } else {
           dispatch(initializeSelectedAddress())
         }
-        setCartReady(true)
       } catch (error) {
         console.error("Error fetching user data:", error)
-        setCartReady(false)
       }
     }
 
-    if (user && userId && token) {
+    if (user && userId && token && cartReady) {
       getUserData()
     }
-  }, [user, userId, token, dispatch])
+  }, [user, userId, token, dispatch, cartReady])
 
   // Stock sync using existing product API
   const syncCartWithStock = async () => {
@@ -149,7 +185,9 @@ const AddToCart = () => {
         }
       })
 
-      dispatch({ type: "cart/setCartItem", payload: updatedCartItems })
+      dispatch(setCartItem(updatedCartItems))
+      // Update localStorage
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCartItems))
     } catch (error) {
       console.error("Failed to sync cart with stock:", error)
     } finally {
@@ -165,6 +203,31 @@ const AddToCart = () => {
 
   const handleManualStockSync = () => {
     syncCartWithStock()
+  }
+
+  const handleRemoveItem = async (item) => {
+    try {
+      dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))
+
+      // Update localStorage
+      const updatedCart = cartItems.filter(
+        (cartItem) => !(cartItem._id === item._id && cartItem.variantId === item.variantId),
+      )
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCart))
+
+      // Sync with backend
+      if (token) {
+        try {
+          await axiosWithToken(token).delete(`${API_BASE}/api/cart/remove`, {
+            data: { productId: item._id, variantId: item.variantId },
+          })
+        } catch (syncError) {
+          console.warn("Failed to sync removal with backend:", syncError)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to remove item:", error)
+    }
   }
 
   if (!cartReady) {
@@ -277,7 +340,7 @@ const AddToCart = () => {
                               <div className="flex items-center gap-4 mt-1">
                                 <span className="text-sm text-gray-600">Size: {item.size || "N/A"}</span>
                                 <span className="text-sm text-gray-500">•</span>
-                                <span className="text-sm text-gray-500">Seller: Mirakle</span>
+                                <span className="text-sm text-gray-500">Qty: {item.quantity || 1}</span>
                               </div>
                               {typeof item.stock === "number" && item.stock <= 10 && item.stock > 0 && (
                                 <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
@@ -286,54 +349,10 @@ const AddToCart = () => {
                               )}
                             </div>
 
-                            {/* Quantity Controls */}
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center border border-gray-300 rounded-lg">
-                                <button
-                                  className="p-2 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-                                  onClick={() =>
-                                    dispatch(
-                                      decrementQuantity({
-                                        _id: item._id,
-                                        variantId: item.variantId,
-                                      }),
-                                    )
-                                  }
-                                  disabled={item.quantity <= 1}
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                  </svg>
-                                </button>
-                                <span className="px-4 py-2 min-w-[60px] text-center font-medium">
-                                  {item.quantity || 0}
-                                </span>
-                                <button
-                                  className={`p-2 hover:bg-gray-100 transition-colors ${
-                                    typeof item.stock === "number" && item.quantity >= item.stock
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
-                                  onClick={() => {
-                                    if (typeof item.stock === "number" && item.quantity >= item.stock) return
-                                    dispatch(
-                                      incrementQuantity({
-                                        _id: item._id,
-                                        variantId: item.variantId,
-                                      }),
-                                    )
-                                  }}
-                                  disabled={typeof item.stock === "number" && item.quantity >= item.stock}
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M12 4v16m8-8H4"
-                                    />
-                                  </svg>
-                                </button>
+                            {/* Stock Status */}
+                            <div className="text-center">
+                              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                                {typeof item.stock === "number" ? `${item.stock} Available` : "In Stock"}
                               </div>
                             </div>
 
@@ -348,14 +367,7 @@ const AddToCart = () => {
                             {/* Remove Button */}
                             <button
                               className="text-red-500 hover:text-red-700 p-2 transition-colors"
-                              onClick={() =>
-                                dispatch(
-                                  removeFromCart({
-                                    _id: item._id,
-                                    variantId: item.variantId,
-                                  }),
-                                )
-                              }
+                              onClick={() => handleRemoveItem(item)}
                               title="Remove item"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -405,7 +417,7 @@ const AddToCart = () => {
                               <div className="flex items-center gap-4 mt-1">
                                 <span className="text-sm text-gray-600">Size: {item.size || "N/A"}</span>
                                 <span className="text-sm text-gray-500">•</span>
-                                <span className="text-sm text-gray-500">Seller: Mirakle</span>
+                                <span className="text-sm text-gray-500">Qty: {item.quantity || 1}</span>
                               </div>
                               <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                 📦 {item.stockMessage || "Currently out of stock"}
@@ -430,14 +442,7 @@ const AddToCart = () => {
                             {/* Remove Button */}
                             <button
                               className="text-red-500 hover:text-red-700 p-2 transition-colors"
-                              onClick={() =>
-                                dispatch(
-                                  removeFromCart({
-                                    _id: item._id,
-                                    variantId: item.variantId,
-                                  }),
-                                )
-                              }
+                              onClick={() => handleRemoveItem(item)}
                               title="Remove item"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
