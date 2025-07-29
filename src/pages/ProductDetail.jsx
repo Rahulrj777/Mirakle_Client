@@ -198,6 +198,8 @@ const ProductDetail = () => {
         discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0,
         currentPrice: Number.parseFloat(finalPrice),
         quantity: 1,
+        stock: selectedVariant.stock,
+        isOutOfStock: selectedVariant.isOutOfStock
       }
 
       console.log("🛒 Product to add:", productToAdd)

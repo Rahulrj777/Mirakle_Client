@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react"
-import { useSelector, useDispatch } from "react-redux"
+import { useEffect, useState, useRef, useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
   incrementQuantity,
   decrementQuantity,
@@ -7,11 +7,10 @@ import {
   selectAddress,
   setAddresses,
   initializeSelectedAddress,
-} from "../Redux/cartSlice"
-import { useNavigate } from "react-router-dom"
-import { axiosWithToken } from "../utils/axiosWithToken"
-import { API_BASE } from "../utils/api"
-import { useMemo } from "react"
+} from "../Redux/cartSlice";
+import { useNavigate } from "react-router-dom";
+import { axiosWithToken } from "../utils/axiosWithToken";
+import { API_BASE } from "../utils/api";
 
 const LoadingPlaceholder = () => (
   <div className="bg-gray-100 min-h-screen py-6">
@@ -23,190 +22,215 @@ const LoadingPlaceholder = () => (
       </div>
     </div>
   </div>
-)
+);
 
 const AddToCart = () => {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
-  const modalRef = useRef()
-  const prevCartRef = useRef([])
-  const syncTimeoutRef = useRef(null)
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const modalRef = useRef();
+  const prevCartRef = useRef([]);
+  const syncTimeoutRef = useRef(null);
 
-  const cartItems = useSelector((state) => state.cart.items)
-  const cartReady = useSelector((state) => state.cart.cartReady)
-  const userId = useSelector((state) => state.cart.userId)
-  const addresses = useSelector((state) => state.cart.addresses)
-  const selectedAddress = useSelector((state) => state.cart.selectedAddress)
+  const cartItems = useSelector((state) => state.cart.items);
+  const cartReady = useSelector((state) => state.cart.cartReady);
+  const userId = useSelector((state) => state.cart.userId);
+  const addresses = useSelector((state) => state.cart.addresses);
+  const selectedAddress = useSelector((state) => state.cart.selectedAddress);
 
-  const [showAddressModal, setShowAddressModal] = useState(false)
-  const [addressesLoaded, setAddressesLoaded] = useState(false)
-  const [addressesLoading, setAddressesLoading] = useState(false)
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [addressesLoaded, setAddressesLoaded] = useState(false);
+  const [addressesLoading, setAddressesLoading] = useState(false);
 
   // Get user and token from localStorage with error handling
   const getUserData = () => {
     try {
-      const userData = JSON.parse(localStorage.getItem("mirakleUser"))
+      const userData = JSON.parse(localStorage.getItem("mirakleUser"));
       return {
         user: userData?.user || null,
         token: userData?.token || null,
-      }
+      };
     } catch {
-      return { user: null, token: null }
+      return { user: null, token: null };
     }
-  }
+  };
 
-  const { user, token } = getUserData()
+  const { user, token } = getUserData();
 
   const safeCartItems = useMemo(() => {
-    return Array.isArray(cartItems) ? cartItems : []
-  }, [cartItems])
+    return Array.isArray(cartItems) ? cartItems : [];
+  }, [cartItems]);
 
   const subtotal = useMemo(() => {
     return safeCartItems.reduce(
       (acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0),
       0
-    )
-  }, [safeCartItems])
+    );
+  }, [safeCartItems]);
 
   const originalTotal = useMemo(() => {
     return safeCartItems.reduce(
       (acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0),
       0
-    )
-  }, [safeCartItems])
+    );
+  }, [safeCartItems]);
 
-  const discountAmount = useMemo(() => originalTotal - subtotal, [originalTotal, subtotal])
+  const discountAmount = useMemo(
+    () => originalTotal - subtotal,
+    [originalTotal, subtotal]
+  );
 
   // Fetch saved addresses on first load
   useEffect(() => {
-    if (!cartReady || !token || !userId || addressesLoaded) return
+    if (!cartReady || !token || !userId || addressesLoaded) return;
 
-    setAddressesLoading(true)
+    setAddressesLoading(true);
     axiosWithToken(token)
       .get(`${API_BASE}/api/users/address`)
       .then((res) => {
         if (Array.isArray(res.data.addresses)) {
-          dispatch(setAddresses(res.data.addresses))
-          setAddressesLoaded(true)
-
+          dispatch(setAddresses(res.data.addresses));
+          setAddressesLoaded(true);
           // Initialize selected address if saved in localStorage and still valid
-          const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
+          const savedAddressStr = localStorage.getItem(
+            `deliveryAddress_${userId}`
+          );
           if (savedAddressStr) {
             try {
-              const savedAddress = JSON.parse(savedAddressStr)
-              const exists = res.data.addresses.some((addr) => addr._id === savedAddress._id)
+              const savedAddress = JSON.parse(savedAddressStr);
+              const exists = res.data.addresses.some(
+                (addr) => addr._id === savedAddress._id
+              );
               if (exists) {
-                dispatch(initializeSelectedAddress(savedAddress))
+                dispatch(initializeSelectedAddress(savedAddress));
               } else {
-                localStorage.removeItem(`deliveryAddress_${userId}`)
-                dispatch(selectAddress(null))
+                localStorage.removeItem(`deliveryAddress_${userId}`);
+                dispatch(selectAddress(null));
               }
             } catch {
-              localStorage.removeItem(`deliveryAddress_${userId}`)
-              dispatch(selectAddress(null))
+              localStorage.removeItem(`deliveryAddress_${userId}`);
+              dispatch(selectAddress(null));
             }
           }
         }
       })
       .catch((err) => {
-        console.error("Failed to load addresses:", err)
+        console.error("Failed to load addresses:", err);
       })
       .finally(() => {
-        setAddressesLoading(false)
-      })
-  }, [cartReady, token, userId, dispatch, addressesLoaded])
+        setAddressesLoading(false);
+      });
+  }, [cartReady, token, userId, dispatch, addressesLoaded]);
 
   // Debounced cart sync to backend
   useEffect(() => {
-    if (!cartReady || !token || !user || !userId) return
+    if (!cartReady || !token || !user || !userId) return;
 
-    // Clear any existing timeout
     if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current)
+      clearTimeout(syncTimeoutRef.current);
     }
 
-    // Compare previous cart to avoid redundant sync
-    if (JSON.stringify(prevCartRef.current) === JSON.stringify(safeCartItems)) return
+    if (
+      JSON.stringify(prevCartRef.current) === JSON.stringify(safeCartItems)
+    )
+      return;
 
-    // Debounce the sync operation
     syncTimeoutRef.current = setTimeout(() => {
-      prevCartRef.current = [...safeCartItems]
+      prevCartRef.current = [...safeCartItems];
 
-      // Update localStorage cache for this specific user
-      localStorage.setItem(`cart_${userId}`, JSON.stringify(safeCartItems))
+      localStorage.setItem(
+        `cart_${userId}`,
+        JSON.stringify(safeCartItems)
+      );
 
       // Sync to backend
       axiosWithToken(token)
         .post("/cart", { items: safeCartItems })
         .then(() => {
-          console.log("✅ Cart synced successfully")
+          console.log("✅ Cart synced successfully");
         })
         .catch((err) => {
-          console.error("❌ Cart sync failed:", err)
-          // Optionally show user notification here
-        })
-    }, 500) // 500ms debounce
+          console.error("❌ Cart sync failed:", err);
+        });
+    }, 500);
 
-    // Cleanup timeout on unmount
     return () => {
       if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current)
+        clearTimeout(syncTimeoutRef.current);
       }
-    }
-  }, [safeCartItems, cartReady, token, user, userId])
+    };
+  }, [safeCartItems, cartReady, token, user, userId]);
 
   // Address modal outside click to close
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setShowAddressModal(false)
+        setShowAddressModal(false);
       }
-    }
+    };
     if (showAddressModal) {
-      document.addEventListener("mousedown", handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [showAddressModal])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showAddressModal]);
 
   const handleAddressSelect = (address) => {
-    dispatch(selectAddress(address))
-    localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(address))
-    setShowAddressModal(false)
-  }
+    dispatch(selectAddress(address));
+    localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(address));
+    setShowAddressModal(false);
+  };
 
   const confirmDelete = (addressId) => {
     if (window.confirm("Are you sure you want to delete this address?")) {
-      handleDeleteAddress(addressId)
+      handleDeleteAddress(addressId);
     }
-  }
+  };
 
   const handleDeleteAddress = async (id) => {
     try {
-      const res = await axiosWithToken(token).delete(`${API_BASE}/api/users/address/${id}`)
+      const res = await axiosWithToken(token).delete(
+        `${API_BASE}/api/users/address/${id}`
+      );
       if (res.data.addresses) {
-        dispatch(setAddresses(res.data.addresses))
+        dispatch(setAddresses(res.data.addresses));
         if (selectedAddress?._id === id) {
-          localStorage.removeItem(`deliveryAddress_${userId}`)
+          localStorage.removeItem(`deliveryAddress_${userId}`);
           if (res.data.addresses.length > 0) {
-            const newSelected = res.data.addresses[0]
-            dispatch(selectAddress(newSelected))
-            localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(newSelected))
+            const newSelected = res.data.addresses[0];
+            dispatch(selectAddress(newSelected));
+            localStorage.setItem(
+              `deliveryAddress_${userId}`,
+              JSON.stringify(newSelected)
+            );
           } else {
-            dispatch(selectAddress(null))
+            dispatch(selectAddress(null));
           }
         }
       }
     } catch (error) {
-      console.error("Failed to delete address:", error)
-      alert("Could not delete address. Please try again later.")
+      console.error("Failed to delete address:", error);
+      alert("Could not delete address. Please try again later.");
     }
-  }
+  };
 
   if (!cartReady) {
-    return <LoadingPlaceholder />
+    return <LoadingPlaceholder />;
   }
+
+  // Helper to determine out of stock for each cart item
+  const isItemOutOfStock = (item) => {
+    // Covers boolean flag and stock quantity (number or string)
+    return (
+      item.isOutOfStock === true ||
+      (typeof item.stock === "number" && item.stock <= 0) ||
+      item.stock === "0" ||
+      item.stock === 0
+    );
+  };
+
+  // Determine if any cart item is out of stock to disable Place Order
+  const hasOutOfStockItem = safeCartItems.some(isItemOutOfStock);
 
   return (
     <div className="bg-gray-100 min-h-screen py-6">
@@ -230,15 +254,22 @@ const AddToCart = () => {
                     Deliver to: {selectedAddress.name}, {selectedAddress.pincode}
                   </p>
                   <p className="text-md">
-                    {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.landmark}
+                    {selectedAddress.line1}, {selectedAddress.city},{" "}
+                    {selectedAddress.landmark}
                   </p>
                 </div>
-                <button onClick={() => setShowAddressModal(true)} className="text-blue-600 hover:underline text-sm">
+                <button
+                  onClick={() => setShowAddressModal(true)}
+                  className="text-blue-600 hover:underline text-sm"
+                >
                   Change
                 </button>
               </>
             ) : (
-              <button onClick={() => setShowAddressModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded">
+              <button
+                onClick={() => setShowAddressModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
                 Select Address
               </button>
             )}
@@ -256,57 +287,107 @@ const AddToCart = () => {
               </button>
             </div>
           ) : (
-            safeCartItems.map((item) => (
-              <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
-                <img
-                  src={item.images?.others?.[0]?.url || "/placeholder.svg"}
-                  alt={item.title || "Product"}
-                  loading="lazy"
-                  className="w-28 h-28 object-cover border rounded"
-                />
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold">{item.title || "Unknown Product"}</h2>
-                  <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
-                  <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-600 font-bold text-xl">₹{(item.currentPrice || 0).toFixed(2)}</span>
-                    {(item.originalPrice || 0) > (item.currentPrice || 0) && (
-                      <>
-                        <span className="line-through text-sm text-gray-500">
-                          ₹{(item.originalPrice || 0).toFixed(2)}
+            safeCartItems.map((item) => {
+              const outOfStock = isItemOutOfStock(item);
+              return (
+                <div
+                  key={`${item._id}_${item.variantId}`}
+                  className="bg-white rounded shadow p-4 flex gap-4"
+                >
+                  <img
+                    src={item.images?.others?.[0]?.url || "/placeholder.svg"}
+                    alt={item.title || "Product"}
+                    loading="lazy"
+                    className="w-28 h-28 object-cover border rounded"
+                  />
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">
+                      {item.title || "Unknown Product"}
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      Size: {item.size || "N/A"}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-green-600 font-bold text-xl">
+                        ₹{(item.currentPrice || 0).toFixed(2)}
+                      </span>
+                      {(item.originalPrice || 0) > (item.currentPrice || 0) && (
+                        <>
+                          <span className="line-through text-sm text-gray-500">
+                            ₹{(item.originalPrice || 0).toFixed(2)}
+                          </span>
+                          <span className="text-red-500 text-sm font-medium">
+                            {Math.round(
+                              ((item.originalPrice - item.currentPrice) /
+                                item.originalPrice) *
+                                100
+                            )}
+                            % Off
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center gap-4">
+                      {outOfStock ? (
+                        <span className="text-red-600 font-semibold text-lg">
+                          Out of Stock
                         </span>
-                        <span className="text-red-500 text-sm font-medium">
-                          {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div className="mt-3 flex items-center gap-4">
-                    <div className="flex items-center border rounded">
+                      ) : (
+                        <div className="flex items-center border rounded">
+                          <button
+                            className="px-3 py-1 text-lg hover:bg-gray-100"
+                            onClick={() =>
+                              dispatch(
+                                decrementQuantity({
+                                  _id: item._id,
+                                  variantId: item.variantId,
+                                })
+                              )
+                            }
+                            disabled={item.quantity <= 1}
+                          >
+                            −
+                          </button>
+                          <span className="px-4">{item.quantity || 0}</span>
+                          <button
+                            className="px-3 py-1 text-lg hover:bg-gray-100"
+                            onClick={() =>
+                              dispatch(
+                                incrementQuantity({
+                                  _id: item._id,
+                                  variantId: item.variantId,
+                                })
+                              )
+                            }
+                            disabled={
+                              typeof item.stock === "number"
+                                ? item.quantity >= item.stock
+                                : false
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
                       <button
-                        className="px-3 py-1 text-lg hover:bg-gray-100"
-                        onClick={() => dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))}
+                        className="text-red-500 text-sm hover:underline"
+                        onClick={() =>
+                          dispatch(
+                            removeFromCart({
+                              _id: item._id,
+                              variantId: item.variantId,
+                            })
+                          )
+                        }
                       >
-                        −
-                      </button>
-                      <span className="px-4">{item.quantity || 0}</span>
-                      <button
-                        className="px-3 py-1 text-lg hover:bg-gray-100"
-                        onClick={() => dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))}
-                      >
-                        +
+                        Remove
                       </button>
                     </div>
-                    <button
-                      className="text-red-500 text-sm hover:underline"
-                      onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
-                    >
-                      Remove
-                    </button>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -315,13 +396,16 @@ const AddToCart = () => {
           <h3 className="text-xl font-bold mb-4">Price Details</h3>
           <div className="flex justify-between mb-2">
             <span>
-              Price ({safeCartItems.length} item{safeCartItems.length > 1 ? "s" : ""})
+              Price ({safeCartItems.length} item
+              {safeCartItems.length > 1 ? "s" : ""})
             </span>
             <span>₹{originalTotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span>Discount</span>
-            <span className="text-green-600">− ₹{discountAmount.toFixed(2)}</span>
+            <span className="text-green-600">
+              − ₹{discountAmount.toFixed(2)}
+            </span>
           </div>
           <div className="flex justify-between mb-2">
             <span>Delivery Charges</span>
@@ -332,9 +416,14 @@ const AddToCart = () => {
             <span>Total Amount</span>
             <span>₹{subtotal.toFixed(2)}</span>
           </div>
+          {hasOutOfStockItem && (
+            <div className="text-red-500 text-sm my-2 text-center">
+              Remove Out of Stock items to continue
+            </div>
+          )}
           <button
             onClick={() => navigate("/checkout")}
-            disabled={safeCartItems.length === 0}
+            disabled={safeCartItems.length === 0 || hasOutOfStockItem}
             className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold"
           >
             PLACE ORDER
@@ -345,13 +434,19 @@ const AddToCart = () => {
       {/* Address Modal */}
       {showAddressModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
-          <div ref={modalRef} className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div
+            ref={modalRef}
+            className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto"
+          >
             <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
             {addresses.length === 0 ? (
               <p className="text-gray-500">No addresses saved yet.</p>
             ) : (
               addresses.map((addr, idx) => (
-                <div key={addr._id || idx} className="border p-3 rounded mb-2 relative">
+                <div
+                  key={addr._id || idx}
+                  className="border p-3 rounded mb-2 relative"
+                >
                   <input
                     type="radio"
                     name="selectedAddress"
@@ -375,8 +470,8 @@ const AddToCart = () => {
             )}
             <button
               onClick={() => {
-                setShowAddressModal(false)
-                navigate("/address")
+                setShowAddressModal(false);
+                navigate("/address");
               }}
               className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
             >
@@ -386,7 +481,7 @@ const AddToCart = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default AddToCart
+export default AddToCart;
