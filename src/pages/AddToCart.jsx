@@ -254,18 +254,18 @@ const AddToCart = () => {
               <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                {/* <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p> */}
-                {/* <p className="text-sm text-gray-500">Items</p> */}
-              </div>
-              <button
+              {/* <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
+                <p className="text-sm text-gray-500">Items</p>
+              </div> */}
+              {/* <button
                 onClick={handleManualStockSync}
                 disabled={stockSyncLoading}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
                 title="Refresh stock status"
               >
-                {/* {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"} */}
-              </button>
+                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
+              </button> */}
             </div>
           </div>
         </div>
