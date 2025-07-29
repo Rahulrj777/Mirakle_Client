@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState, useRef } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import {
@@ -13,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom"
 import { axiosWithToken } from "../utils/axiosWithToken"
 import { API_BASE } from "../utils/api"
+import { useMemo } from "react"
 
 const LoadingPlaceholder = () => (
   <div className="bg-gray-100 min-h-screen py-6">
@@ -32,23 +31,18 @@ const AddToCart = () => {
   const modalRef = useRef()
   const prevCartRef = useRef([])
   const syncTimeoutRef = useRef(null)
-  const stockCheckIntervalRef = useRef(null)
 
-  // Redux state
   const cartItems = useSelector((state) => state.cart.items)
   const cartReady = useSelector((state) => state.cart.cartReady)
   const userId = useSelector((state) => state.cart.userId)
   const addresses = useSelector((state) => state.cart.addresses)
   const selectedAddress = useSelector((state) => state.cart.selectedAddress)
 
-  // Local state
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(false)
-  const [outOfStockItems, setOutOfStockItems] = useState(new Set())
-  const [stockCheckLoading, setStockCheckLoading] = useState(false)
 
-  // Get user and token from localStorage
+  // Get user and token from localStorage with error handling
   const getUserData = () => {
     try {
       const userData = JSON.parse(localStorage.getItem("mirakleUser"))
@@ -62,120 +56,28 @@ const AddToCart = () => {
   }
 
   const { user, token } = getUserData()
-  const safeCartItems = Array.isArray(cartItems) ? cartItems : []
 
-  // Stock checking function
-  const checkStockStatus = async () => {
-    if (!token || safeCartItems.length === 0) {
-      console.log("🔍 Stock check skipped - no token or empty cart")
-      return
-    }
+  const safeCartItems = useMemo(() => {
+    return Array.isArray(cartItems) ? cartItems : []
+  }, [cartItems])
 
-    setStockCheckLoading(true)
-    console.log("🔍 Starting stock check for", safeCartItems.length, "items")
+  const subtotal = useMemo(() => {
+    return safeCartItems.reduce(
+      (acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0),
+      0
+    )
+  }, [safeCartItems])
 
-    try {
-      const productIds = safeCartItems.map((item) => ({
-        productId: item._id,
-        variantId: item.variantId,
-      }))
+  const originalTotal = useMemo(() => {
+    return safeCartItems.reduce(
+      (acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0),
+      0
+    )
+  }, [safeCartItems])
 
-      console.log("🔍 Checking stock for items:", productIds)
-      console.log("🔍 API URL:", `${API_BASE}/api/products/check-stock`)
+  const discountAmount = useMemo(() => originalTotal - subtotal, [originalTotal, subtotal])
 
-      const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
-        items: productIds,
-      })
-
-      console.log("✅ Stock check response:", response.data)
-
-      const stockData = response.data.stockStatus || []
-      const newOutOfStockItems = new Set()
-
-      stockData.forEach((item) => {
-        console.log(
-          `📊 Item ${item.productId}_${item.variantId}: inStock=${item.inStock}, quantity=${item.availableQuantity}`,
-        )
-
-        if (!item.inStock || item.availableQuantity === 0) {
-          newOutOfStockItems.add(`${item.productId}_${item.variantId}`)
-        }
-      })
-
-      console.log("📋 Out of stock items:", Array.from(newOutOfStockItems))
-
-      // Check for newly out of stock items
-      const previouslyInStock = Array.from(outOfStockItems)
-      const newlyOutOfStock = Array.from(newOutOfStockItems).filter((item) => !previouslyInStock.includes(item))
-
-      if (newlyOutOfStock.length > 0) {
-        const outOfStockProducts = safeCartItems.filter((item) =>
-          newlyOutOfStock.includes(`${item._id}_${item.variantId}`),
-        )
-        const productNames = outOfStockProducts.map((item) => item.title).join(", ")
-        console.log("🚨 Newly out of stock products:", productNames)
-
-        // Show notification
-        alert(`⚠️ The following items in your cart are now out of stock: ${productNames}`)
-      }
-
-      setOutOfStockItems(newOutOfStockItems)
-    } catch (error) {
-      console.error("❌ Stock check failed:", error)
-      console.error("❌ Error response:", error.response?.data)
-      console.error("❌ Error status:", error.response?.status)
-
-      // Show user-friendly error
-      if (error.response?.status === 404) {
-        console.error("❌ Stock check API endpoint not found")
-      } else if (error.response?.status === 401) {
-        console.error("❌ Authentication failed for stock check")
-      }
-    } finally {
-      setStockCheckLoading(false)
-    }
-  }
-
-  // Initial stock check and interval setup
-  useEffect(() => {
-    if (!token || safeCartItems.length === 0) {
-      console.log("❌ Stock check conditions not met:", {
-        hasToken: !!token,
-        hasItems: safeCartItems.length > 0,
-      })
-      return
-    }
-
-    console.log("🚀 Setting up stock check...")
-
-    // Initial check
-    checkStockStatus()
-
-    // Set up interval for periodic checks (every 30 seconds)
-    if (stockCheckIntervalRef.current) {
-      clearInterval(stockCheckIntervalRef.current)
-    }
-
-    stockCheckIntervalRef.current = setInterval(() => {
-      console.log("⏰ Periodic stock check triggered")
-      checkStockStatus()
-    }, 30000)
-
-    return () => {
-      if (stockCheckIntervalRef.current) {
-        console.log("🧹 Cleaning up stock check interval")
-        clearInterval(stockCheckIntervalRef.current)
-      }
-    }
-  }, [token, safeCartItems.length])
-
-  // Calculate totals (excluding out of stock items)
-  const availableItems = safeCartItems.filter((item) => !outOfStockItems.has(`${item._id}_${item.variantId}`))
-  const subtotal = availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
-  const originalTotal = availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
-  const discountAmount = originalTotal - subtotal
-
-  // Address loading
+  // Fetch saved addresses on first load
   useEffect(() => {
     if (!cartReady || !token || !userId || addressesLoaded) return
 
@@ -187,7 +89,7 @@ const AddToCart = () => {
           dispatch(setAddresses(res.data.addresses))
           setAddressesLoaded(true)
 
-          // Initialize selected address from localStorage
+          // Initialize selected address if saved in localStorage and still valid
           const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
           if (savedAddressStr) {
             try {
@@ -214,20 +116,26 @@ const AddToCart = () => {
       })
   }, [cartReady, token, userId, dispatch, addressesLoaded])
 
-  // Cart sync to backend
+  // Debounced cart sync to backend
   useEffect(() => {
     if (!cartReady || !token || !user || !userId) return
 
+    // Clear any existing timeout
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current)
     }
 
+    // Compare previous cart to avoid redundant sync
     if (JSON.stringify(prevCartRef.current) === JSON.stringify(safeCartItems)) return
 
+    // Debounce the sync operation
     syncTimeoutRef.current = setTimeout(() => {
       prevCartRef.current = [...safeCartItems]
+
+      // Update localStorage cache for this specific user
       localStorage.setItem(`cart_${userId}`, JSON.stringify(safeCartItems))
 
+      // Sync to backend
       axiosWithToken(token)
         .post("/cart", { items: safeCartItems })
         .then(() => {
@@ -235,9 +143,11 @@ const AddToCart = () => {
         })
         .catch((err) => {
           console.error("❌ Cart sync failed:", err)
+          // Optionally show user notification here
         })
-    }, 500)
+    }, 500) // 500ms debounce
 
+    // Cleanup timeout on unmount
     return () => {
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current)
@@ -245,24 +155,21 @@ const AddToCart = () => {
     }
   }, [safeCartItems, cartReady, token, user, userId])
 
-  // Modal click outside handler
+  // Address modal outside click to close
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         setShowAddressModal(false)
       }
     }
-
     if (showAddressModal) {
       document.addEventListener("mousedown", handleClickOutside)
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [showAddressModal])
 
-  // Address handlers
   const handleAddressSelect = (address) => {
     dispatch(selectAddress(address))
     localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(address))
@@ -297,27 +204,6 @@ const AddToCart = () => {
     }
   }
 
-  // Quantity change handler
-  const handleQuantityChange = (item, action) => {
-    const itemKey = `${item._id}_${item.variantId}`
-    if (outOfStockItems.has(itemKey)) {
-      alert("This item is currently out of stock and cannot be modified.")
-      return
-    }
-
-    if (action === "increment") {
-      dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))
-    } else {
-      dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))
-    }
-  }
-
-  // Manual stock check for testing
-  const testStockCheck = () => {
-    console.log("🧪 Manual stock check triggered")
-    checkStockStatus()
-  }
-
   if (!cartReady) {
     return <LoadingPlaceholder />
   }
@@ -327,28 +213,6 @@ const AddToCart = () => {
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left side - Cart items and address */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Debug Section - Remove in production */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
-            <h3 className="font-bold text-yellow-800 mb-2">Debug Info</h3>
-            <div className="text-sm text-yellow-700 space-y-1">
-              <p>API_BASE: {API_BASE}</p>
-              <p>Token exists: {token ? "✅ Yes" : "❌ No"}</p>
-              <p>Cart items: {safeCartItems.length}</p>
-              <p>Out of stock items: {outOfStockItems.size}</p>
-              <p>Cart ready: {cartReady ? "✅ Yes" : "❌ No"}</p>
-              <p>Stock check loading: {stockCheckLoading ? "🔄 Yes" : "✅ No"}</p>
-            </div>
-            <div className="mt-2 space-x-2">
-              <button
-                onClick={testStockCheck}
-                disabled={stockCheckLoading}
-                className="bg-yellow-500 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
-              >
-                {stockCheckLoading ? "Checking..." : "Test Stock Check"}
-              </button>
-            </div>
-          </div>
-
           {/* Address Section */}
           <div className="bg-white p-4 rounded shadow flex justify-between items-center">
             {addressesLoading ? (
@@ -380,36 +244,6 @@ const AddToCart = () => {
             )}
           </div>
 
-          {/* Out of Stock Notification */}
-          {outOfStockItems.size > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded p-4">
-              <div className="flex items-center">
-                <div className="text-red-600">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <p className="ml-2 text-red-800 text-sm">
-                  ⚠️ Some items in your cart are currently out of stock and cannot be ordered.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Stock Check Loading */}
-          {stockCheckLoading && (
-            <div className="bg-blue-50 border border-blue-200 rounded p-4">
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <p className="ml-2 text-blue-800 text-sm">🔄 Checking stock availability...</p>
-              </div>
-            </div>
-          )}
-
           {/* Cart Items */}
           {safeCartItems.length === 0 ? (
             <div className="bg-white rounded shadow p-8 text-center">
@@ -422,90 +256,57 @@ const AddToCart = () => {
               </button>
             </div>
           ) : (
-            safeCartItems.map((item) => {
-              const itemKey = `${item._id}_${item.variantId}`
-              const isOutOfStock = outOfStockItems.has(itemKey)
-
-              return (
-                <div
-                  key={itemKey}
-                  className={`bg-white rounded shadow p-4 flex gap-4 transition-all ${
-                    isOutOfStock ? "opacity-60 border-2 border-red-200 bg-red-50" : ""
-                  }`}
-                >
-                  <div className="relative">
-                    <img
-                      src={item.images?.others?.[0]?.url || "/placeholder.svg?height=112&width=112"}
-                      alt={item.title || "Product"}
-                      loading="lazy"
-                      className="w-28 h-28 object-cover border rounded"
-                    />
-                    {isOutOfStock && (
-                      <div className="absolute inset-0 bg-red-500 bg-opacity-20 flex items-center justify-center rounded">
-                        <span className="bg-red-500 text-white px-2 py-1 text-xs rounded font-semibold">
-                          OUT OF STOCK
+            safeCartItems.map((item) => (
+              <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
+                <img
+                  src={item.images?.others?.[0]?.url || "/placeholder.svg"}
+                  alt={item.title || "Product"}
+                  loading="lazy"
+                  className="w-28 h-28 object-cover border rounded"
+                />
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold">{item.title || "Unknown Product"}</h2>
+                  <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
+                  <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-green-600 font-bold text-xl">₹{(item.currentPrice || 0).toFixed(2)}</span>
+                    {(item.originalPrice || 0) > (item.currentPrice || 0) && (
+                      <>
+                        <span className="line-through text-sm text-gray-500">
+                          ₹{(item.originalPrice || 0).toFixed(2)}
                         </span>
-                      </div>
+                        <span className="text-red-500 text-sm font-medium">
+                          {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
+                        </span>
+                      </>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <h2 className={`text-lg font-semibold ${isOutOfStock ? "text-gray-500" : ""}`}>
-                      {item.title || "Unknown Product"}
-                    </h2>
-                    <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
-                    <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
-                    <p className="text-xs text-gray-400">
-                      ID: {item._id} | Variant: {item.variantId}
-                    </p>
-
-                    {isOutOfStock && (
-                      <p className="text-red-600 text-sm font-medium mb-2">⚠️ This item is currently out of stock</p>
-                    )}
-
-                    <div className="flex items-center gap-3">
-                      <span className={`font-bold text-xl ${isOutOfStock ? "text-gray-500" : "text-green-600"}`}>
-                        ₹{(item.currentPrice || 0).toFixed(2)}
-                      </span>
-                      {(item.originalPrice || 0) > (item.currentPrice || 0) && (
-                        <>
-                          <span className="line-through text-sm text-gray-500">
-                            ₹{(item.originalPrice || 0).toFixed(2)}
-                          </span>
-                          <span className="text-red-500 text-sm font-medium">
-                            {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center gap-4">
-                      <div className={`flex items-center border rounded ${isOutOfStock ? "opacity-50" : ""}`}>
-                        <button
-                          className="px-3 py-1 text-lg hover:bg-gray-100 disabled:cursor-not-allowed"
-                          onClick={() => handleQuantityChange(item, "decrement")}
-                          disabled={isOutOfStock}
-                        >
-                          −
-                        </button>
-                        <span className="px-4">{item.quantity || 0}</span>
-                        <button
-                          className="px-3 py-1 text-lg hover:bg-gray-100 disabled:cursor-not-allowed"
-                          onClick={() => handleQuantityChange(item, "increment")}
-                          disabled={isOutOfStock}
-                        >
-                          +
-                        </button>
-                      </div>
+                  <div className="mt-3 flex items-center gap-4">
+                    <div className="flex items-center border rounded">
                       <button
-                        className="text-red-500 text-sm hover:underline"
-                        onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
+                        className="px-3 py-1 text-lg hover:bg-gray-100"
+                        onClick={() => dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))}
                       >
-                        Remove
+                        −
+                      </button>
+                      <span className="px-4">{item.quantity || 0}</span>
+                      <button
+                        className="px-3 py-1 text-lg hover:bg-gray-100"
+                        onClick={() => dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))}
+                      >
+                        +
                       </button>
                     </div>
+                    <button
+                      className="text-red-500 text-sm hover:underline"
+                      onClick={() => dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))}
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
-              )
-            })
+              </div>
+            ))
           )}
         </div>
 
@@ -514,23 +315,14 @@ const AddToCart = () => {
           <h3 className="text-xl font-bold mb-4">Price Details</h3>
           <div className="flex justify-between mb-2">
             <span>
-              Price ({availableItems.length} available item{availableItems.length > 1 ? "s" : ""})
+              Price ({safeCartItems.length} item{safeCartItems.length > 1 ? "s" : ""})
             </span>
             <span>₹{originalTotal.toFixed(2)}</span>
           </div>
-          {outOfStockItems.size > 0 && (
-            <div className="flex justify-between mb-2 text-red-600 text-sm">
-              <span>
-                ({outOfStockItems.size} out of stock item{outOfStockItems.size > 1 ? "s" : ""} excluded)
-              </span>
-            </div>
-          )}
-          {discountAmount > 0 && (
-            <div className="flex justify-between mb-2">
-              <span>Discount</span>
-              <span className="text-green-600">− ₹{discountAmount.toFixed(2)}</span>
-            </div>
-          )}
+          <div className="flex justify-between mb-2">
+            <span>Discount</span>
+            <span className="text-green-600">− ₹{discountAmount.toFixed(2)}</span>
+          </div>
           <div className="flex justify-between mb-2">
             <span>Delivery Charges</span>
             <span className="text-green-600">Free</span>
@@ -542,16 +334,11 @@ const AddToCart = () => {
           </div>
           <button
             onClick={() => navigate("/checkout")}
-            disabled={availableItems.length === 0}
-            className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold transition-colors"
+            disabled={safeCartItems.length === 0}
+            className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold"
           >
-            PLACE ORDER ({availableItems.length} items)
+            PLACE ORDER
           </button>
-          {outOfStockItems.size > 0 && (
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Out of stock items will not be included in your order
-            </p>
-          )}
         </div>
       </div>
 
