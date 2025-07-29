@@ -14,7 +14,6 @@ const AddToCart = () => {
   })
 
   const [cartReady, setCartReady] = useState(false)
-  const [stockSyncLoading, setStockSyncLoading] = useState(false)
 
   const user = useMemo(() => {
     try {
@@ -136,73 +135,6 @@ const AddToCart = () => {
     }
   }, [user, userId, token, dispatch, cartReady])
 
-  // Stock sync using existing product API
-  const syncCartWithStock = async () => {
-    if (!cartReady || !token || !userId || cartItems.length === 0) return
-    try {
-      setStockSyncLoading(true)
-      const response = await axiosWithToken(token).get(`${API_BASE}/api/products/all-products`)
-      const allProducts = response.data
-
-      const updatedCartItems = cartItems.map((cartItem) => {
-        const currentProduct = allProducts.find((p) => p._id === cartItem._id)
-        if (!currentProduct) {
-          return {
-            ...cartItem,
-            isOutOfStock: true,
-            stock: 0,
-            stockMessage: "Product no longer available",
-          }
-        }
-
-        const currentVariant = currentProduct.variants?.find((v) => v.size === cartItem.size)
-        if (!currentVariant) {
-          return {
-            ...cartItem,
-            isOutOfStock: true,
-            stock: 0,
-            stockMessage: "Variant no longer available",
-          }
-        }
-
-        const isOutOfStock =
-          currentProduct.isOutOfStock === true ||
-          currentVariant.isOutOfStock === true ||
-          currentVariant.stock === 0 ||
-          currentVariant.stock === "0" ||
-          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0)
-
-        return {
-          ...cartItem,
-          isOutOfStock,
-          stock: currentVariant.stock,
-          stockMessage: isOutOfStock ? "Currently out of stock" : null,
-          originalPrice: currentVariant.price,
-          discountPercent: currentVariant.discountPercent || 0,
-          currentPrice: currentVariant.price - (currentVariant.price * (currentVariant.discountPercent || 0)) / 100,
-        }
-      })
-
-      dispatch(setCartItem(updatedCartItems))
-      // Update localStorage
-      localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCartItems))
-    } catch (error) {
-      console.error("Failed to sync cart with stock:", error)
-    } finally {
-      setStockSyncLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (cartReady && token && userId && cartItems.length > 0) {
-      syncCartWithStock()
-    }
-  }, [cartReady, token, userId, cartItems.length])
-
-  const handleManualStockSync = () => {
-    syncCartWithStock()
-  }
-
   const handleRemoveItem = async (item) => {
     try {
       dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))
@@ -246,30 +178,6 @@ const AddToCart = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-              <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
-                <p className="text-sm text-gray-500">Items</p>
-              </div>
-              <button
-                onClick={handleManualStockSync}
-                disabled={stockSyncLoading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
-                title="Refresh stock status"
-              >
-                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
-              </button>
-            </div>
-          </div>
-        </div>
-
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
