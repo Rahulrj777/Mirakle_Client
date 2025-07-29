@@ -10,24 +10,57 @@ import { axiosWithToken } from "../utils/axiosWithToken"
 
 const ProductDetail = () => {
   const { id } = useParams()
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
-
-  // Core state
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
   const [selectedImage, setSelectedImage] = useState("")
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [quantity, setQuantity] = useState(1)
+  const [relatedProducts, setRelatedProducts] = useState([])
+  const [loading, setLoading] = useState(true)
   const [addingToCart, setAddingToCart] = useState(false)
-
-  // UI state
-  const [activeTab, setActiveTab] = useState("description")
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState("")
+  const [reviewImages, setReviewImages] = useState([])
+  const [reviewImagePreviews, setReviewImagePreviews] = useState([])
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewError, setReviewError] = useState("")
+  const [showAllReviews, setShowAllReviews] = useState(false)
+  const [actionLoading, setActionLoading] = useState({})
+  const [stockSyncLoading, setStockSyncLoading] = useState(false)
+  const [quantity, setQuantity] = useState(1)
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState("")
-  const [relatedProducts, setRelatedProducts] = useState([])
+  const [showDescription, setShowDescription] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [showReviews, setShowReviews] = useState(true)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
+  const [isInWishlist, setIsInWishlist] = useState(false)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [compareLoading, setCompareLoading] = useState(false)
+  const [showSizeGuide, setShowSizeGuide] = useState(false)
+  const [deliveryInfo, setDeliveryInfo] = useState(null)
+  const [pincode, setPincode] = useState("")
+  const [checkingDelivery, setCheckingDelivery] = useState(false)
+  const [showNotifyModal, setShowNotifyModal] = useState(false)
+  const [notifyEmail, setNotifyEmail] = useState("")
+  const [notifyLoading, setNotifyLoading] = useState(false)
+  const [productViews, setProductViews] = useState(0)
+  const [recentlyViewed, setRecentlyViewed] = useState([])
+  const [showQA, setShowQA] = useState(false)
+  const [qaQuestion, setQaQuestion] = useState("")
+  const [qaLoading, setQaLoading] = useState(false)
+  const [productQuestions, setProductQuestions] = useState([])
+  const [showBulkOrder, setShowBulkOrder] = useState(false)
+  const [bulkQuantity, setBulkQuantity] = useState(10)
+  const [bulkPrice, setBulkPrice] = useState(0)
+  const [showVideoModal, setShowVideoModal] = useState(false)
+  const [productVideo, setProductVideo] = useState("")
+  const [zoom, setZoom] = useState(false)
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
+
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   const user = useMemo(() => {
     try {
@@ -49,24 +82,78 @@ const ProductDetail = () => {
     return (price - (price * discount) / 100).toFixed(2)
   }, [selectedVariant])
 
+  // Enhanced stock checking logic
   const isOutOfStock = useMemo(() => {
     if (!product || !selectedVariant) return false
-    return (
-      product.isOutOfStock === true ||
-      selectedVariant.isOutOfStock === true ||
-      (typeof selectedVariant.stock === "number" && selectedVariant.stock <= 0) ||
-      selectedVariant.stock === "0" ||
-      selectedVariant.stock === 0
-    )
+
+    console.log("🔍 Stock Check Debug:")
+    console.log("- Product isOutOfStock:", product.isOutOfStock)
+    console.log("- Selected variant:", selectedVariant)
+    console.log("- Variant stock:", selectedVariant.stock)
+    console.log("- Variant isOutOfStock:", selectedVariant.isOutOfStock)
+
+    const conditions = [
+      product.isOutOfStock === true,
+      selectedVariant.isOutOfStock === true,
+      typeof selectedVariant.stock === "number" && selectedVariant.stock <= 0,
+      selectedVariant.stock === "0" || selectedVariant.stock === 0,
+    ]
+
+    const isOOS = conditions.some((condition) => condition)
+    console.log("- Final out of stock status:", isOOS)
+    return isOOS
   }, [product, selectedVariant])
 
-  const avgRating = useMemo(() => {
-    if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
-    const validRatings = product.reviews.filter((r) => r && typeof r.rating === "number")
-    if (validRatings.length === 0) return 0
-    const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
-    return (total / validRatings.length).toFixed(1)
-  }, [product?.reviews])
+  const token = user?.token
+
+  // Stock sync functionality
+  const syncProductStock = useCallback(async () => {
+    if (!product || !token) return
+
+    try {
+      setStockSyncLoading(true)
+      console.log("🔄 Syncing product stock status...")
+
+      const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
+        productIds: [product._id],
+      })
+
+      if (response && response.data.products && response.data.products.length > 0) {
+        const updatedProduct = response.data.products[0]
+
+        setProduct((prev) => ({
+          ...prev,
+          variants: updatedProduct.variants,
+          isOutOfStock: updatedProduct.isOutOfStock,
+        }))
+
+        if (selectedVariant) {
+          const updatedVariant = updatedProduct.variants.find(
+            (v) =>
+              v.size === selectedVariant.size ||
+              (v.weight &&
+                selectedVariant.weight &&
+                v.weight.value === selectedVariant.weight.value &&
+                v.weight.unit === selectedVariant.weight.unit),
+          )
+
+          if (updatedVariant) {
+            setSelectedVariant((prev) => ({
+              ...prev,
+              stock: updatedVariant.stock,
+              isOutOfStock: updatedVariant.isOutOfStock,
+            }))
+          }
+        }
+
+        console.log("✅ Product stock synced successfully")
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync product stock:", error)
+    } finally {
+      setStockSyncLoading(false)
+    }
+  }, [product, selectedVariant, token])
 
   const fetchProduct = useCallback(async () => {
     try {
@@ -76,11 +163,29 @@ const ProductDetail = () => {
       const found = res.data.find((p) => p._id === id)
 
       if (found) {
+        console.log("🔍 Fetched product:", found)
         setProduct(found)
         setSelectedImage(found.images?.others?.[0]?.url || "")
+        setProductVideo(found.video || "")
+
         if (found.variants && found.variants.length > 0) {
+          console.log("🔍 Product variants:", found.variants)
           setSelectedVariant(found.variants[0])
           setSelectedVariantIndex(0)
+        }
+
+        // Track product view
+        setProductViews((prev) => prev + 1)
+
+        // Add to recently viewed
+        const viewed = JSON.parse(localStorage.getItem("recentlyViewed") || "[]")
+        const updatedViewed = [found, ...viewed.filter((p) => p._id !== found._id)].slice(0, 10)
+        localStorage.setItem("recentlyViewed", JSON.stringify(updatedViewed))
+        setRecentlyViewed(updatedViewed)
+
+        // Check if in wishlist
+        if (user?.token) {
+          checkWishlistStatus(found._id)
         }
       } else {
         setError("Product not found")
@@ -91,7 +196,7 @@ const ProductDetail = () => {
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, user?.token])
 
   const fetchRelated = useCallback(async () => {
     try {
@@ -103,56 +208,149 @@ const ProductDetail = () => {
     }
   }, [id])
 
-  const loadCartSafely = useCallback(async () => {
-    if (!user?.token || cartItems.length > 0) return
+  const fetchProductQuestions = useCallback(async () => {
     try {
-      const response = await axiosWithToken(user.token).get(`${API_BASE}/api/cart`)
+      const res = await axios.get(`${API_BASE}/api/products/${id}/questions`)
+      setProductQuestions(Array.isArray(res.data) ? res.data : [])
+    } catch (err) {
+      console.error("Failed to fetch product questions", err)
+      setProductQuestions([])
+    }
+  }, [id])
+
+  const loadCartSafely = useCallback(async () => {
+    if (!token || cartItems.length > 0) return
+
+    try {
+      const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
       const cartData = response.data
+
       if (cartData && Array.isArray(cartData.items)) {
         dispatch(setCartItem(cartData.items))
       } else if (Array.isArray(cartData)) {
         dispatch(setCartItem(cartData))
+      } else {
+        dispatch(setCartItem([]))
       }
     } catch (error) {
       console.error("Failed to load cart:", error)
+      dispatch(setCartItem([]))
     }
-  }, [user?.token, cartItems.length, dispatch])
+  }, [token, cartItems.length, dispatch])
+
+  const checkWishlistStatus = useCallback(
+    async (productId) => {
+      if (!token) return
+
+      try {
+        const response = await axiosWithToken(token).get(`${API_BASE}/api/wishlist`)
+        const wishlist = response.data.items || []
+        setIsInWishlist(wishlist.some((item) => item._id === productId))
+      } catch (error) {
+        console.error("Failed to check wishlist status:", error)
+      }
+    },
+    [token],
+  )
+
+  const checkDelivery = useCallback(async () => {
+    if (!pincode.trim()) {
+      alert("Please enter a valid pincode")
+      return
+    }
+
+    setCheckingDelivery(true)
+    try {
+      const response = await axios.get(`${API_BASE}/api/delivery/check/${pincode}`)
+      setDeliveryInfo(response.data)
+    } catch (error) {
+      console.error("Failed to check delivery:", error)
+      setDeliveryInfo({ available: false, message: "Delivery not available" })
+    } finally {
+      setCheckingDelivery(false)
+    }
+  }, [pincode])
 
   useEffect(() => {
     if (id) {
       fetchProduct()
       fetchRelated()
+      fetchProductQuestions()
     }
-  }, [id, fetchProduct, fetchRelated])
+  }, [id, fetchProduct, fetchRelated, fetchProductQuestions])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [id])
 
   useEffect(() => {
     loadCartSafely()
   }, [loadCartSafely])
 
+  // Stock sync effects
+  useEffect(() => {
+    if (product && token) {
+      syncProductStock()
+
+      const interval = setInterval(() => {
+        if (!document.hidden) {
+          syncProductStock()
+        }
+      }, 30000)
+
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          syncProductStock()
+        }
+      }
+
+      document.addEventListener("visibilitychange", handleVisibilityChange)
+
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener("visibilitychange", handleVisibilityChange)
+      }
+    }
+  }, [product, token, syncProductStock])
+
   const handleSizeClick = useCallback((variant, index) => {
+    console.log("🎯 Selected variant:", variant, "at index:", index)
     setSelectedVariant(variant)
     setSelectedVariantIndex(index)
-    setQuantity(1)
+    setQuantity(1) // Reset quantity when variant changes
   }, [])
 
   const handleAddToCart = useCallback(async () => {
     if (addingToCart) return
+
     if (!user?.token) {
       alert("Please login to add items to cart")
       navigate("/login_signup")
       return
     }
+
     if (!selectedVariant) {
       alert("Please select a variant")
       return
     }
+
     if (isOutOfStock) {
       alert("This product variant is currently out of stock")
       return
     }
 
+    if (quantity > selectedVariant.stock) {
+      alert(`Only ${selectedVariant.stock} items available in stock`)
+      return
+    }
+
+    console.log("🛒 Adding to cart - Selected variant:", selectedVariant)
     setAddingToCart(true)
-    const variantKey = selectedVariant._id || selectedVariant.size || selectedVariantIndex
+
+    const variantKey =
+      selectedVariant._id ||
+      selectedVariant.size ||
+      (selectedVariant.weight ? `${selectedVariant.weight.value}_${selectedVariant.weight.unit}` : selectedVariantIndex)
     const variantId = `${product._id}_${variantKey}`
 
     const productToAdd = {
@@ -160,30 +358,46 @@ const ProductDetail = () => {
       title: product.title,
       images: product.images,
       variantId: variantId,
-      size: selectedVariant.size || "N/A",
+      size:
+        selectedVariant.size ||
+        (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"),
+      weight: {
+        value: selectedVariant?.weight?.value || selectedVariant?.size,
+        unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
+      },
       originalPrice: Number.parseFloat(selectedVariant.price),
       discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0,
       currentPrice: Number.parseFloat(finalPrice),
       quantity: quantity,
       stock: selectedVariant.stock,
       isOutOfStock: selectedVariant.isOutOfStock || false,
+      stockMessage: isOutOfStock ? "Currently out of stock" : null,
     }
+
+    console.log("🛒 Product to add:", productToAdd)
 
     try {
       dispatch(addToCart(productToAdd))
-      try {
-        await axiosWithToken(user.token).post(`${API_BASE}/api/cart/add`, {
-          productId: product._id,
-          variantIndex: selectedVariantIndex,
-          variantId: variantId,
-          quantity: quantity,
-        })
-      } catch (syncError) {
-        console.warn("Backend sync failed, but item added to local cart:", syncError)
+
+      const backendPayload = {
+        productId: product._id,
+        variantIndex: selectedVariantIndex,
+        variantId: variantId,
+        quantity: quantity,
       }
+
+      console.log("🔄 Syncing to backend with payload:", backendPayload)
+
+      try {
+        await axiosWithToken(token).post(`${API_BASE}/api/cart/add`, backendPayload)
+        console.log("✅ Cart synced to backend successfully")
+      } catch (syncError) {
+        console.warn("⚠️ Backend sync failed, but item added to local cart:", syncError)
+      }
+
       alert(`✅ Added ${quantity} ${productToAdd.size} to cart successfully`)
     } catch (err) {
-      console.error("Add to cart failed:", err)
+      console.error("❌ Add to cart failed:", err)
       alert("Something went wrong while adding to cart")
     } finally {
       setAddingToCart(false)
@@ -199,6 +413,7 @@ const ProductDetail = () => {
     isOutOfStock,
     quantity,
     product,
+    token,
   ])
 
   const handleBuyNow = useCallback(async () => {
@@ -207,6 +422,281 @@ const ProductDetail = () => {
       navigate("/cart")
     }
   }, [handleAddToCart, isOutOfStock, selectedVariant, navigate])
+
+  const handleWishlist = useCallback(async () => {
+    if (!user?.token) {
+      alert("Please login to add to wishlist")
+      navigate("/login_signup")
+      return
+    }
+
+    setWishlistLoading(true)
+    try {
+      if (isInWishlist) {
+        await axiosWithToken(token).delete(`${API_BASE}/api/wishlist/${product._id}`)
+        setIsInWishlist(false)
+        alert("Removed from wishlist")
+      } else {
+        await axiosWithToken(token).post(`${API_BASE}/api/wishlist/add`, {
+          productId: product._id,
+          variantId: selectedVariant._id,
+        })
+        setIsInWishlist(true)
+        alert("Added to wishlist")
+      }
+    } catch (error) {
+      console.error("Wishlist operation failed:", error)
+      alert("Failed to update wishlist")
+    } finally {
+      setWishlistLoading(false)
+    }
+  }, [user, token, isInWishlist, product, selectedVariant, navigate])
+
+  const handleShare = useCallback(
+    async (platform) => {
+      setShareLoading(true)
+      const url = window.location.href
+      const text = `Check out this amazing product: ${product.title}`
+
+      try {
+        switch (platform) {
+          case "whatsapp":
+            window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`)
+            break
+          case "facebook":
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)
+            break
+          case "twitter":
+            window.open(
+              `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+            )
+            break
+          case "copy":
+            await navigator.clipboard.writeText(url)
+            alert("Link copied to clipboard!")
+            break
+          default:
+            break
+        }
+      } catch (error) {
+        console.error("Share failed:", error)
+        alert("Failed to share")
+      } finally {
+        setShareLoading(false)
+        setShowShareModal(false)
+      }
+    },
+    [product],
+  )
+
+  const handleNotifyWhenAvailable = useCallback(async () => {
+    if (!notifyEmail.trim()) {
+      alert("Please enter a valid email address")
+      return
+    }
+
+    setNotifyLoading(true)
+    try {
+      await axios.post(`${API_BASE}/api/products/${id}/notify`, {
+        email: notifyEmail,
+        variantId: selectedVariant._id,
+      })
+      alert("You'll be notified when this item is back in stock!")
+      setShowNotifyModal(false)
+      setNotifyEmail("")
+    } catch (error) {
+      console.error("Notify request failed:", error)
+      alert("Failed to set up notification")
+    } finally {
+      setNotifyLoading(false)
+    }
+  }, [notifyEmail, id, selectedVariant])
+
+  const handleImageClick = useCallback((imageUrl) => {
+    setModalImage(imageUrl)
+    setShowImageModal(true)
+  }, [])
+
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!zoom) return
+
+      const rect = e.currentTarget.getBoundingClientRect()
+      const x = ((e.clientX - rect.left) / rect.width) * 100
+      const y = ((e.clientY - rect.top) / rect.height) * 100
+      setZoomPosition({ x, y })
+    },
+    [zoom],
+  )
+
+  const handleReviewImageChange = useCallback((e) => {
+    const files = Array.from(e.target.files)
+    if (files.length > 5) {
+      setReviewError("You can upload maximum 5 images")
+      return
+    }
+
+    const oversizedFiles = files.filter((file) => file.size > 5 * 1024 * 1024)
+    if (oversizedFiles.length > 0) {
+      setReviewError("Each image must be less than 5MB")
+      return
+    }
+
+    setReviewImages(files)
+    setReviewError("")
+    const previews = files.map((file) => URL.createObjectURL(file))
+    setReviewImagePreviews(previews)
+  }, [])
+
+  const removeReviewImage = useCallback(
+    (index) => {
+      const newImages = reviewImages.filter((_, i) => i !== index)
+      const newPreviews = reviewImagePreviews.filter((_, i) => i !== index)
+      URL.revokeObjectURL(reviewImagePreviews[index])
+      setReviewImages(newImages)
+      setReviewImagePreviews(newPreviews)
+    },
+    [reviewImages, reviewImagePreviews],
+  )
+
+  const handleReviewSubmit = useCallback(
+    async (e) => {
+      e.preventDefault()
+      if (!reviewRating || !reviewComment.trim()) {
+        setReviewError("Please provide both rating and review.")
+        return
+      }
+
+      if (reviewComment.trim().length < 10) {
+        setReviewError("Review must be at least 10 characters long.")
+        return
+      }
+
+      setSubmittingReview(true)
+      setReviewError("")
+
+      try {
+        const formData = new FormData()
+        formData.append("rating", reviewRating)
+        formData.append("comment", reviewComment.trim())
+        reviewImages.forEach((image) => {
+          formData.append("images", image)
+        })
+
+        const response = await axiosWithToken(token).post(`${API_BASE}/api/products/${id}/review`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+
+        if (response.data) {
+          setReviewRating(0)
+          setReviewComment("")
+          setReviewImages([])
+          setReviewImagePreviews([])
+          setReviewError("")
+          fetchProduct()
+          alert("Review submitted successfully!")
+        }
+      } catch (err) {
+        console.error("Review submission error:", err)
+        setReviewError(err.response?.data?.message || "Failed to submit review")
+      } finally {
+        setSubmittingReview(false)
+      }
+    },
+    [reviewRating, reviewComment, reviewImages, id, token, fetchProduct],
+  )
+
+  const handleDeleteReview = useCallback(
+    async (reviewId) => {
+      if (!confirm("Are you sure you want to delete your review?")) return
+
+      setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: true }))
+
+      try {
+        await axiosWithToken(token).delete(`${API_BASE}/api/products/${id}/review/${reviewId}`)
+        fetchProduct()
+        alert("Review deleted successfully!")
+      } catch (error) {
+        console.error("Delete review failed:", error)
+        alert("Failed to delete review. Please try again.")
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: false }))
+      }
+    },
+    [id, token, fetchProduct],
+  )
+
+  const handleQuestionSubmit = useCallback(async () => {
+    if (!qaQuestion.trim()) {
+      alert("Please enter a question")
+      return
+    }
+
+    if (!user?.token) {
+      alert("Please login to ask a question")
+      navigate("/login_signup")
+      return
+    }
+
+    setQaLoading(true)
+    try {
+      await axiosWithToken(token).post(`${API_BASE}/api/products/${id}/question`, {
+        question: qaQuestion.trim(),
+      })
+      setQaQuestion("")
+      fetchProductQuestions()
+      alert("Question submitted successfully!")
+    } catch (error) {
+      console.error("Question submission failed:", error)
+      alert("Failed to submit question")
+    } finally {
+      setQaLoading(false)
+    }
+  }, [qaQuestion, user, token, id, navigate, fetchProductQuestions])
+
+  const calculateBulkPrice = useCallback(
+    (qty) => {
+      if (!selectedVariant) return 0
+
+      const basePrice = Number.parseFloat(finalPrice)
+      let discount = 0
+
+      if (qty >= 50) discount = 0.15
+      else if (qty >= 20) discount = 0.1
+      else if (qty >= 10) discount = 0.05
+
+      return (basePrice * qty * (1 - discount)).toFixed(2)
+    },
+    [selectedVariant, finalPrice],
+  )
+
+  useEffect(() => {
+    setBulkPrice(calculateBulkPrice(bulkQuantity))
+  }, [bulkQuantity, calculateBulkPrice])
+
+  const avgRating = useMemo(() => {
+    if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
+    const validRatings = product.reviews.filter((r) => r && typeof r.rating === "number")
+    if (validRatings.length === 0) return 0
+    const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
+    return (total / validRatings.length).toFixed(1)
+  }, [product?.reviews])
+
+  const currentUserReview = useMemo(() => {
+    if (!Array.isArray(product?.reviews)) return null
+    const currentUserId = user?.user?.userId || user?.user?._id
+    if (!currentUserId) return null
+    return product.reviews.find((r) => r?.user === currentUserId)
+  }, [product?.reviews, user])
+
+  const otherReviews = useMemo(() => {
+    if (!Array.isArray(product?.reviews)) return []
+    const currentUserId = user?.user?.userId || user?.user?._id
+    if (!currentUserId) return product.reviews
+    return product.reviews.filter((r) => r?.user !== currentUserId)
+  }, [product?.reviews, user])
 
   const renderStars = useCallback((rating) => {
     return (
@@ -258,6 +748,7 @@ const ProductDetail = () => {
 
   const price = selectedVariant.price
   const discount = selectedVariant.discountPercent || 0
+  const reviewsToShow = showAllReviews ? otherReviews : otherReviews.slice(0, 3)
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -282,19 +773,51 @@ const ProductDetail = () => {
 
       {/* Product Images and Info */}
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Image Preview with contained zoom */}
+        {/* Image Preview */}
         <div className="space-y-4">
-          <div className="relative overflow-hidden rounded-lg border">
+          <div className="relative">
             <img
-              src={selectedImage || "/placeholder.svg?height=500&width=500"}
-              className="w-full h-[500px] object-contain cursor-zoom-in transition-transform duration-300 hover:scale-110"
+              src={selectedImage || "/placeholder.svg"}
+              className="w-full h-[500px] object-contain rounded cursor-zoom-in"
               alt={product.title}
               loading="lazy"
-              onClick={() => {
-                setModalImage(selectedImage)
-                setShowImageModal(true)
-              }}
+              onClick={() => handleImageClick(selectedImage)}
+              onMouseMove={handleMouseMove}
+              onMouseEnter={() => setZoom(true)}
+              onMouseLeave={() => setZoom(false)}
+              style={
+                zoom
+                  ? {
+                      transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                      transform: "scale(2)",
+                    }
+                  : {}
+              }
             />
+
+            {/* Stock sync button */}
+            <button
+              onClick={syncProductStock}
+              disabled={stockSyncLoading}
+              className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm text-blue-600 hover:bg-white hover:text-blue-700 text-sm px-3 py-2 rounded-full shadow-md disabled:opacity-50 transition-all"
+              title="Refresh stock status"
+            >
+              {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh"}
+            </button>
+
+            {/* Wishlist button */}
+            <button
+              onClick={handleWishlist}
+              disabled={wishlistLoading}
+              className={`absolute top-4 left-4 p-2 rounded-full shadow-md transition-all ${
+                isInWishlist
+                  ? "bg-red-500 text-white hover:bg-red-600"
+                  : "bg-white/80 backdrop-blur-sm text-gray-600 hover:bg-white hover:text-red-500"
+              }`}
+              title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              {wishlistLoading ? "⏳" : isInWishlist ? "❤️" : "🤍"}
+            </button>
           </div>
 
           {/* Thumbnail Images */}
@@ -302,21 +825,40 @@ const ProductDetail = () => {
             {product.images?.others?.map((img, i) => (
               <img
                 key={i}
-                src={img.url || "/placeholder.svg?height=80&width=80"}
+                src={img.url || "/placeholder.svg"}
                 onClick={() => setSelectedImage(img.url)}
-                className={`w-20 h-20 object-cover border cursor-pointer transition-all flex-shrink-0 rounded ${
+                className={`w-20 h-20 object-cover border cursor-pointer transition-all flex-shrink-0 ${
                   selectedImage === img.url ? "border-blue-500 scale-105" : "hover:scale-105"
                 }`}
                 alt={`${product.title} ${i + 1}`}
                 loading="lazy"
               />
             ))}
+
+            {/* Video thumbnail if available */}
+            {productVideo && (
+              <div
+                onClick={() => setShowVideoModal(true)}
+                className="w-20 h-20 bg-gray-200 border cursor-pointer transition-all flex-shrink-0 hover:scale-105 flex items-center justify-center"
+              >
+                <span className="text-2xl">▶️</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Product Info */}
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
+          <div className="flex items-start justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="text-gray-500 hover:text-blue-600 transition-colors"
+              title="Share product"
+            >
+              📤
+            </button>
+          </div>
 
           {/* Rating and Reviews */}
           <div className="flex items-center gap-4">
@@ -327,6 +869,8 @@ const ProductDetail = () => {
             <span className="text-sm text-gray-500">
               ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? "s" : ""})
             </span>
+            <span className="text-sm text-gray-400">|</span>
+            <span className="text-sm text-gray-500">{productViews} views</span>
           </div>
 
           {/* Price */}
@@ -347,54 +891,36 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* Enhanced Stock Status */}
+          {/* Stock Status */}
           {isOutOfStock ? (
-            <div className="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">!</span>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-red-800 font-semibold">Out of Stock</h3>
-                  <p className="text-red-600 text-sm">This variant is currently unavailable</p>
-                </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-red-600 font-medium">⚠️ Out of Stock</span>
+                <button onClick={() => setShowNotifyModal(true)} className="text-blue-600 hover:underline text-sm">
+                  Notify me when available
+                </button>
               </div>
+              <p className="text-red-500 text-sm">This variant is currently unavailable</p>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-green-50 to-emerald-100 border-l-4 border-green-500 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">✓</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-green-800 font-semibold">In Stock</h3>
-                      {typeof selectedVariant.stock === "number" && selectedVariant.stock <= 10 && (
-                        <p className="text-orange-600 text-sm font-medium">
-                          Only {selectedVariant.stock} left - Order soon!
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-700">
-                        {typeof selectedVariant.stock === "number" ? selectedVariant.stock : "∞"}
-                      </div>
-                      <div className="text-xs text-green-600 uppercase tracking-wide">Available</div>
-                    </div>
-                  </div>
-                </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 font-medium">✅ In Stock</span>
+                {typeof selectedVariant.stock === "number" && selectedVariant.stock <= 10 && (
+                  <span className="text-orange-600 text-sm">(Only {selectedVariant.stock} left!)</span>
+                )}
               </div>
             </div>
           )}
 
           {/* Size/Variant Selection */}
           <div className="space-y-3">
-            <p className="font-medium text-gray-900">Select Size:</p>
+            <div className="flex items-center justify-between">
+              <p className="font-medium text-gray-900">Select Size:</p>
+              <button onClick={() => setShowSizeGuide(true)} className="text-blue-600 hover:underline text-sm">
+                Size Guide
+              </button>
+            </div>
             <div className="flex gap-2 flex-wrap">
               {product.variants?.map((v, i) => {
                 const variantOutOfStock =
@@ -402,6 +928,7 @@ const ProductDetail = () => {
                   (typeof v.stock === "number" && v.stock <= 0) ||
                   v.stock === "0" ||
                   v.stock === 0
+
                 return (
                   <button
                     key={`variant-${i}`}
@@ -459,12 +986,16 @@ const ProductDetail = () => {
           {/* Action Buttons */}
           <div className="space-y-3">
             {isOutOfStock ? (
-              <button
-                disabled
-                className="w-full bg-gray-400 text-white px-6 py-4 rounded-lg cursor-not-allowed opacity-75 font-medium text-lg"
-              >
-                📦 Currently Unavailable
-              </button>
+              <div className="space-y-2">
+                <button
+                  disabled
+                  className="w-full bg-gray-400 text-white px-6 py-4 rounded-lg cursor-not-allowed opacity-75 font-medium text-lg"
+                  title="This variant is currently out of stock"
+                >
+                  📦 Currently Unavailable
+                </button>
+                <p className="text-xs text-gray-500 text-center">This size is temporarily out of stock</p>
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -480,6 +1011,51 @@ const ProductDetail = () => {
                 >
                   ⚡ Buy Now
                 </button>
+              </div>
+            )}
+
+            {/* Secondary Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowBulkOrder(true)}
+                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all text-sm"
+              >
+                📦 Bulk Order
+              </button>
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all text-sm"
+              >
+                📤 Share
+              </button>
+            </div>
+          </div>
+
+          {/* Delivery Check */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <h3 className="font-medium text-gray-900">Check Delivery</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter pincode"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={checkDelivery}
+                disabled={checkingDelivery}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all"
+              >
+                {checkingDelivery ? "Checking..." : "Check"}
+              </button>
+            </div>
+            {deliveryInfo && (
+              <div className={`text-sm ${deliveryInfo.available ? "text-green-600" : "text-red-600"}`}>
+                {deliveryInfo.message}
+                {deliveryInfo.available && deliveryInfo.estimatedDays && (
+                  <span className="block">Estimated delivery: {deliveryInfo.estimatedDays} days</span>
+                )}
               </div>
             )}
           </div>
@@ -501,24 +1077,66 @@ const ProductDetail = () => {
       <div className="mt-12">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8">
-            {["description", "details", "reviews"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
-                  activeTab === tab
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab} {tab === "reviews" && `(${product.reviews?.length || 0})`}
-              </button>
-            ))}
+            <button
+              onClick={() => {
+                setShowDescription(true)
+                setShowDetails(false)
+                setShowReviews(false)
+                setShowQA(false)
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                showDescription
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Description
+            </button>
+            <button
+              onClick={() => {
+                setShowDescription(false)
+                setShowDetails(true)
+                setShowReviews(false)
+                setShowQA(false)
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                showDetails ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Details
+            </button>
+            <button
+              onClick={() => {
+                setShowDescription(false)
+                setShowDetails(false)
+                setShowReviews(true)
+                setShowQA(false)
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                showReviews ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Reviews ({product.reviews?.length || 0})
+            </button>
+            <button
+              onClick={() => {
+                setShowDescription(false)
+                setShowDetails(false)
+                setShowReviews(false)
+                setShowQA(true)
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                showQA ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Q&A ({productQuestions.length})
+            </button>
           </nav>
         </div>
 
         <div className="mt-6">
-          {activeTab === "description" && (
+          {/* Description Tab */}
+          {showDescription && (
             <div className="prose max-w-none">
               <div className="text-gray-700 whitespace-pre-line leading-relaxed">
                 {product.description || "No description available."}
@@ -526,7 +1144,8 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {activeTab === "details" && (
+          {/* Details Tab */}
+          {showDetails && (
             <div>
               <h3 className="text-lg font-semibold mb-4">Product Details</h3>
               {product.details && typeof product.details === "object" ? (
@@ -544,41 +1163,333 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {activeTab === "reviews" && (
+          {/* Reviews Tab */}
+          {showReviews && (
             <div>
-              {product.reviews && product.reviews.length > 0 ? (
-                <div className="space-y-6">
-                  {product.reviews.map((review, index) => (
-                    <div key={index} className="border p-6 rounded-lg shadow-sm bg-white">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex gap-3 items-center">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              {(review.name || "User").charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">{review.name || "Anonymous User"}</p>
-                            <div className="flex items-center gap-2">
-                              {renderStars(review.rating)}
-                              <span className="text-xs text-gray-500">
-                                {new Date(review.createdAt).toLocaleDateString()}
-                              </span>
+              {/* Review Statistics */}
+              {product.reviews && product.reviews.length > 0 && (
+                <div className="mb-8 p-6 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-yellow-600 mb-2">{avgRating}</div>
+                      <div className="flex justify-center mb-2">{renderStars(Number.parseFloat(avgRating))}</div>
+                      <div className="text-sm text-gray-600">
+                        Based on {product.reviews.length} review{product.reviews.length !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                    <div>
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const count = product.reviews.filter(
+                          (r) => r && typeof r.rating === "number" && r.rating === star,
+                        ).length
+                        const percentage = product.reviews.length > 0 ? (count / product.reviews.length) * 100 : 0
+                        return (
+                          <div key={star} className="flex items-center gap-2 mb-2">
+                            <span className="text-sm w-8">{star}★</span>
+                            <div className="flex-1 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${percentage}%` }}
+                              ></div>
                             </div>
+                            <span className="text-sm text-gray-600 w-8">{count}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Review Form */}
+              {token && !currentUserReview ? (
+                <form onSubmit={handleReviewSubmit} className="space-y-6 mb-8 bg-gray-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-semibold">Write a Review</h3>
+
+                  {/* Rating */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Rating:</label>
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <svg
+                          key={star}
+                          onClick={() => setReviewRating(star)}
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill={reviewRating >= star ? "#facc15" : "none"}
+                          viewBox="0 0 24 24"
+                          stroke="#facc15"
+                          className="w-8 h-8 cursor-pointer transition hover:scale-110"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="1.5"
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+                          />
+                        </svg>
+                      ))}
+                      <span className="ml-2 text-sm text-gray-600">
+                        {reviewRating > 0 ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}` : "Click to rate"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Comment */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Review:</label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      rows={4}
+                      className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Share your experience with this product... (minimum 10 characters)"
+                      maxLength={1000}
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {reviewComment.length}/1000 characters
+                      {reviewComment.length < 10 && reviewComment.length > 0 && " (minimum 10 required)"}
+                    </div>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Add Photos (Optional):</label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleReviewImageChange}
+                      className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">You can upload up to 5 images (max 5MB each)</div>
+                  </div>
+
+                  {/* Image Previews */}
+                  {reviewImagePreviews.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Photo Previews:</label>
+                      <div className="flex flex-wrap gap-2">
+                        {reviewImagePreviews.map((preview, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={preview || "/placeholder.svg"}
+                              alt={`Preview ${index + 1}`}
+                              loading="lazy"
+                              className="w-20 h-20 object-cover rounded border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeReviewImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
+
+                  <button
+                    type="submit"
+                    disabled={
+                      submittingReview || !reviewRating || !reviewComment.trim() || reviewComment.trim().length < 10
+                    }
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {submittingReview ? "Submitting..." : "Submit Review"}
+                  </button>
+                </form>
+              ) : token && currentUserReview ? (
+                <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-700 font-medium">✅ You have already reviewed this product.</p>
+                  <p className="text-sm text-green-600">You can delete your review and write a new one if needed.</p>
+                </div>
+              ) : (
+                <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-gray-600">Please login to write a review.</p>
+                  <button onClick={() => navigate("/login_signup")} className="text-blue-600 hover:underline mt-2">
+                    Login to review
+                  </button>
+                </div>
+              )}
+
+              {/* Reviews List */}
+              <div className="space-y-6">
+                {/* Current User's Review */}
+                {currentUserReview && (
+                  <div className="border p-6 rounded-lg shadow-sm bg-blue-50 border-blue-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex gap-3 items-center">
+                        <p className="text-sm font-semibold text-blue-800">Your Review</p>
+                        {renderStars(currentUserReview.rating)}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-xs text-gray-400">
+                          {new Date(currentUserReview.createdAt).toLocaleDateString()}
+                        </p>
+                        <button
+                          onClick={() => handleDeleteReview(currentUserReview._id)}
+                          disabled={actionLoading[`delete-${currentUserReview._id}`]}
+                          className="text-xs text-red-500 hover:underline disabled:opacity-50"
+                        >
+                          {actionLoading[`delete-${currentUserReview._id}`] ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 mb-3 leading-relaxed">{currentUserReview.comment}</p>
+
+                    {/* Review Images */}
+                    {currentUserReview.images && currentUserReview.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {currentUserReview.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                            alt={`Review image ${index + 1}`}
+                            loading="lazy"
+                            className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => handleImageClick(image.startsWith("http") ? image : `${API_BASE}${image}`)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {reviewsToShow.length === 0 && !currentUserReview && (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-6xl mb-4">📝</div>
+                    <p className="text-gray-400 italic text-lg">No reviews yet.</p>
+                    <p className="text-gray-500 text-sm mt-2">Be the first to review this product!</p>
+                  </div>
+                )}
+
+                {reviewsToShow.map((review) => (
+                  <div key={review._id} className="border p-6 rounded-lg shadow-sm bg-white">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex gap-3 items-center">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {(review.name || "User").charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{review.name || "Anonymous User"}</p>
+                          <div className="flex items-center gap-2">
+                            {renderStars(review.rating)}
+                            <span className="text-xs text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
                     </div>
-                  ))}
+                    <p className="text-sm text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
+
+                    {/* Review Images */}
+                    {review.images && review.images.length > 0 && (
+                      <div className="mb-3">
+                        <div className="flex flex-wrap gap-2">
+                          {review.images.map((image, index) => (
+                            <img
+                              key={index}
+                              src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                              loading="lazy"
+                              alt={`Review image ${index + 1}`}
+                              className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                              onClick={() => handleImageClick(image.startsWith("http") ? image : `${API_BASE}${image}`)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Show More/Less Button */}
+                {otherReviews.length > 3 && (
+                  <div className="text-center">
+                    <button
+                      onClick={() => setShowAllReviews(!showAllReviews)}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      {showAllReviews ? "Show Less Reviews" : `Show ${otherReviews.length - 3} More Reviews`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Q&A Tab */}
+          {showQA && (
+            <div>
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4">Questions & Answers</h3>
+
+                {/* Ask Question Form */}
+                <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                  <h4 className="font-medium mb-3">Ask a Question</h4>
+                  <div className="space-y-3">
+                    <textarea
+                      value={qaQuestion}
+                      onChange={(e) => setQaQuestion(e.target.value)}
+                      placeholder="Ask anything about this product..."
+                      rows={3}
+                      className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      maxLength={500}
+                    />
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">{qaQuestion.length}/500 characters</span>
+                      <button
+                        onClick={handleQuestionSubmit}
+                        disabled={qaLoading || !qaQuestion.trim()}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        {qaLoading ? "Submitting..." : "Ask Question"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="text-gray-400 text-6xl mb-4">📝</div>
-                  <p className="text-gray-400 italic text-lg">No reviews yet.</p>
-                  <p className="text-gray-500 text-sm mt-2">Be the first to review this product!</p>
+
+                {/* Questions List */}
+                <div className="space-y-4">
+                  {productQuestions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-2">❓</div>
+                      <p className="text-gray-500">No questions yet. Be the first to ask!</p>
+                    </div>
+                  ) : (
+                    productQuestions.map((qa) => (
+                      <div key={qa._id} className="border rounded-lg p-4">
+                        <div className="mb-3">
+                          <div className="flex items-start gap-2">
+                            <span className="text-blue-600 font-medium text-sm">Q:</span>
+                            <p className="text-gray-800">{qa.question}</p>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 ml-4">
+                            Asked by {qa.userName || "Anonymous"} on {new Date(qa.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {qa.answer && (
+                          <div className="ml-4 pl-4 border-l-2 border-gray-200">
+                            <div className="flex items-start gap-2">
+                              <span className="text-green-600 font-medium text-sm">A:</span>
+                              <p className="text-gray-700">{qa.answer}</p>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 ml-4">
+                              Answered on {new Date(qa.answeredAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -590,7 +1501,7 @@ const ProductDetail = () => {
           <h2 className="text-2xl font-bold mb-6">You Might Also Like</h2>
           <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {relatedProducts.slice(0, 10).map((p) => {
-              const mainImage = p.images?.others?.[0]?.url || "/placeholder.svg?height=200&width=200"
+              const mainImage = p.images?.others?.[0]?.url || "/placeholder.svg"
               const firstVariant = p.variants?.[0]
               const price = firstVariant?.price || 0
               const discount = firstVariant?.discountPercent || 0
@@ -602,11 +1513,13 @@ const ProductDetail = () => {
                   onClick={() => navigate(`/product/${p._id}`)}
                   className="cursor-pointer border rounded-lg shadow-sm p-4 hover:shadow-md transition duration-200 relative group"
                 >
+                  {/* Discount Badge */}
                   {discount > 0 && (
                     <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
                       {discount}% OFF
                     </div>
                   )}
+
                   <div className="relative overflow-hidden rounded-lg mb-3">
                     <img
                       src={mainImage || "/placeholder.svg"}
@@ -615,12 +1528,21 @@ const ProductDetail = () => {
                       loading="lazy"
                     />
                   </div>
+
                   <h4 className="text-sm font-semibold mb-2 line-clamp-2">{p.title}</h4>
+
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-green-600 font-bold">₹{finalPrice}</span>
                       {discount > 0 && <span className="text-xs text-gray-400 line-through">₹{price}</span>}
                     </div>
+
+                    {p.reviews && p.reviews.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <div className="flex">{renderStars(p.avgRating || 0)}</div>
+                        <span className="text-xs text-gray-500">({p.reviews.length})</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -629,12 +1551,47 @@ const ProductDetail = () => {
         </div>
       )}
 
+      {/* Recently Viewed */}
+      {recentlyViewed.length > 1 && (
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold mb-6">Recently Viewed</h2>
+          <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {recentlyViewed.slice(1, 7).map((p) => {
+              const mainImage = p.images?.others?.[0]?.url || "/placeholder.svg"
+              const firstVariant = p.variants?.[0]
+              const price = firstVariant?.price || 0
+              const discount = firstVariant?.discountPercent || 0
+              const finalPrice = (price - (price * discount) / 100).toFixed(2)
+
+              return (
+                <div
+                  key={p._id}
+                  onClick={() => navigate(`/product/${p._id}`)}
+                  className="cursor-pointer border rounded-lg shadow-sm p-3 hover:shadow-md transition duration-200"
+                >
+                  <img
+                    src={mainImage || "/placeholder.svg"}
+                    alt={p.title}
+                    className="w-full h-32 object-cover rounded mb-2"
+                    loading="lazy"
+                  />
+                  <h4 className="text-xs font-medium mb-1 line-clamp-2">{p.title}</h4>
+                  <p className="text-green-600 font-bold text-sm">₹{finalPrice}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+
       {/* Image Modal */}
       {showImageModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
           <div className="relative max-w-4xl max-h-full">
             <img
-              src={modalImage || "/placeholder.svg?height=600&width=600"}
+              src={modalImage || "/placeholder.svg"}
               alt="Product"
               className="max-w-full max-h-full object-contain"
               loading="lazy"
@@ -645,6 +1602,223 @@ const ProductDetail = () => {
             >
               ✕
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Video Modal */}
+      {showVideoModal && productVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
+          <div className="relative max-w-4xl max-h-full">
+            <video src={productVideo} controls autoPlay className="max-w-full max-h-full" />
+            <button
+              onClick={() => setShowVideoModal(false)}
+              className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm text-gray-800 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white transition-all"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4">Share this product</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleShare("whatsapp")}
+                disabled={shareLoading}
+                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
+              >
+                <span className="text-green-500">📱</span>
+                WhatsApp
+              </button>
+              <button
+                onClick={() => handleShare("facebook")}
+                disabled={shareLoading}
+                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
+              >
+                <span className="text-blue-600">📘</span>
+                Facebook
+              </button>
+              <button
+                onClick={() => handleShare("twitter")}
+                disabled={shareLoading}
+                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
+              >
+                <span className="text-blue-400">🐦</span>
+                Twitter
+              </button>
+              <button
+                onClick={() => handleShare("copy")}
+                disabled={shareLoading}
+                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
+              >
+                <span>📋</span>
+                Copy Link
+              </button>
+            </div>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="mt-4 w-full text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notify When Available Modal */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4">Get notified when available</h3>
+            <p className="text-sm text-gray-600 mb-4">We'll send you an email when this item is back in stock.</p>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={notifyEmail}
+              onChange={(e) => setNotifyEmail(e.target.value)}
+              className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={handleNotifyWhenAvailable}
+                disabled={notifyLoading || !notifyEmail.trim()}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {notifyLoading ? "Setting up..." : "Notify Me"}
+              </button>
+              <button
+                onClick={() => setShowNotifyModal(false)}
+                className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Size Guide Modal */}
+      {showSizeGuide && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Size Guide</h3>
+              <button onClick={() => setShowSizeGuide(false)} className="text-gray-500 hover:text-gray-700">
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">Please refer to the size chart below to find your perfect fit.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="border border-gray-300 p-2 text-left">Size</th>
+                      <th className="border border-gray-300 p-2 text-left">Chest (inches)</th>
+                      <th className="border border-gray-300 p-2 text-left">Waist (inches)</th>
+                      <th className="border border-gray-300 p-2 text-left">Length (inches)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-gray-300 p-2">S</td>
+                      <td className="border border-gray-300 p-2">36-38</td>
+                      <td className="border border-gray-300 p-2">30-32</td>
+                      <td className="border border-gray-300 p-2">26-27</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 p-2">M</td>
+                      <td className="border border-gray-300 p-2">38-40</td>
+                      <td className="border border-gray-300 p-2">32-34</td>
+                      <td className="border border-gray-300 p-2">27-28</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 p-2">L</td>
+                      <td className="border border-gray-300 p-2">40-42</td>
+                      <td className="border border-gray-300 p-2">34-36</td>
+                      <td className="border border-gray-300 p-2">28-29</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 p-2">XL</td>
+                      <td className="border border-gray-300 p-2">42-44</td>
+                      <td className="border border-gray-300 p-2">36-38</td>
+                      <td className="border border-gray-300 p-2">29-30</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Order Modal */}
+      {showBulkOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Bulk Order</h3>
+            <p className="text-sm text-gray-600 mb-4">Get special discounts on bulk orders:</p>
+            <ul className="text-sm text-gray-600 mb-4 space-y-1">
+              <li>• 10-19 items: 5% discount</li>
+              <li>• 20-49 items: 10% discount</li>
+              <li>• 50+ items: 15% discount</li>
+            </ul>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Quantity:</label>
+                <input
+                  type="number"
+                  min="10"
+                  max="1000"
+                  value={bulkQuantity}
+                  onChange={(e) => setBulkQuantity(Number(e.target.value))}
+                  className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex justify-between text-sm">
+                  <span>Unit Price:</span>
+                  <span>₹{finalPrice}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Quantity:</span>
+                  <span>{bulkQuantity}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Discount:</span>
+                  <span className="text-green-600">
+                    {bulkQuantity >= 50 ? "15%" : bulkQuantity >= 20 ? "10%" : bulkQuantity >= 10 ? "5%" : "0%"}
+                  </span>
+                </div>
+                <hr className="my-2" />
+                <div className="flex justify-between font-semibold">
+                  <span>Total:</span>
+                  <span>₹{bulkPrice}</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setQuantity(bulkQuantity)
+                    setShowBulkOrder(false)
+                  }}
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-all"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  onClick={() => setShowBulkOrder(false)}
+                  className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
