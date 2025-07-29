@@ -33,8 +33,6 @@ const ProductDetail = () => {
   const [notifyEmail, setNotifyEmail] = useState("")
   const [notifyLoading, setNotifyLoading] = useState(false)
   const [productViews, setProductViews] = useState(0)
-  const [showBulkOrder, setShowBulkOrder] = useState(false)
-  const [bulkPrice, setBulkPrice] = useState(0)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [productVideo, setProductVideo] = useState("")
   const [zoom, setZoom] = useState(false)
@@ -398,19 +396,6 @@ const ProductDetail = () => {
     [id, token, fetchProduct],
   )
 
-  const calculateBulkPrice = useCallback(
-    (qty) => {
-      if (!selectedVariant) return 0
-      const basePrice = Number.parseFloat(finalPrice)
-      let discount = 0
-      if (qty >= 50) discount = 0.15
-      else if (qty >= 20) discount = 0.1
-      else if (qty >= 10) discount = 0.05
-      return (basePrice * qty * (1 - discount)).toFixed(2)
-    },
-    [selectedVariant, finalPrice],
-  )
-
   const avgRating = useMemo(() => {
     if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
     const validRatings = product.reviews.filter((r) => r && typeof r.rating === "number")
@@ -721,21 +706,6 @@ const ProductDetail = () => {
                 </button>
               </div>
             )}
-            {/* Secondary Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setShowBulkOrder(true)}
-                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all text-sm"
-              >
-                📦 Bulk Order
-              </button>
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all text-sm"
-              >
-                📤 Share
-              </button>
-            </div>
           </div>
         </div>
       </div>
