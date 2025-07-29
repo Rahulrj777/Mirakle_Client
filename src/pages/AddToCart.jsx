@@ -447,7 +447,7 @@ const AddToCart = () => {
         </div>
 
         <div id="summary" className="w-1/4 px-8 py-10">
-          <h1 className="font-semibold text-2xl border-b pb-8">Price Details</h1>
+          <h1 className="font-semibold text-2xl border-b pb-8">Price Detail's</h1>
 
           <div className="flex justify-between mt-10 mb-5">
             <span className="font-semibold text-sm uppercase">
@@ -504,7 +504,7 @@ const AddToCart = () => {
               ? "Remove Out of Stock Items"
               : availableItems.length === 0
                 ? "Cart is Empty"
-                : `PLACE ORDERs (${availableItems.length} items)`}
+                : `PLACE ORDER (${availableItems.length} items)`}
           </button>
         </div>
       </div>
