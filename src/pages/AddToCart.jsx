@@ -10,20 +10,30 @@ import {
   initializeSelectedAddress,
   updateCartItemsStock,
 } from "../Redux/cartSlice"
-import { useUser } from "@clerk/clerk-react"
-import { axiosWithToken } from "../utils/axios"
-import { API_BASE } from "../api"
+import { axiosWithToken } from "../utils/axiosWithToken" // Fixed path
+import { API_BASE } from "../utils/api" // Fixed path
 
 const AddToCart = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const cartItems = useSelector((state) => state.cart.cartItems)
+  const cartItems = useSelector((state) => {
+    const items = state.cart?.items
+    return Array.isArray(items) ? items : []
+  })
   const [cartReady, setCartReady] = useState(false)
   const [safeCartItems, setSafeCartItems] = useState([])
   const [hasOutOfStockItem, setHasOutOfStockItem] = useState(false)
-  const { isSignedIn, user } = useUser()
-  const userId = user?.id
-  const token = localStorage.getItem("token")
+  
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("mirakleUser"))
+    } catch {
+      return null
+    }
+  }, [])
+
+  const userId = user?.user?.userId || user?.user?._id
+  const token = user?.token
 
   useEffect(() => {
     if (cartItems) {
@@ -41,15 +51,15 @@ const AddToCart = () => {
   }, [safeCartItems])
 
   const getUserData = async () => {
-    if (!isSignedIn || !userId) return
+    if (!user || !userId || !token) return
 
     try {
-      const response = await axiosWithToken(token).get(`${API_BASE}/api/users/${userId}`)
+      const response = await axiosWithToken(token).get(`${API_BASE}/api/users/address`)
       const userData = response.data
 
       if (userData && userData.addresses) {
         dispatch(setAddresses(userData.addresses))
-        const storedSelectedAddress = localStorage.getItem("selectedAddress")
+        const storedSelectedAddress = localStorage.getItem(`deliveryAddress_${userId}`)
         if (storedSelectedAddress) {
           try {
             const parsedAddress = JSON.parse(storedSelectedAddress)
@@ -72,10 +82,10 @@ const AddToCart = () => {
   }
 
   useEffect(() => {
-    if (isSignedIn && userId && token) {
+    if (user && userId && token) {
       getUserData()
     }
-  }, [isSignedIn, userId, token, dispatch])
+  }, [user, userId, token, dispatch])
 
   // Add this function after getUserData
   const syncCartWithStock = async () => {
