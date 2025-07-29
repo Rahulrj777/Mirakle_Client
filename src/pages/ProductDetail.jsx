@@ -153,6 +153,13 @@ const ProductDetail = () => {
   )
 
   useEffect(() => {
+    if (id) {
+      fetchProduct()
+      fetchRelated()
+    }
+  }, [id, fetchProduct, fetchRelated])
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [id])
 
