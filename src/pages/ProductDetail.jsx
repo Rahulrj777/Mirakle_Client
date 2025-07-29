@@ -199,7 +199,7 @@ const ProductDetail = () => {
         currentPrice: Number.parseFloat(finalPrice),
         quantity: 1,
         stock: selectedVariant.stock,
-        isOutOfStock: selectedVariant.isOutOfStock
+       isOutOfStock: selectedVariant.isOutOfStock
       }
 
       console.log("🛒 Product to add:", productToAdd)

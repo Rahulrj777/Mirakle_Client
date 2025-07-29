@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useState, useMemo } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { useNavigate } from "react-router-dom"
 import {
   incrementQuantity,
   decrementQuantity,
@@ -7,275 +8,218 @@ import {
   selectAddress,
   setAddresses,
   initializeSelectedAddress,
-} from "../Redux/cartSlice";
-import { useNavigate } from "react-router-dom";
-import { axiosWithToken } from "../utils/axiosWithToken";
-import { API_BASE } from "../utils/api";
-
-const LoadingPlaceholder = () => (
-  <div className="bg-gray-100 min-h-screen py-6">
-    <div className="max-w-6xl mx-auto px-4">
-      <div className="animate-pulse space-y-4">
-        <div className="h-20 bg-gray-300 rounded"></div>
-        <div className="h-32 bg-gray-300 rounded"></div>
-        <div className="h-32 bg-gray-300 rounded"></div>
-      </div>
-    </div>
-  </div>
-);
+  updateCartItemsStock,
+} from "../Redux/cartSlice"
+import { useUser } from "@clerk/clerk-react"
+import { axiosWithToken } from "../utils/axios"
+import { API_BASE } from "../api"
 
 const AddToCart = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const modalRef = useRef();
-  const prevCartRef = useRef([]);
-  const syncTimeoutRef = useRef(null);
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const cartItems = useSelector((state) => state.cart.cartItems)
+  const [cartReady, setCartReady] = useState(false)
+  const [safeCartItems, setSafeCartItems] = useState([])
+  const [hasOutOfStockItem, setHasOutOfStockItem] = useState(false)
+  const { isSignedIn, user } = useUser()
+  const userId = user?.id
+  const token = localStorage.getItem("token")
 
-  const cartItems = useSelector((state) => state.cart.items);
-  const cartReady = useSelector((state) => state.cart.cartReady);
-  const userId = useSelector((state) => state.cart.userId);
-  const addresses = useSelector((state) => state.cart.addresses);
-  const selectedAddress = useSelector((state) => state.cart.selectedAddress);
-
-  const [showAddressModal, setShowAddressModal] = useState(false);
-  const [addressesLoaded, setAddressesLoaded] = useState(false);
-  const [addressesLoading, setAddressesLoading] = useState(false);
-
-  // Get user and token from localStorage with error handling
-  const getUserData = () => {
-    try {
-      const userData = JSON.parse(localStorage.getItem("mirakleUser"));
-      return {
-        user: userData?.user || null,
-        token: userData?.token || null,
-      };
-    } catch {
-      return { user: null, token: null };
-    }
-  };
-
-  const { user, token } = getUserData();
-
-  const safeCartItems = useMemo(() => {
-    return Array.isArray(cartItems) ? cartItems : [];
-  }, [cartItems]);
-
-  const subtotal = useMemo(() => {
-    return safeCartItems.reduce(
-      (acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0),
-      0
-    );
-  }, [safeCartItems]);
-
-  const originalTotal = useMemo(() => {
-    return safeCartItems.reduce(
-      (acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0),
-      0
-    );
-  }, [safeCartItems]);
-
-  const discountAmount = useMemo(
-    () => originalTotal - subtotal,
-    [originalTotal, subtotal]
-  );
-
-  // Fetch saved addresses on first load
   useEffect(() => {
-    if (!cartReady || !token || !userId || addressesLoaded) return;
-
-    setAddressesLoading(true);
-    axiosWithToken(token)
-      .get(`${API_BASE}/api/users/address`)
-      .then((res) => {
-        if (Array.isArray(res.data.addresses)) {
-          dispatch(setAddresses(res.data.addresses));
-          setAddressesLoaded(true);
-          // Initialize selected address if saved in localStorage and still valid
-          const savedAddressStr = localStorage.getItem(
-            `deliveryAddress_${userId}`
-          );
-          if (savedAddressStr) {
-            try {
-              const savedAddress = JSON.parse(savedAddressStr);
-              const exists = res.data.addresses.some(
-                (addr) => addr._id === savedAddress._id
-              );
-              if (exists) {
-                dispatch(initializeSelectedAddress(savedAddress));
-              } else {
-                localStorage.removeItem(`deliveryAddress_${userId}`);
-                dispatch(selectAddress(null));
-              }
-            } catch {
-              localStorage.removeItem(`deliveryAddress_${userId}`);
-              dispatch(selectAddress(null));
-            }
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load addresses:", err);
-      })
-      .finally(() => {
-        setAddressesLoading(false);
-      });
-  }, [cartReady, token, userId, dispatch, addressesLoaded]);
-
-  // Debounced cart sync to backend
-  useEffect(() => {
-    if (!cartReady || !token || !user || !userId) return;
-
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
+    if (cartItems) {
+      setSafeCartItems(cartItems)
     }
+  }, [cartItems])
 
-    if (
-      JSON.stringify(prevCartRef.current) === JSON.stringify(safeCartItems)
-    )
-      return;
-
-    syncTimeoutRef.current = setTimeout(() => {
-      prevCartRef.current = [...safeCartItems];
-
-      localStorage.setItem(
-        `cart_${userId}`,
-        JSON.stringify(safeCartItems)
-      );
-
-      // Sync to backend
-      axiosWithToken(token)
-        .post("/cart", { items: safeCartItems })
-        .then(() => {
-          console.log("✅ Cart synced successfully");
-        })
-        .catch((err) => {
-          console.error("❌ Cart sync failed:", err);
-        });
-    }, 500);
-
-    return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-    };
-  }, [safeCartItems, cartReady, token, user, userId]);
-
-  // Address modal outside click to close
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setShowAddressModal(false);
-      }
-    };
-    if (showAddressModal) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showAddressModal]);
-
-  const handleAddressSelect = (address) => {
-    dispatch(selectAddress(address));
-    localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(address));
-    setShowAddressModal(false);
-  };
-
-  const confirmDelete = (addressId) => {
-    if (window.confirm("Are you sure you want to delete this address?")) {
-      handleDeleteAddress(addressId);
-    }
-  };
-
-  const handleDeleteAddress = async (id) => {
-    try {
-      const res = await axiosWithToken(token).delete(
-        `${API_BASE}/api/users/address/${id}`
-      );
-      if (res.data.addresses) {
-        dispatch(setAddresses(res.data.addresses));
-        if (selectedAddress?._id === id) {
-          localStorage.removeItem(`deliveryAddress_${userId}`);
-          if (res.data.addresses.length > 0) {
-            const newSelected = res.data.addresses[0];
-            dispatch(selectAddress(newSelected));
-            localStorage.setItem(
-              `deliveryAddress_${userId}`,
-              JSON.stringify(newSelected)
-            );
-          } else {
-            dispatch(selectAddress(null));
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Failed to delete address:", error);
-      alert("Could not delete address. Please try again later.");
-    }
-  };
-
-  if (!cartReady) {
-    return <LoadingPlaceholder />;
+  const isItemOutOfStock = (item) => {
+    return item.isOutOfStock === true
   }
 
-  // Helper to determine out of stock for each cart item
-  const isItemOutOfStock = (item) => {
-    // Covers boolean flag and stock quantity (number or string)
-    return (
-      item.isOutOfStock === true ||
-      (typeof item.stock === "number" && item.stock <= 0) ||
-      item.stock === "0" ||
-      item.stock === 0
-    );
-  };
+  useEffect(() => {
+    const outOfStock = safeCartItems.some((item) => isItemOutOfStock(item))
+    setHasOutOfStockItem(outOfStock)
+  }, [safeCartItems])
 
-  // Determine if any cart item is out of stock to disable Place Order
-  const hasOutOfStockItem = safeCartItems.some(isItemOutOfStock);
+  const getUserData = async () => {
+    if (!isSignedIn || !userId) return
+
+    try {
+      const response = await axiosWithToken(token).get(`${API_BASE}/api/users/${userId}`)
+      const userData = response.data
+
+      if (userData && userData.addresses) {
+        dispatch(setAddresses(userData.addresses))
+        const storedSelectedAddress = localStorage.getItem("selectedAddress")
+        if (storedSelectedAddress) {
+          try {
+            const parsedAddress = JSON.parse(storedSelectedAddress)
+            dispatch(selectAddress(parsedAddress))
+          } catch (error) {
+            console.error("Error parsing stored address:", error)
+            dispatch(initializeSelectedAddress())
+          }
+        } else {
+          dispatch(initializeSelectedAddress())
+        }
+      } else {
+        dispatch(initializeSelectedAddress())
+      }
+      setCartReady(true)
+    } catch (error) {
+      console.error("Error fetching user data:", error)
+      setCartReady(false)
+    }
+  }
+
+  useEffect(() => {
+    if (isSignedIn && userId && token) {
+      getUserData()
+    }
+  }, [isSignedIn, userId, token, dispatch])
+
+  // Add this function after getUserData
+  const syncCartWithStock = async () => {
+    if (!cartReady || !token || !userId || safeCartItems.length === 0) return
+
+    try {
+      console.log("🔄 Syncing cart with current stock status...")
+
+      // Get unique product IDs from cart
+      const productIds = [...new Set(safeCartItems.map((item) => item._id))]
+
+      // Check current stock status
+      const response = await axiosWithToken(token).post(`${API_BASE}/api/products/check-stock`, {
+        productIds,
+      })
+
+      const currentProducts = response.data.products
+      const stockUpdates = []
+
+      safeCartItems.forEach((cartItem) => {
+        const currentProduct = currentProducts.find((p) => p._id === cartItem._id)
+
+        if (!currentProduct) {
+          stockUpdates.push({
+            _id: cartItem._id,
+            variantId: cartItem.variantId,
+            isOutOfStock: true,
+            stock: 0,
+            stockMessage: "Product no longer available",
+          })
+          return
+        }
+
+        // Find matching variant
+        const currentVariant = currentProduct.variants.find((v) => {
+          return (
+            v.size === cartItem.size ||
+            (v.weight &&
+              cartItem.weight &&
+              v.weight.value === cartItem.weight.value &&
+              v.weight.unit === cartItem.weight.unit)
+          )
+        })
+
+        if (!currentVariant) {
+          stockUpdates.push({
+            _id: cartItem._id,
+            variantId: cartItem.variantId,
+            isOutOfStock: true,
+            stock: 0,
+            stockMessage: "Variant no longer available",
+          })
+          return
+        }
+
+        // Check stock status
+        const isOutOfStock =
+          currentProduct.isOutOfStock === true ||
+          currentVariant.isOutOfStock === true ||
+          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0) ||
+          currentVariant.stock === "0" ||
+          currentVariant.stock === 0
+
+        stockUpdates.push({
+          _id: cartItem._id,
+          variantId: cartItem.variantId,
+          isOutOfStock,
+          stock: currentVariant.stock,
+          stockMessage: isOutOfStock ? "Currently out of stock" : null,
+          originalPrice: currentVariant.price,
+          discountPercent: currentVariant.discountPercent || 0,
+          currentPrice: currentVariant.price - (currentVariant.price * (currentVariant.discountPercent || 0)) / 100,
+        })
+      })
+
+      // Update cart with stock status
+      dispatch(updateCartItemsStock(stockUpdates))
+
+      const outOfStockCount = stockUpdates.filter((update) => update.isOutOfStock).length
+      if (outOfStockCount > 0) {
+        console.log(`⚠️ ${outOfStockCount} items in cart are now out of stock`)
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync cart with stock:", error)
+    }
+  }
+
+  // Add this useEffect after the existing ones
+  useEffect(() => {
+    if (cartReady && token && userId) {
+      // Initial sync
+      syncCartWithStock()
+
+      // Sync every 30 seconds when tab is active
+      const interval = setInterval(() => {
+        if (!document.hidden) {
+          syncCartWithStock()
+        }
+      }, 30000)
+
+      // Sync when tab becomes visible
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          syncCartWithStock()
+        }
+      }
+
+      document.addEventListener("visibilitychange", handleVisibilityChange)
+
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener("visibilitychange", handleVisibilityChange)
+      }
+    }
+  }, [cartReady, token, userId, safeCartItems.length])
+
+  // Replace the existing cart items mapping with this:
+  const availableItems = useMemo(() => {
+    return safeCartItems.filter((item) => !isItemOutOfStock(item))
+  }, [safeCartItems])
+
+  const subtotal = useMemo(() => {
+    return availableItems.reduce((acc, item) => acc + (item.currentPrice || 0) * (item.quantity || 0), 0)
+  }, [availableItems])
+
+  const originalTotal = useMemo(() => {
+    return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
+  }, [availableItems])
 
   return (
-    <div className="bg-gray-100 min-h-screen py-6">
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side - Cart items and address */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Address Section */}
-          <div className="bg-white p-4 rounded shadow flex justify-between items-center">
-            {addressesLoading ? (
-              <div className="flex items-center animate-pulse space-x-4">
-                <div className="rounded-full bg-gray-300 h-4 w-4"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-300 rounded w-48"></div>
-                  <div className="h-3 bg-gray-300 rounded w-32"></div>
-                </div>
-              </div>
-            ) : selectedAddress ? (
-              <>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Deliver to: {selectedAddress.name}, {selectedAddress.pincode}
-                  </p>
-                  <p className="text-md">
-                    {selectedAddress.line1}, {selectedAddress.city},{" "}
-                    {selectedAddress.landmark}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAddressModal(true)}
-                  className="text-blue-600 hover:underline text-sm"
-                >
-                  Change
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setShowAddressModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Select Address
-              </button>
-            )}
+    <div className="container mx-auto mt-10">
+      <div className="flex shadow-md my-10">
+        <div className="w-3/4 bg-white px-10 py-10">
+          <div className="flex justify-between border-b pb-8">
+            <h1 className="font-semibold text-2xl">Shopping Cart</h1>
+            <h2 className="font-semibold text-2xl">{safeCartItems?.length} Items</h2>
+          </div>
+          <div className="flex mt-10 mb-5">
+            <h3 className="font-semibold text-gray-600 text-xs uppercase w-2/5">Product Details</h3>
+            <h3 className="font-semibold text-gray-600 text-xs uppercase w-1/5 text-center">Quantity</h3>
+            <h3 className="font-semibold text-gray-600 text-xs uppercase w-1/5 text-center">Price</h3>
+            <h3 className="font-semibold text-gray-600 text-xs uppercase w-1/5 text-center">Total</h3>
           </div>
 
-          {/* Cart Items */}
           {safeCartItems.length === 0 ? (
             <div className="bg-white rounded shadow p-8 text-center">
               <p className="text-gray-600 text-lg">Your cart is empty.</p>
@@ -287,53 +231,42 @@ const AddToCart = () => {
               </button>
             </div>
           ) : (
-            safeCartItems.map((item) => {
-              const outOfStock = isItemOutOfStock(item);
-              return (
-                <div
-                  key={`${item._id}_${item.variantId}`}
-                  className="bg-white rounded shadow p-4 flex gap-4"
-                >
-                  <img
-                    src={item.images?.others?.[0]?.url || "/placeholder.svg"}
-                    alt={item.title || "Product"}
-                    loading="lazy"
-                    className="w-28 h-28 object-cover border rounded"
-                  />
-                  <div className="flex-1">
-                    <h2 className="text-lg font-semibold">
-                      {item.title || "Unknown Product"}
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      Size: {item.size || "N/A"}
-                    </p>
-                    <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
-                    <div className="flex items-center gap-3">
-                      <span className="text-green-600 font-bold text-xl">
-                        ₹{(item.currentPrice || 0).toFixed(2)}
-                      </span>
-                      {(item.originalPrice || 0) > (item.currentPrice || 0) && (
-                        <>
-                          <span className="line-through text-sm text-gray-500">
-                            ₹{(item.originalPrice || 0).toFixed(2)}
-                          </span>
-                          <span className="text-red-500 text-sm font-medium">
-                            {Math.round(
-                              ((item.originalPrice - item.currentPrice) /
-                                item.originalPrice) *
-                                100
-                            )}
-                            % Off
-                          </span>
-                        </>
+            <>
+              {/* Available Items */}
+              {safeCartItems
+                .filter((item) => !isItemOutOfStock(item))
+                .map((item) => (
+                  <div key={`${item._id}_${item.variantId}`} className="bg-white rounded shadow p-4 flex gap-4">
+                    <img
+                      src={item.images?.others?.[0]?.url || "/placeholder.svg"}
+                      alt={item.title || "Product"}
+                      loading="lazy"
+                      className="w-28 h-28 object-cover border rounded"
+                    />
+                    <div className="flex-1">
+                      <h2 className="text-lg font-semibold">{item.title || "Unknown Product"}</h2>
+                      <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
+                      <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
+
+                      {/* Stock warning for low stock */}
+                      {!isItemOutOfStock(item) && typeof item.stock === "number" && item.stock <= 10 && (
+                        <p className="text-orange-600 text-xs mb-2">⚡ Only {item.stock} left in stock</p>
                       )}
-                    </div>
-                    <div className="mt-3 flex items-center gap-4">
-                      {outOfStock ? (
-                        <span className="text-red-600 font-semibold text-lg">
-                          Out of Stock
-                        </span>
-                      ) : (
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-green-600 font-bold text-xl">₹{(item.currentPrice || 0).toFixed(2)}</span>
+                        {(item.originalPrice || 0) > (item.currentPrice || 0) && (
+                          <>
+                            <span className="line-through text-sm text-gray-500">
+                              ₹{(item.originalPrice || 0).toFixed(2)}
+                            </span>
+                            <span className="text-red-500 text-sm font-medium">
+                              {Math.round(((item.originalPrice - item.currentPrice) / item.originalPrice) * 100)}% Off
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="mt-3 flex items-center gap-4">
                         <div className="flex items-center border rounded">
                           <button
                             className="px-3 py-1 text-lg hover:bg-gray-100"
@@ -342,7 +275,7 @@ const AddToCart = () => {
                                 decrementQuantity({
                                   _id: item._id,
                                   variantId: item.variantId,
-                                })
+                                }),
                               )
                             }
                             disabled={item.quantity <= 1}
@@ -357,131 +290,156 @@ const AddToCart = () => {
                                 incrementQuantity({
                                   _id: item._id,
                                   variantId: item.variantId,
-                                })
+                                }),
                               )
                             }
-                            disabled={
-                              typeof item.stock === "number"
-                                ? item.quantity >= item.stock
-                                : false
-                            }
+                            disabled={typeof item.stock === "number" ? item.quantity >= item.stock : false}
                           >
                             +
                           </button>
                         </div>
-                      )}
-                      <button
-                        className="text-red-500 text-sm hover:underline"
-                        onClick={() =>
-                          dispatch(
-                            removeFromCart({
-                              _id: item._id,
-                              variantId: item.variantId,
-                            })
-                          )
-                        }
-                      >
-                        Remove
-                      </button>
+                        <button
+                          className="text-red-500 text-sm hover:underline"
+                          onClick={() =>
+                            dispatch(
+                              removeFromCart({
+                                _id: item._id,
+                                variantId: item.variantId,
+                              }),
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
+                ))}
+
+              {/* Out of Stock Items Section */}
+              {safeCartItems.filter((item) => isItemOutOfStock(item)).length > 0 && (
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded p-4">
+                    <h3 className="text-red-800 font-medium mb-2">⚠️ Out of Stock Items</h3>
+                    <p className="text-red-600 text-sm">
+                      The following items are currently unavailable. Remove them to continue with your order.
+                    </p>
+                  </div>
+
+                  {safeCartItems
+                    .filter((item) => isItemOutOfStock(item))
+                    .map((item) => (
+                      <div
+                        key={`${item._id}_${item.variantId}`}
+                        className="bg-white rounded shadow p-4 flex gap-4 opacity-75"
+                      >
+                        <img
+                          src={item.images?.others?.[0]?.url || "/placeholder.svg"}
+                          alt={item.title || "Product"}
+                          loading="lazy"
+                          className="w-28 h-28 object-cover border rounded"
+                        />
+                        <div className="flex-1">
+                          <h2 className="text-lg font-semibold">{item.title || "Unknown Product"}</h2>
+                          <p className="text-sm text-gray-600">Size: {item.size || "N/A"}</p>
+                          <p className="text-sm text-gray-500 mb-2">Seller: Mirakle</p>
+
+                          {/* Out of stock alert */}
+                          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded">
+                            <p className="text-red-600 font-medium text-sm">
+                              📦 {item.stockMessage || "This item is currently out of stock"}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-500 font-bold text-xl">
+                              ₹{(item.currentPrice || 0).toFixed(2)}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 flex items-center gap-4">
+                            <span className="text-red-600 font-semibold">Out of Stock</span>
+                            <button
+                              className="text-red-500 text-sm hover:underline"
+                              onClick={() =>
+                                dispatch(
+                                  removeFromCart({
+                                    _id: item._id,
+                                    variantId: item.variantId,
+                                  }),
+                                )
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
-              );
-            })
+              )}
+            </>
           )}
+
+          <a href="/shop/allproduct" className="flex font-semibold text-indigo-600 text-sm mt-10">
+            <svg className="fill-current mr-2 text-indigo-600 w-4" viewBox="0 0 448 512">
+              <path d="M134.059 296H436c6.627 0 12-5.373 12-12v-56c0-6.627-5.373-12-12-12H134.059v-46.059c0-21.382-25.851-32.09-40.971-16.971L7.029 239.029c-9.373 9.373-9.373 24.569 0 33.941l86.059 86.059c15.119 15.119 40.971 4.411 40.971-16.971V296z" />
+            </svg>
+            Continue Shopping
+          </a>
         </div>
 
-        {/* Right side - Price details */}
-        <div className="bg-white p-6 rounded shadow sticky top-28">
-          <h3 className="text-xl font-bold mb-4">Price Details</h3>
-          <div className="flex justify-between mb-2">
-            <span>
-              Price ({safeCartItems.length} item
-              {safeCartItems.length > 1 ? "s" : ""})
-            </span>
-            <span>₹{originalTotal.toFixed(2)}</span>
+        <div id="summary" className="w-1/4 px-8 py-10">
+          <h1 className="font-semibold text-2xl border-b pb-8">Order Summary</h1>
+          <div className="flex justify-between mt-10 mb-5">
+            <span className="font-semibold text-sm uppercase">Items {safeCartItems?.length}</span>
+            <span className="font-semibold text-sm">{subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between mb-2">
-            <span>Discount</span>
-            <span className="text-green-600">
-              − ₹{discountAmount.toFixed(2)}
-            </span>
+          <div>
+            <label className="font-medium inline-block mb-3 text-sm uppercase">Shipping</label>
+            <select className="block p-2 text-gray-600 w-full text-sm">
+              <option>Standard shipping - $10.00</option>
+            </select>
           </div>
-          <div className="flex justify-between mb-2">
-            <span>Delivery Charges</span>
-            <span className="text-green-600">Free</span>
+          <div className="py-10">
+            <label htmlFor="promo" className="font-semibold inline-block mb-3 text-sm uppercase">
+              Promo Code
+            </label>
+            <input type="text" id="promo" placeholder="Enter your code" className="p-2 text-sm w-full" />
           </div>
-          <hr className="my-4" />
-          <div className="flex justify-between font-bold text-lg">
-            <span>Total Amount</span>
-            <span>₹{subtotal.toFixed(2)}</span>
-          </div>
-          {hasOutOfStockItem && (
-            <div className="text-red-500 text-sm my-2 text-center">
-              Remove Out of Stock items to continue
+          <button className="bg-red-500 hover:bg-red-600 px-5 py-2 text-sm text-white uppercase">Apply</button>
+          <div className="border-t mt-8">
+            <div className="flex justify-between mt-8">
+              <span>
+                Price ({availableItems.length} available item{availableItems.length > 1 ? "s" : ""})
+              </span>
+              <span>₹{originalTotal.toFixed(2)}</span>
             </div>
-          )}
-          <button
-            onClick={() => navigate("/checkout")}
-            disabled={safeCartItems.length === 0 || hasOutOfStockItem}
-            className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold"
-          >
-            PLACE ORDER
-          </button>
-        </div>
-      </div>
 
-      {/* Address Modal */}
-      {showAddressModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
-          <div
-            ref={modalRef}
-            className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto"
-          >
-            <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
-            {addresses.length === 0 ? (
-              <p className="text-gray-500">No addresses saved yet.</p>
-            ) : (
-              addresses.map((addr, idx) => (
-                <div
-                  key={addr._id || idx}
-                  className="border p-3 rounded mb-2 relative"
-                >
-                  <input
-                    type="radio"
-                    name="selectedAddress"
-                    checked={selectedAddress?._id === addr._id}
-                    onChange={() => handleAddressSelect(addr)}
-                  />
-                  <span className="ml-2 font-medium">
-                    {addr.name}, {addr.pincode}
-                  </span>
-                  <p className="text-sm text-gray-600">
-                    {addr.line1}, {addr.city}, {addr.landmark}
-                  </p>
-                  <button
-                    onClick={() => confirmDelete(addr._id)}
-                    className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))
+            {/* Add this after the existing price details */}
+            {safeCartItems.filter((item) => isItemOutOfStock(item)).length > 0 && (
+              <div className="text-red-500 text-sm my-2 text-center">
+                {safeCartItems.filter((item) => isItemOutOfStock(item)).length} out of stock item(s) excluded from total
+              </div>
             )}
+
+            <div className="flex font-semibold justify-between py-6 text-sm uppercase">
+              <span>Total cost</span>
+              <span>₹{subtotal.toFixed(2)}</span>
+            </div>
+            {/* Update the Place Order button */}
             <button
-              onClick={() => {
-                setShowAddressModal(false);
-                navigate("/address");
-              }}
-              className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
+              onClick={() => navigate("/checkout")}
+              disabled={availableItems.length === 0 || hasOutOfStockItem}
+              className="mt-6 w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded font-semibold"
             >
-              Add New Address
+              PLACE ORDER ({availableItems.length} items)
             </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default AddToCart;
+export default AddToCart

@@ -28,6 +28,29 @@ const cartSlice = createSlice({
       }
       console.log("✅ Cart items set:", state.items)
     },
+    updateCartItemsStock: (state, action) => {
+      const stockUpdates = action.payload 
+
+      state.items = state.items.map((item) => {
+        const stockUpdate = stockUpdates.find(
+          (update) => update._id === item._id && update.variantId === item.variantId,
+        )
+
+        if (stockUpdate) {
+          return {
+            ...item,
+            isOutOfStock: stockUpdate.isOutOfStock,
+            stock: stockUpdate.stock,
+            stockMessage: stockUpdate.stockMessage,
+            originalPrice: stockUpdate.originalPrice || item.originalPrice,
+            currentPrice: stockUpdate.currentPrice || item.currentPrice,
+            discountPercent: stockUpdate.discountPercent || item.discountPercent,
+          }
+        }
+        return item
+      })
+      console.log("✅ Cart stock status updated")
+    },
     clearCart: (state) => {
       state.items = []
       console.log("✅ Cart cleared")
@@ -38,7 +61,6 @@ const cartSlice = createSlice({
       state.cartReady = false
       state.addresses = []
       state.selectedAddress = null
-      // Clear all cart-related localStorage data
       const keys = Object.keys(localStorage)
       keys.forEach((key) => {
         if (key.startsWith("cart_") || key === "deliveryAddress") {
@@ -54,7 +76,6 @@ const cartSlice = createSlice({
       const item = action.payload
       console.log("🛒 Adding to cart:", item)
 
-      // Ensure items is always an array
       if (!Array.isArray(state.items)) {
         state.items = []
       }
@@ -73,6 +94,9 @@ const cartSlice = createSlice({
         state.items.push({
           ...item,
           quantity: item.quantity || 1,
+          isOutOfStock: item.isOutOfStock || false,
+          stock: item.stock,
+          stockMessage: item.stockMessage || null,
         })
       }
       console.log("Cart after addition:", state.items)
@@ -86,7 +110,12 @@ const cartSlice = createSlice({
       const item = state.items.find(
         (item) => item._id.toString() === _id.toString() && item.variantId?.toString() === variantId?.toString(),
       )
-      if (item) {
+      if (item && !item.isOutOfStock) {
+
+        if (typeof item.stock === "number" && item.quantity >= item.stock) {
+          console.log("⚠️ Cannot increment - stock limit reached")
+          return
+        }
         item.quantity += 1
         console.log("✅ Incremented quantity for", item.title, "variant:", item.variantId)
       }
@@ -135,6 +164,7 @@ const cartSlice = createSlice({
 export const {
   setUserId,
   setCartItem,
+  updateCartItemsStock,
   clearCart,
   clearUser,
   addToCart,
