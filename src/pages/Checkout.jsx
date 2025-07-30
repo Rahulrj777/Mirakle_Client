@@ -12,6 +12,24 @@ const Checkout = () => {
   const cartItems = useSelector((state) => state.cart.items || []);
   const cartReady = useSelector((state) => state.cart.cartReady);
 
+  // ✅ Items & Total
+let items = [];
+  if (mode === "buy-now" && product) {
+    items = [
+      {
+        ...product,
+        quantity: product.quantity || 1, // default 1 for buy now
+      },
+    ];
+  } else if (mode === "cart") {
+    items = cartItems.filter((item) => !item.isOutOfStock); // optional: hide OOS
+  }
+
+  const total = items.reduce(
+    (sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1),
+    0
+  );
+
   // ✅ Load product for Buy Now
   useEffect(() => {
     if (mode === "buy-now") {
@@ -69,13 +87,6 @@ const Checkout = () => {
       </div>
     );
   }
-
-  // ✅ Items & Total
-  const items = mode === "buy-now" ? [product] : cartItems;
-  const total = items.reduce(
-    (sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1),
-    0
-  );
 
   return (
     <div className="max-w-6xl mx-auto mt-10 p-6">
