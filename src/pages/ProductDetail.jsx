@@ -671,7 +671,7 @@ const ProductDetail = () => {
                 >
                   📦 Currently Unavailable
                 </button>
-                <p className="text-xs text-gray-500 text-center">This size is temporarily out of stock</p>
+                <p className="text-xs text-gray-500 text-center">This item is temporarily out of stock</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
