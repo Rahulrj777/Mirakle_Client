@@ -601,15 +601,15 @@ const ProductDetail = () => {
             </div>
           ) : (
             typeof selectedVariant.stock === "number" &&selectedVariant.stock <= 10 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-bold">📦</span>
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-blue-800 font-semibold">Available</h3>
+                    <h3 className="text-red-800 font-semibold">Available</h3>
                     <p className="text-orange-600 text-sm font-medium">
                       Only {selectedVariant.stock} left - Order soon!
                     </p>
