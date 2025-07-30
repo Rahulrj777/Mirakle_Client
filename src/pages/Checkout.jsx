@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 
 const Checkout = () => {
@@ -11,24 +11,6 @@ const Checkout = () => {
   // Redux cart
   const cartItems = useSelector((state) => state.cart.items || []);
   const cartReady = useSelector((state) => state.cart.cartReady);
-
-  // ✅ Items & Total
-let items = [];
-  if (mode === "buy-now" && product) {
-    items = [
-      {
-        ...product,
-        quantity: product.quantity || 1, // default 1 for buy now
-      },
-    ];
-  } else if (mode === "cart") {
-    items = cartItems.filter((item) => !item.isOutOfStock); // optional: hide OOS
-  }
-
-  const total = items.reduce(
-    (sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1),
-    0
-  );
 
   // ✅ Load product for Buy Now
   useEffect(() => {
@@ -53,9 +35,7 @@ let items = [];
 
   // ✅ Show loader while cart is syncing
   if (mode === "cart" && !cartReady) {
-    return (
-      <div className="text-center mt-20 text-gray-600">Loading your cart...</div>
-    );
+    return <div className="text-center mt-20 text-gray-600">Loading your cart...</div>;
   }
 
   // ✅ Handle Buy Now without product
@@ -73,8 +53,19 @@ let items = [];
     );
   }
 
+  // ✅ Compute items dynamically AFTER product is loaded
+  const items = useMemo(() => {
+    if (mode === "buy-now" && product) {
+      return [{ ...product, quantity: product.quantity || 1 }];
+    }
+    if (mode === "cart") {
+      return cartItems.filter((item) => !item.isOutOfStock);
+    }
+    return [];
+  }, [mode, product, cartItems]);
+
   // ✅ Handle empty cart AFTER ready
-  if (mode === "cart" && cartReady && cartItems.length === 0) {
+  if (mode === "cart" && cartReady && items.length === 0) {
     return (
       <div className="text-center mt-20 text-gray-500">
         Your cart is empty.
@@ -87,6 +78,11 @@ let items = [];
       </div>
     );
   }
+
+  const total = items.reduce(
+    (sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1),
+    0
+  );
 
   return (
     <div className="max-w-6xl mx-auto mt-10 p-6">
