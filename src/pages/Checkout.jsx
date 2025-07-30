@@ -42,7 +42,7 @@ const Checkout = () => {
       return null;
     }
 
-  const imageUrl =item.images?.others?.[0]?.url || "/placeholder.jpg";
+  const imageUrl =product?.images?.others?.[0]?.url || "/placeholder.jpg";
 
   return (
     <div className="max-w-3xl mx-auto mt-10 p-6 border rounded shadow">
