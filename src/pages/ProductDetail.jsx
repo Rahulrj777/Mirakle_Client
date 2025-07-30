@@ -967,6 +967,26 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
+                {/* Review Images - Simplified */}
+                {review.images && review.images.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {review.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image || "/placeholder.svg?height=80&width=80"}
+                          loading="lazy"
+                          alt={`Review image ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() => handleImageClick(image)}
+                          onError={(e) => {
+                            e.target.src = "/placeholder.svg?height=80&width=80"
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
 
