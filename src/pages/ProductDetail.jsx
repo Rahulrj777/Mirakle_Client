@@ -600,29 +600,29 @@ const ProductDetail = () => {
               </div>
             </div>
           ) : (
-            typeof selectedVariant.stock === "number" &&selectedVariant.stock <= 10 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">📦</span>
-                    </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">📦</span>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-blue-800 font-semibold">Available</h3>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-blue-800 font-semibold">Available</h3>
+                  {typeof selectedVariant.stock === "number" && selectedVariant.stock <= 10 && (
                     <p className="text-orange-600 text-sm font-medium">
                       Only {selectedVariant.stock} left - Order soon!
                     </p>
-                    <p className="text-blue-600 text-sm">Ready to ship</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
-                      {selectedVariant.stock} Available
-                    </div>
+                  )}
+                  <p className="text-blue-600 text-sm">Ready to ship</p>
+                </div>
+                <div className="text-right">
+                  <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    {typeof selectedVariant.stock === "number" ? `${selectedVariant.stock} Available` : "In Stock"}
                   </div>
                 </div>
               </div>
-            )
+            </div>
           )}
 
           {/* Size/Variant Selection */}
