@@ -14,22 +14,13 @@ const ProductDetail = () => {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
   const [selectedImage, setSelectedImage] = useState("")
   const [error, setError] = useState("")
-  const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [addingToCart, setAddingToCart] = useState(false)
-  const [reviewRating, setReviewRating] = useState(0)
-  const [reviewComment, setReviewComment] = useState("")
-  const [reviewImages, setReviewImages] = useState([])
-  const [reviewImagePreviews, setReviewImagePreviews] = useState([])
-  const [submittingReview, setSubmittingReview] = useState(false)
-  const [reviewError, setReviewError] = useState("")
-  const [showAllReviews, setShowAllReviews] = useState(false)
-  const [actionLoading, setActionLoading] = useState({})
   const [showImageModal, setShowImageModal] = useState(false)
   const [modalImage, setModalImage] = useState("")
   const [shareLoading, setShareLoading] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [productViews, setProductViews] = useState(0)
+  const [setProductViews] = useState(0)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [productVideo, setProductVideo] = useState("")
   const [zoom, setZoom] = useState(false)
@@ -128,17 +119,7 @@ const ProductDetail = () => {
     } finally {
       setLoading(false)
     }
-  }, [id])
-
-  const fetchRelated = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/api/products/related/${id}`)
-      setRelatedProducts(Array.isArray(res.data) ? res.data : [])
-    } catch (err) {
-      console.error("Failed to fetch related products", err)
-      setRelatedProducts([])
-    }
-  }, [id])
+  }, [id,setProductViews])
 
   const loadCartSafely = useCallback(async () => {
     if (!token) return
@@ -161,9 +142,8 @@ const ProductDetail = () => {
   useEffect(() => {
     if (id) {
       fetchProduct()
-      fetchRelated()
     }
-  }, [id, fetchProduct, fetchRelated])
+  }, [id, fetchProduct])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -331,147 +311,6 @@ const ProductDetail = () => {
     [zoom],
   )
 
-  const handleReviewImageChange = useCallback((e) => {
-    const files = Array.from(e.target.files)
-    if (files.length > 5) {
-      setReviewError("You can upload maximum 5 images")
-      return
-    }
-    const oversizedFiles = files.filter((file) => file.size > 5 * 1024 * 1024)
-    if (oversizedFiles.length > 0) {
-      setReviewError("Each image must be less than 5MB")
-      return
-    }
-    setReviewImages(files)
-    setReviewError("")
-    const previews = files.map((file) => URL.createObjectURL(file))
-    setReviewImagePreviews(previews)
-  }, [])
-
-  const removeReviewImage = useCallback(
-    (index) => {
-      const newImages = reviewImages.filter((_, i) => i !== index)
-      const newPreviews = reviewImagePreviews.filter((_, i) => i !== index)
-      URL.revokeObjectURL(reviewImagePreviews[index])
-      setReviewImages(newImages)
-      setReviewImagePreviews(newPreviews)
-    },
-    [reviewImages, reviewImagePreviews],
-  )
-
-  const handleReviewSubmit = useCallback(
-    async (e) => {
-      e.preventDefault()
-      if (!reviewRating || !reviewComment.trim()) {
-        setReviewError("Please provide both rating and review.")
-        return
-      }
-      if (reviewComment.trim().length < 10) {
-        setReviewError("Review must be at least 10 characters long.")
-        return
-      }
-
-      setSubmittingReview(true)
-      setReviewError("")
-
-      try {
-        const formData = new FormData()
-        formData.append("rating", reviewRating)
-        formData.append("comment", reviewComment.trim())
-        reviewImages.forEach((image) => {
-          formData.append("images", image)
-        })
-
-        const response = await axiosWithToken(token).post(`${API_BASE}/api/products/${id}/review`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-
-        if (response.data) {
-          setReviewRating(0)
-          setReviewComment("")
-          setReviewImages([])
-          setReviewImagePreviews([])
-          setReviewError("")
-          fetchProduct()
-          alert("Review submitted successfully!")
-        }
-      } catch (err) {
-        console.error("Review submission error:", err)
-        setReviewError(err.response?.data?.message || "Failed to submit review")
-      } finally {
-        setSubmittingReview(false)
-      }
-    },
-    [reviewRating, reviewComment, reviewImages, id, token, fetchProduct],
-  )
-
-  const handleDeleteReview = useCallback(
-    async (reviewId) => {
-      if (!confirm("Are you sure you want to delete your review?")) return
-
-      setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: true }))
-      try {
-        await axiosWithToken(token).delete(`${API_BASE}/api/products/${id}/review/${reviewId}`)
-        fetchProduct()
-        alert("Review deleted successfully!")
-      } catch (error) {
-        console.error("Delete review failed:", error)
-        alert("Failed to delete review. Please try again.")
-      } finally {
-        setActionLoading((prev) => ({ ...prev, [`delete-${reviewId}`]: false }))
-      }
-    },
-    [id, token, fetchProduct],
-  )
-
-  const avgRating = useMemo(() => {
-    if (!Array.isArray(product?.reviews) || product.reviews.length === 0) return 0
-    const validRatings = product.reviews.filter((r) => r && typeof r.rating === "number")
-    if (validRatings.length === 0) return 0
-    const total = validRatings.reduce((acc, r) => acc + r.rating, 0)
-    return (total / validRatings.length).toFixed(1)
-  }, [product?.reviews])
-
-  const currentUserReview = useMemo(() => {
-    if (!Array.isArray(product?.reviews)) return null
-    const currentUserId = user?.user?.userId || user?.user?._id
-    if (!currentUserId) return null
-    return product.reviews.find((r) => r?.user === currentUserId)
-  }, [product?.reviews, user])
-
-  const otherReviews = useMemo(() => {
-    if (!Array.isArray(product?.reviews)) return []
-    const currentUserId = user?.user?.userId || user?.user?._id
-    if (!currentUserId) return product.reviews
-    return product.reviews.filter((r) => r?.user !== currentUserId)
-  }, [product?.reviews, user])
-
-  const renderStars = useCallback((rating) => {
-    return (
-      <div className="flex">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <svg
-            key={star}
-            xmlns="http://www.w3.org/2000/svg"
-            fill={rating >= star ? "#facc15" : "none"}
-            viewBox="0 0 24 24"
-            stroke="#facc15"
-            className="w-4 h-4"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.5"
-              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
-            />
-          </svg>
-        ))}
-      </div>
-    )
-  }, [])
-
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-6">
@@ -498,7 +337,6 @@ const ProductDetail = () => {
 
   const price = selectedVariant.price
   const discount = selectedVariant.discountPercent || 0
-  const reviewsToShow = showAllReviews ? otherReviews : otherReviews.slice(0, 3)
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -599,19 +437,6 @@ const ProductDetail = () => {
                 />
               </svg>
             </button>
-          </div>
-
-          {/* Rating and Reviews */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              {renderStars(Number.parseFloat(avgRating))}
-              <span className="text-sm text-gray-700 font-medium">{avgRating} / 5</span>
-            </div>
-            <span className="text-sm text-gray-500">
-              ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? "s" : ""})
-            </span>
-            <span className="text-sm text-gray-400">|</span>
-            <span className="text-sm text-gray-500">{productViews} views</span>
           </div>
 
           {/* Price */}
@@ -758,7 +583,7 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* Description Section - Moved to right side */}
+          {/* Description Section */}
           <div className="mt-8 bg-gray-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xl">📄</span>
@@ -769,7 +594,7 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Details Section - Moved to right side */}
+          {/* Details Section */}
           <div className="mt-6 bg-gray-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xl">📋</span>
@@ -793,9 +618,6 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
-
-      {/* Rest of your existing code for reviews, related products, modals, etc. */}
-      {/* ... (keeping the rest of the component unchanged) ... */}
 
       {/* Modals */}
       {/* Image Modal */}
@@ -833,7 +655,7 @@ const ProductDetail = () => {
         </div>
       )}
 
-      {/* Updated Share Modal - Only WhatsApp and Copy Link */}
+      {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full">
