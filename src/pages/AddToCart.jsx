@@ -448,26 +448,24 @@ const AddToCart = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Visible Header for debugging - Show stock sync button */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-              <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
-                <p className="text-sm text-gray-500">Items</p>
+        {/* Hidden Header - Keep functionality but hide visually */}
+        <div className="hidden">
+          <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+                <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
               </div>
-              <button
-                onClick={handleManualStockSync}
-                disabled={stockSyncLoading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
-                title="Refresh stock status"
-              >
-                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleManualStockSync}
+                  disabled={stockSyncLoading}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
+                  title="Refresh stock status"
+                >
+                  {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -602,18 +600,11 @@ const AddToCart = () => {
                                 </button>
                               </div>
                             </div>
-                            {/* Stock Status */}
-                            <div className="text-center">
-                              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
-                                {typeof item.stock === "number" ? `${item.stock} Available` : "In Stock"}
-                              </div>
-                            </div>
                             {/* Price */}
                             <div className="text-right">
                               <div className="font-bold text-lg text-gray-900">
                                 ₹{((item.currentPrice || 0) * (item.quantity || 0)).toFixed(2)}
                               </div>
-                              <div className="text-sm text-gray-500">₹{(item.currentPrice || 0).toFixed(2)} each</div>
                             </div>
                             {/* Remove Button */}
                             <button
