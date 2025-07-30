@@ -1,18 +1,24 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 
 const Checkout = () => {
+  // All hooks at the top, ALWAYS called
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const [product, setProduct] = useState(null);
   const mode = location.state?.mode || "cart";
 
-  // Redux cart
+  // Redux state selectors
   const cartItems = useSelector((state) => state.cart.items || []);
   const cartReady = useSelector((state) => state.cart.cartReady);
 
-  // ✅ Load product for Buy Now
+  // Auth token
+  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+
+  // Buy now logic
   useEffect(() => {
     if (mode === "buy-now") {
       const prodFromState = location.state?.product;
@@ -26,19 +32,18 @@ const Checkout = () => {
     }
   }, [location.state, mode]);
 
-  // ✅ Redirect if not logged in
-  const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+  // Early returns AFTER hooks
   if (!token) {
     navigate("/login");
     return null;
   }
 
-  // ✅ Show loader while cart is syncing
   if (mode === "cart" && !cartReady) {
-    return <div className="text-center mt-20 text-gray-600">Loading your cart...</div>;
+    return (
+      <div className="text-center mt-20 text-gray-600">Loading your cart...</div>
+    );
   }
 
-  // ✅ Handle Buy Now without product
   if (mode === "buy-now" && !product) {
     return (
       <div className="text-center mt-20 text-red-500">
@@ -53,19 +58,7 @@ const Checkout = () => {
     );
   }
 
-  // ✅ Compute items dynamically AFTER product is loaded
-  const items = useMemo(() => {
-    if (mode === "buy-now" && product) {
-      return [{ ...product, quantity: product.quantity || 1 }];
-    }
-    if (mode === "cart") {
-      return cartItems.filter((item) => !item.isOutOfStock);
-    }
-    return [];
-  }, [mode, product, cartItems]);
-
-  // ✅ Handle empty cart AFTER ready
-  if (mode === "cart" && cartReady && items.length === 0) {
+  if (mode === "cart" && cartReady && cartItems.length === 0) {
     return (
       <div className="text-center mt-20 text-gray-500">
         Your cart is empty.
@@ -79,58 +72,151 @@ const Checkout = () => {
     );
   }
 
-  const total = items.reduce(
+  // Choose which items we're showing
+  const items = mode === "buy-now" ? [product] : cartItems;
+
+  // Calculation
+  const subtotal = items.reduce(
     (sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1),
     0
   );
+  const SHIPPING = 49;
+  const total = subtotal + SHIPPING;
+
+  // Handlers (change these to your actual Redux action creators if you use them)
+  const handleIncrement = (item) => {
+    dispatch({
+      type: "cart/incrementQuantity",
+      payload: { _id: item._id, variantId: item.variantId }
+    });
+  };
+  const handleDecrement = (item) => {
+    dispatch({
+      type: "cart/decrementQuantity",
+      payload: { _id: item._id, variantId: item.variantId }
+    });
+  };
+  const handleRemove = (item) => {
+    dispatch({
+      type: "cart/removeFromCart",
+      payload: { _id: item._id, variantId: item.variantId }
+    });
+  };
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-6">
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Product List */}
-        <div className="lg:col-span-2 space-y-4">
-          {items.map((item, index) => {
-            const imageUrl = item?.images?.others?.[0]?.url || "/placeholder.jpg";
-            return (
-              <div key={index} className="flex gap-4 border p-4 rounded shadow-sm">
+    <div className="min-h-screen bg-blue-50 flex justify-center py-12 px-2">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-10 bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* LEFT: Product List */}
+        <div className="col-span-2 p-8">
+          <h2 className="text-2xl font-semibold mb-6">Your Items</h2>
+          <div className="space-y-5">
+            {items.map((item, i) => (
+              <div
+                className="flex items-center gap-6 p-5 rounded-xl shadow bg-neutral-50 border"
+                key={i}
+              >
                 <img
-                  src={imageUrl}
+                  src={item?.images?.others?.[0]?.url || "/placeholder.jpg"}
                   alt={item.title}
-                  loading="lazy"
-                  className="w-28 h-28 object-cover rounded"
+                  className="w-20 h-20 rounded-lg object-cover border"
                 />
                 <div className="flex-1">
-                  <h2 className="text-xl font-semibold">{item.title}</h2>
+                  <h3 className="font-semibold text-lg">{item.title}</h3>
                   {item.size && (
-                    <p className="mt-1 text-gray-600">Size: {item.size}</p>
+                    <div className="text-sm text-gray-500 mb-1">
+                      Size: {item.size}
+                    </div>
                   )}
-                  <p className="text-green-600 font-bold text-lg mt-2">
+                  <div className="text-green-600 font-semibold">
                     ₹{item.currentPrice} × {item.quantity || 1}
-                  </p>
+                  </div>
                 </div>
+                {mode === "cart" && (
+                  <div className="flex items-center space-x-1 border rounded px-2 py-1 bg-white shadow-sm">
+                    <button
+                      className="text-lg px-2"
+                      onClick={() => handleDecrement(item)}
+                      disabled={item.quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <span className="px-2">{item.quantity}</span>
+                    <button
+                      className="text-lg px-2"
+                      onClick={() => handleIncrement(item)}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+                {mode === "cart" && (
+                  <button
+                    className="ml-2 px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600"
+                    onClick={() => handleRemove(item)}
+                    title="Remove from cart"
+                  >
+                    🗑
+                  </button>
+                )}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
-        {/* Right: Summary */}
-        <div className="border p-6 rounded shadow h-fit">
-          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-          <div className="flex justify-between mb-2">
-            <span>Total Items:</span>
-            <span>{items.length}</span>
+        {/* RIGHT: Order Summary + Card Details */}
+        <div className="p-8 bg-gradient-to-b from-blue-100 via-white to-blue-50 rounded-xl shadow h-fit">
+          <h2 className="text-xl font-semibold mb-8">Card Details</h2>
+          <div className="mb-8">
+            {/* Card logos */}
+            <div className="flex gap-2 mb-4">
+              <img src="/visa-logo.png" alt="Visa" className="h-7" />
+              <img src="/mastercard-logo.png" alt="MC" className="h-7" />
+              <img src="/rupay-logo.png" alt="RuPay" className="h-7" />
+            </div>
+            <input
+              type="text"
+              placeholder="Name on Card"
+              className="w-full py-2 mb-3 px-3 rounded border focus:outline-none"
+            />
+            <input
+              type="text"
+              placeholder="Card Number"
+              maxLength={19}
+              className="w-full py-2 mb-3 px-3 rounded border focus:outline-none"
+            />
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="MM/YY"
+                className="w-1/2 py-2 px-3 rounded border focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="CVV"
+                maxLength={4}
+                className="w-1/2 py-2 px-3 rounded border focus:outline-none"
+              />
+            </div>
           </div>
-          <div className="flex justify-between text-lg font-bold mb-4">
-            <span>Total:</span>
-            <span>₹{total.toLocaleString()}</span>
+          <div className="mb-8">
+            <div className="flex justify-between mb-2">
+              <span>Subtotal</span>
+              <span>₹{subtotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between mb-2">
+              <span>Shipping</span>
+              <span>₹{SHIPPING}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold border-t pt-3">
+              <span>Total (incl. tax)</span>
+              <span>₹{total.toLocaleString()}</span>
+            </div>
           </div>
           <button
-            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 cursor-pointer"
+            className="w-full py-3 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-lg shadow"
             onClick={() => alert("Proceeding to payment (not implemented)")}
           >
-            Proceed to Payment
+            ₹{total.toLocaleString()} — Checkout
           </button>
         </div>
       </div>
