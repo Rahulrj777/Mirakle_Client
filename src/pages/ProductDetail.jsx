@@ -924,14 +924,11 @@ const ProductDetail = () => {
                     {currentUserReview.images.map((image, index) => (
                       <img
                         key={index}
-                        src={image.url || "/placeholder.svg?height=80&width=80"}
+                        src={image || "/placeholder.svg?height=80&width=80"}
                         alt={`Review image ${index + 1}`}
                         loading="lazy"
                         className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                         onClick={() => handleImageClick(image)}
-                        onError={(e) => {
-                          e.target.src = "/placeholder.svg?height=80&width=80"
-                        }}
                       />
                     ))}
                   </div>
@@ -979,9 +976,6 @@ const ProductDetail = () => {
                           alt={`Review image ${index + 1}`}
                           className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                           onClick={() => handleImageClick(image)}
-                          onError={(e) => {
-                            e.target.src = "/placeholder.svg?height=80&width=80"
-                          }}
                         />
                       ))}
                     </div>
