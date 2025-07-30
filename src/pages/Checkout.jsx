@@ -8,9 +8,9 @@ const Checkout = () => {
   const [product, setProduct] = useState(null);
   const mode = location.state?.mode || "cart";
 
-  // ✅ Redux cart
+  // Redux cart
   const cartItems = useSelector((state) => state.cart.cartItems || []);
-  const cartReady = useSelector((state) => state.cart.cartReady); // add this if exists
+  const cartReady = useSelector((state) => state.cart.cartReady || false);
 
   // ✅ Load product for Buy Now
   useEffect(() => {
@@ -33,12 +33,14 @@ const Checkout = () => {
     return null;
   }
 
-  // ✅ Show loading until cart is ready
+  // ✅ Show loader while cart is syncing
   if (mode === "cart" && !cartReady) {
-    return <div className="text-center mt-20">Loading your cart...</div>;
+    return (
+      <div className="text-center mt-20 text-gray-600">Loading your cart...</div>
+    );
   }
 
-  // ✅ Handle empty cases
+  // ✅ Handle Buy Now without product
   if (mode === "buy-now" && !product) {
     return (
       <div className="text-center mt-20 text-red-500">
@@ -52,7 +54,9 @@ const Checkout = () => {
       </div>
     );
   }
-  if (mode === "cart" && cartItems.length === 0) {
+
+  // ✅ Handle empty cart AFTER ready
+  if (mode === "cart" && cartReady && cartItems.length === 0) {
     return (
       <div className="text-center mt-20 text-gray-500">
         Your cart is empty.
@@ -91,7 +95,9 @@ const Checkout = () => {
               />
               <div className="flex-1">
                 <h2 className="text-xl font-semibold">{item.title}</h2>
-                {item.size && <p className="mt-1 text-gray-600">Size: {item.size}</p>}
+                {item.size && (
+                  <p className="mt-1 text-gray-600">Size: {item.size}</p>
+                )}
                 <p className="text-green-600 font-bold text-lg mt-2">
                   ₹{item.currentPrice} x {item.quantity || 1}
                 </p>
