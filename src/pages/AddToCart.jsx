@@ -44,26 +44,32 @@ const AddToCart = () => {
   const userId = user?.user?.userId || user?.user?._id
   const token = user?.token
 
-  // Enhanced stock checking function - Fixed logic
+  // Enhanced stock checking function - Fixed to properly detect out of stock items
   const isItemOutOfStock = (item) => {
     if (!item) return true
 
     // Check explicit out of stock flags first
     if (item.isOutOfStock === true) return true
 
-    // Check stock numbers
-    if (typeof item.stock === "number") {
-      return item.stock <= 0
-    }
+    // Check stock numbers - if stock is 0 or negative
+    if (typeof item.stock === "number" && item.stock <= 0) return true
 
     // Check string stock values
-    if (item.stock === "0" || item.stock === 0) return true
+    if (item.stock === "0") return true
 
-    // Check stock message
-    if (item.stockMessage && item.stockMessage.toLowerCase().includes("out of stock")) return true
+    // Check stock message for out of stock indicators
+    if (item.stockMessage) {
+      const message = item.stockMessage.toLowerCase()
+      if (
+        message.includes("out of stock") ||
+        message.includes("unavailable") ||
+        message.includes("no longer available")
+      ) {
+        return true
+      }
+    }
 
-    // If stock is undefined or null but isOutOfStock is not explicitly false, consider it available
-    // This prevents items from being marked as out of stock when they shouldn't be
+    // If none of the above conditions are met, item is in stock
     return false
   }
 
@@ -281,18 +287,21 @@ const AddToCart = () => {
     }
   }
 
-  // Debug stock status
+  // Debug stock status - Enhanced logging
   useEffect(() => {
-    console.log(
-      "Cart items stock status:",
-      cartItems.map((item) => ({
-        title: item.title,
-        stock: item.stock,
-        isOutOfStock: item.isOutOfStock,
-        stockMessage: item.stockMessage,
-      })),
-    )
-  }, [cartItems])
+    console.log("=== CART STOCK DEBUG ===")
+    cartItems.forEach((item, index) => {
+      console.log(`Item ${index + 1}: ${item.title}`)
+      console.log(`  - stock: ${item.stock} (type: ${typeof item.stock})`)
+      console.log(`  - isOutOfStock: ${item.isOutOfStock}`)
+      console.log(`  - stockMessage: ${item.stockMessage}`)
+      console.log(`  - Detected as out of stock: ${isItemOutOfStock(item)}`)
+      console.log("---")
+    })
+    console.log(`Available items: ${availableItems.length}`)
+    console.log(`Out of stock items: ${outOfStockItems.length}`)
+    console.log("======================")
+  }, [cartItems, availableItems, outOfStockItems])
 
   const handleQuantityChange = async (item, action) => {
     try {

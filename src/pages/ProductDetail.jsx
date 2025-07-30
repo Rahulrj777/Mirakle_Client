@@ -29,8 +29,6 @@ const ProductDetail = () => {
   const [modalImage, setModalImage] = useState("")
   const [shareLoading, setShareLoading] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [notifyEmail, setNotifyEmail] = useState("")
-  const [notifyLoading, setNotifyLoading] = useState(false)
   const [productViews, setProductViews] = useState(0)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [productVideo, setProductVideo] = useState("")
@@ -689,47 +687,40 @@ const ProductDetail = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Description and Details Sections - Moved below the main grid */}
-      <div className="mt-12 space-y-8">
-        {/* Description Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">📄</span>
-            <h3 className="text-xl font-semibold text-gray-900">Product Description</h3>
-          </div>
-          <div className="prose max-w-none">
-            <div className="text-gray-700 whitespace-pre-line leading-relaxed bg-gray-50 p-4 rounded-lg">
+          {/* Description Section - Moved to right side */}
+          <div className="mt-8 bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">📄</span>
+              <h3 className="text-lg font-semibold text-gray-900">Product Description</h3>
+            </div>
+            <div className="text-gray-700 text-sm leading-relaxed">
               {product.description || "No description available for this product."}
             </div>
           </div>
-        </div>
 
-        {/* Details Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">📋</span>
-            <h3 className="text-xl font-semibold text-gray-900">Product Details</h3>
-          </div>
-          {product.details && typeof product.details === "object" ? (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Details Section - Moved to right side */}
+          <div className="mt-6 bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">📋</span>
+              <h3 className="text-lg font-semibold text-gray-900">Product Details</h3>
+            </div>
+            {product.details && typeof product.details === "object" ? (
+              <div className="space-y-2">
                 {Object.entries(product.details).map(([key, value]) => (
-                  <div key={key} className="flex justify-between py-3 px-4 bg-white rounded border">
+                  <div key={key} className="flex justify-between py-2 px-3 bg-white rounded text-sm">
                     <span className="font-medium text-gray-600 capitalize">{key}:</span>
                     <span className="text-gray-900 font-semibold">{value}</span>
                   </div>
                 ))}
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <span className="text-4xl mb-2 block">📋</span>
-              <p className="text-gray-500">No additional details available for this product.</p>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-4">
+                <span className="text-2xl mb-1 block">📋</span>
+                <p className="text-gray-500 text-sm">No additional details available.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
