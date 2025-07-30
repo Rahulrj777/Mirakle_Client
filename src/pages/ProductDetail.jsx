@@ -920,19 +920,19 @@ const ProductDetail = () => {
                 <p className="text-sm text-gray-700 mb-3 leading-relaxed">{currentUserReview.comment}</p>
                 {/* Review Images - Simplified */}
                 {currentUserReview.images && currentUserReview.images.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {currentUserReview.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image || "/placeholder.svg?height=80&width=80"}
-                        alt={`Review image ${index + 1}`}
-                        loading="lazy"
-                        className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleImageClick(image)}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {currentUserReview.images.map((image, index) => (
+                    <img
+                      key={index}
+                      src={image || "/placeholder.svg?height=80&width=80"}
+                      alt={`Review image ${index + 1}`}
+                      loading="lazy"
+                      className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleImageClick(image)}
+                    />
+                  ))}
+                </div>
+              )}
               </div>
             )}
 
