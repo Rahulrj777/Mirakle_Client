@@ -448,25 +448,11 @@ const AddToCart = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Hidden Header - Keep functionality but hide visually */}
-        <div className="hidden">
-          <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-                <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleManualStockSync}
-                  disabled={stockSyncLoading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
-                  title="Refresh stock status"
-                >
-                  {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
-                </button>
-              </div>
-            </div>
+        {/* Shopping Cart Header */}
+        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+            <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
           </div>
         </div>
 
@@ -580,8 +566,8 @@ const AddToCart = () => {
                                 </div>
                               )}
                             </div>
-                            {/* Quantity Controls */}
-                            <div className="flex items-center gap-3">
+                            {/* Centered Quantity Controls */}
+                            <div className="flex flex-col items-center gap-2">
                               <div className="flex items-center border rounded-lg">
                                 <button
                                   className="px-3 py-2 text-lg hover:bg-gray-100 transition-colors"
@@ -668,9 +654,9 @@ const AddToCart = () => {
                                 📦 {item.stockMessage || "Currently out of stock"}
                               </div>
                             </div>
-                            {/* Out of Stock Badge */}
-                            <div className="text-center">
-                              <div className="bg-red-100 text-red-800 px-3 py-2 rounded-lg font-medium text-sm">
+                            {/* Centered Out of Stock Badge */}
+                            <div className="flex flex-col items-center">
+                              <div className="bg-red-100 text-red-800 px-4 py-2 rounded-lg font-medium text-sm">
                                 OUT OF STOCK
                               </div>
                             </div>

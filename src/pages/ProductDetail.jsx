@@ -469,8 +469,8 @@ const ProductDetail = () => {
 
       {/* Product Images and Info */}
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Image Preview */}
-        <div className="space-y-4">
+        {/* Image Preview - Make this sticky */}
+        <div className="space-y-4 sticky top-4 self-start">
           <div className="relative overflow-hidden rounded-lg border">
             <img
               src={selectedImage || "/placeholder.svg?height=500&width=500"}
@@ -517,7 +517,7 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Product Info */}
+        {/* Product Info - This will scroll normally */}
         <div className="space-y-4">
           <div className="flex items-start justify-between">
             <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
