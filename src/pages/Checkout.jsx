@@ -1,14 +1,16 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux"; // for cart
-import { API_BASE } from "../utils/api";
+import { useSelector } from "react-redux";
 
 const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
-  const mode = location.state?.mode || "cart"; // default to cart
+  const mode = location.state?.mode || "cart";
+
+  // ✅ Redux cart
   const cartItems = useSelector((state) => state.cart.cartItems || []);
+  const cartReady = useSelector((state) => state.cart.cartReady); // add this if exists
 
   // ✅ Load product for Buy Now
   useEffect(() => {
@@ -29,6 +31,11 @@ const Checkout = () => {
   if (!token) {
     navigate("/login");
     return null;
+  }
+
+  // ✅ Show loading until cart is ready
+  if (mode === "cart" && !cartReady) {
+    return <div className="text-center mt-20">Loading your cart...</div>;
   }
 
   // ✅ Handle empty cases
@@ -59,9 +66,12 @@ const Checkout = () => {
     );
   }
 
-  // ✅ Calculate total
+  // ✅ Items & Total
   const items = mode === "buy-now" ? [product] : cartItems;
-  const total = items.reduce((sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1), 0);
+  const total = items.reduce(
+    (sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1),
+    0
+  );
 
   return (
     <div className="max-w-5xl mx-auto mt-10 p-6 border rounded shadow bg-white">
@@ -81,9 +91,7 @@ const Checkout = () => {
               />
               <div className="flex-1">
                 <h2 className="text-xl font-semibold">{item.title}</h2>
-                {item.size && (
-                  <p className="mt-1 text-gray-600">Size: {item.size}</p>
-                )}
+                {item.size && <p className="mt-1 text-gray-600">Size: {item.size}</p>}
                 <p className="text-green-600 font-bold text-lg mt-2">
                   ₹{item.currentPrice} x {item.quantity || 1}
                 </p>
