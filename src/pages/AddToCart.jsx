@@ -1,22 +1,37 @@
-"use client"
-
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import { removeFromCart, selectAddress, setAddresses, initializeSelectedAddress, setCartItem } from "../Redux/cartSlice"
+import {
+  removeFromCart,
+  selectAddress,
+  setAddresses,
+  initializeSelectedAddress,
+  setCartItem,
+  incrementQuantity,
+  decrementQuantity,
+} from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
 import { API_BASE } from "../utils/api"
 
 const AddToCart = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const modalRef = useRef()
+  const syncTimeoutRef = useRef(null)
+
   const cartItems = useSelector((state) => {
     const items = state.cart?.items
     return Array.isArray(items) ? items : []
   })
 
+  const addresses = useSelector((state) => state.cart?.addresses || [])
+  const selectedAddress = useSelector((state) => state.cart?.selectedAddress)
+
   const [cartReady, setCartReady] = useState(false)
   const [stockSyncLoading, setStockSyncLoading] = useState(false)
+  const [showAddressModal, setShowAddressModal] = useState(false)
+  const [addressesLoaded, setAddressesLoaded] = useState(false)
+  const [addressesLoading, setAddressesLoading] = useState(false)
 
   const user = useMemo(() => {
     try {
@@ -69,14 +84,11 @@ const AddToCart = () => {
         setCartReady(true)
         return
       }
-
       try {
         const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
         const backendCart = response.data
-
         if (backendCart && Array.isArray(backendCart.items)) {
           dispatch(setCartItem(backendCart.items))
-          // Update localStorage
           localStorage.setItem(`cart_${userId}`, JSON.stringify(backendCart.items))
         } else if (Array.isArray(backendCart)) {
           dispatch(setCartItem(backendCart))
@@ -84,7 +96,6 @@ const AddToCart = () => {
         }
       } catch (error) {
         console.error("Failed to sync cart from backend:", error)
-        // Load from localStorage as fallback
         const localCart = localStorage.getItem(`cart_${userId}`)
         if (localCart) {
           try {
@@ -101,51 +112,52 @@ const AddToCart = () => {
         setCartReady(true)
       }
     }
-
     syncCartFromBackend()
   }, [token, userId, dispatch])
 
+  // Load addresses
   useEffect(() => {
-    const getUserData = async () => {
-      if (!user || !userId || !token) return
-      try {
-        const response = await axiosWithToken(token).get(`${API_BASE}/api/users/address`)
-        const userData = response.data
-        if (userData && userData.addresses) {
-          dispatch(setAddresses(userData.addresses))
-          const storedSelectedAddress = localStorage.getItem(`deliveryAddress_${userId}`)
-          if (storedSelectedAddress) {
+    if (!cartReady || !token || !userId || addressesLoaded) return
+    setAddressesLoading(true)
+    axiosWithToken(token)
+      .get(`${API_BASE}/api/users/address`)
+      .then((res) => {
+        if (Array.isArray(res.data.addresses)) {
+          dispatch(setAddresses(res.data.addresses))
+          setAddressesLoaded(true)
+          const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
+          if (savedAddressStr) {
             try {
-              const parsedAddress = JSON.parse(storedSelectedAddress)
-              dispatch(selectAddress(parsedAddress))
-            } catch (error) {
-              console.error("Error parsing stored address:", error)
-              dispatch(initializeSelectedAddress())
+              const savedAddress = JSON.parse(savedAddressStr)
+              const exists = res.data.addresses.some((addr) => addr._id === savedAddress._id)
+              if (exists) {
+                dispatch(initializeSelectedAddress(savedAddress))
+              } else {
+                localStorage.removeItem(`deliveryAddress_${userId}`)
+                dispatch(selectAddress(null))
+              }
+            } catch {
+              localStorage.removeItem(`deliveryAddress_${userId}`)
+              dispatch(selectAddress(null))
             }
-          } else {
-            dispatch(initializeSelectedAddress())
           }
-        } else {
-          dispatch(initializeSelectedAddress())
         }
-      } catch (error) {
-        console.error("Error fetching user data:", error)
-      }
-    }
+      })
+      .catch((err) => {
+        console.error("Failed to load addresses:", err)
+      })
+      .finally(() => {
+        setAddressesLoading(false)
+      })
+  }, [cartReady, token, userId, dispatch, addressesLoaded])
 
-    if (user && userId && token && cartReady) {
-      getUserData()
-    }
-  }, [user, userId, token, dispatch, cartReady])
-
-  // Stock sync using existing product API
+  // Stock sync using existing product API - Fixed to prevent constant syncing
   const syncCartWithStock = async () => {
     if (!cartReady || !token || !userId || cartItems.length === 0) return
     try {
       setStockSyncLoading(true)
       const response = await axiosWithToken(token).get(`${API_BASE}/api/products/all-products`)
       const allProducts = response.data
-
       const updatedCartItems = cartItems.map((cartItem) => {
         const currentProduct = allProducts.find((p) => p._id === cartItem._id)
         if (!currentProduct) {
@@ -156,7 +168,6 @@ const AddToCart = () => {
             stockMessage: "Product no longer available",
           }
         }
-
         const currentVariant = currentProduct.variants?.find((v) => v.size === cartItem.size)
         if (!currentVariant) {
           return {
@@ -166,14 +177,12 @@ const AddToCart = () => {
             stockMessage: "Variant no longer available",
           }
         }
-
         const isOutOfStock =
           currentProduct.isOutOfStock === true ||
           currentVariant.isOutOfStock === true ||
           currentVariant.stock === 0 ||
           currentVariant.stock === "0" ||
           (typeof currentVariant.stock === "number" && currentVariant.stock <= 0)
-
         return {
           ...cartItem,
           isOutOfStock,
@@ -184,9 +193,7 @@ const AddToCart = () => {
           currentPrice: currentVariant.price - (currentVariant.price * (currentVariant.discountPercent || 0)) / 100,
         }
       })
-
       dispatch(setCartItem(updatedCartItems))
-      // Update localStorage
       localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCartItems))
     } catch (error) {
       console.error("Failed to sync cart with stock:", error)
@@ -195,40 +202,136 @@ const AddToCart = () => {
     }
   }
 
+  // Debounced cart sync to backend
   useEffect(() => {
-    if (cartReady && token && userId && cartItems.length > 0) {
-      syncCartWithStock()
+    if (!cartReady || !token || !userId) return
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current)
     }
-  }, [cartReady, token, userId, cartItems.length])
+    syncTimeoutRef.current = setTimeout(() => {
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(cartItems))
+      axiosWithToken(token)
+        .post(`${API_BASE}/api/cart`, { items: cartItems })
+        .then(() => {
+          console.log("✅ Cart synced successfully")
+        })
+        .catch((err) => {
+          console.error("❌ Cart sync failed:", err)
+        })
+    }, 500)
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current)
+      }
+    }
+  }, [cartItems, cartReady, token, userId])
+
+  // Address modal outside click to close
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowAddressModal(false)
+      }
+    }
+    if (showAddressModal) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showAddressModal])
 
   const handleManualStockSync = () => {
     syncCartWithStock()
   }
 
- const handleRemoveItem = async (item) => {
-  try {
-    dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))
-
-    // Update localStorage
-    const updatedCart = cartItems.filter(
-      (cartItem) => !(cartItem._id === item._id && cartItem.variantId === item.variantId)
-    )
-    localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCart))
-
-    // Sync with backend using correct endpoint and parameter names
-    if (token) {
-      try {
-        await axiosWithToken(token).delete(`${API_BASE}/api/cart/item`, {
-          data: { _id: item._id, variantId: item.variantId }
-        })
-      } catch (syncError) {
-        console.warn("Failed to sync removal with backend:", syncError)
+  const handleRemoveItem = async (item) => {
+    try {
+      dispatch(removeFromCart({ _id: item._id, variantId: item.variantId }))
+      const updatedCart = cartItems.filter(
+        (cartItem) => !(cartItem._id === item._id && cartItem.variantId === item.variantId),
+      )
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCart))
+      if (token) {
+        try {
+          await axiosWithToken(token).delete(`${API_BASE}/api/cart/item`, {
+            data: { _id: item._id, variantId: item.variantId },
+          })
+        } catch (syncError) {
+          console.warn("Failed to sync removal with backend:", syncError)
+        }
       }
+    } catch (error) {
+      console.error("Failed to remove item:", error)
     }
-  } catch (error) {
-    console.error("Failed to remove item:", error)
   }
-}
+
+  const handleQuantityChange = async (item, action) => {
+    try {
+      if (action === "increment") {
+        if (typeof item.stock === "number" && item.quantity >= item.stock) {
+          alert("Cannot add more items. Stock limit reached.")
+          return
+        }
+        dispatch(incrementQuantity({ _id: item._id, variantId: item.variantId }))
+      } else if (action === "decrement") {
+        if (item.quantity <= 1) {
+          return
+        }
+        dispatch(decrementQuantity({ _id: item._id, variantId: item.variantId }))
+      }
+
+      // Sync with backend
+      if (token) {
+        const newQuantity = action === "increment" ? item.quantity + 1 : item.quantity - 1
+        try {
+          await axiosWithToken(token).patch(`${API_BASE}/api/cart/update-quantity`, {
+            _id: item._id,
+            variantId: item.variantId,
+            quantity: newQuantity,
+          })
+        } catch (syncError) {
+          console.warn("Failed to sync quantity change with backend:", syncError)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update quantity:", error)
+    }
+  }
+
+  const handleAddressSelect = (address) => {
+    dispatch(selectAddress(address))
+    localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(address))
+    setShowAddressModal(false)
+  }
+
+  const confirmDelete = (addressId) => {
+    if (window.confirm("Are you sure you want to delete this address?")) {
+      handleDeleteAddress(addressId)
+    }
+  }
+
+  const handleDeleteAddress = async (id) => {
+    try {
+      const res = await axiosWithToken(token).delete(`${API_BASE}/api/users/address/${id}`)
+      if (res.data.addresses) {
+        dispatch(setAddresses(res.data.addresses))
+        if (selectedAddress?._id === id) {
+          localStorage.removeItem(`deliveryAddress_${userId}`)
+          if (res.data.addresses.length > 0) {
+            const newSelected = res.data.addresses[0]
+            dispatch(selectAddress(newSelected))
+            localStorage.setItem(`deliveryAddress_${userId}`, JSON.stringify(newSelected))
+          } else {
+            dispatch(selectAddress(null))
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete address:", error)
+      alert("Could not delete address. Please try again later.")
+    }
+  }
 
   if (!cartReady) {
     return (
@@ -248,26 +351,28 @@ const AddToCart = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-              <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
-                <p className="text-sm text-gray-500">Items</p>
+        {/* Hidden Header - Keep functionality but hide visually */}
+        <div className="hidden">
+          <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+                <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
               </div>
-              <button
-                onClick={handleManualStockSync}
-                disabled={stockSyncLoading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
-                title="Refresh stock status"
-              >
-                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
-              </button>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
+                  <p className="text-sm text-gray-500">Items</p>
+                </div>
+                <button
+                  onClick={handleManualStockSync}
+                  disabled={stockSyncLoading}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
+                  title="Refresh stock status"
+                >
+                  {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -275,6 +380,37 @@ const AddToCart = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
+            {/* Address Section */}
+            <div className="bg-white p-4 rounded shadow flex justify-between items-center mb-4">
+              {addressesLoading ? (
+                <div className="flex items-center animate-pulse space-x-4">
+                  <div className="rounded-full bg-gray-300 h-4 w-4"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-300 rounded w-48"></div>
+                    <div className="h-3 bg-gray-300 rounded w-32"></div>
+                  </div>
+                </div>
+              ) : selectedAddress ? (
+                <>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      Deliver to: {selectedAddress.name}, {selectedAddress.pincode}
+                    </p>
+                    <p className="text-md">
+                      {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.landmark}
+                    </p>
+                  </div>
+                  <button onClick={() => setShowAddressModal(true)} className="text-blue-600 hover:underline text-sm">
+                    Change
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setShowAddressModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded">
+                  Select Address
+                </button>
+              )}
+            </div>
+
             {/* Stock Status Alert */}
             {hasOutOfStockItem && (
               <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-6">
@@ -322,19 +458,22 @@ const AddToCart = () => {
                       {availableItems.map((item) => (
                         <div key={`${item._id}_${item.variantId}`} className="p-6 hover:bg-gray-50 transition-colors">
                           <div className="flex items-center gap-4">
-                            {/* Product Image */}
+                            {/* Product Image - Clickable */}
                             <div className="flex-shrink-0">
                               <img
-                                className="w-20 h-20 object-cover rounded-lg border"
+                                className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                                 src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
                                 alt={item.title || "Product"}
                                 loading="lazy"
+                                onClick={() => navigate(`/product/${item._id}`)}
                               />
                             </div>
-
-                            {/* Product Details */}
+                            {/* Product Details - Clickable title */}
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-gray-900 truncate">
+                              <h4
+                                className="font-semibold text-gray-900 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                                onClick={() => navigate(`/product/${item._id}`)}
+                              >
                                 {item.title || "Unknown Product"}
                               </h4>
                               <div className="flex items-center gap-4 mt-1">
@@ -348,14 +487,32 @@ const AddToCart = () => {
                                 </div>
                               )}
                             </div>
-
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center border rounded-lg">
+                                <button
+                                  className="px-3 py-2 text-lg hover:bg-gray-100 transition-colors"
+                                  onClick={() => handleQuantityChange(item, "decrement")}
+                                  disabled={item.quantity <= 1}
+                                >
+                                  −
+                                </button>
+                                <span className="px-4 py-2 font-medium">{item.quantity || 0}</span>
+                                <button
+                                  className="px-3 py-2 text-lg hover:bg-gray-100 transition-colors"
+                                  onClick={() => handleQuantityChange(item, "increment")}
+                                  disabled={typeof item.stock === "number" ? item.quantity >= item.stock : false}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
                             {/* Stock Status */}
                             <div className="text-center">
                               <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
                                 {typeof item.stock === "number" ? `${item.stock} Available` : "In Stock"}
                               </div>
                             </div>
-
                             {/* Price */}
                             <div className="text-right">
                               <div className="font-bold text-lg text-gray-900">
@@ -363,7 +520,6 @@ const AddToCart = () => {
                               </div>
                               <div className="text-sm text-gray-500">₹{(item.currentPrice || 0).toFixed(2)} each</div>
                             </div>
-
                             {/* Remove Button */}
                             <button
                               className="text-red-500 hover:text-red-700 p-2 transition-colors"
@@ -399,19 +555,22 @@ const AddToCart = () => {
                       {outOfStockItems.map((item) => (
                         <div key={`${item._id}_${item.variantId}_oos`} className="p-6 bg-red-50">
                           <div className="flex items-center gap-4">
-                            {/* Product Image */}
+                            {/* Product Image - Clickable */}
                             <div className="flex-shrink-0">
                               <img
-                                className="w-20 h-20 object-cover rounded-lg border grayscale opacity-60"
+                                className="w-20 h-20 object-cover rounded-lg border grayscale opacity-60 cursor-pointer hover:opacity-40 transition-opacity"
                                 src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
                                 alt={item.title || "Product"}
                                 loading="lazy"
+                                onClick={() => navigate(`/product/${item._id}`)}
                               />
                             </div>
-
-                            {/* Product Details */}
+                            {/* Product Details - Clickable title */}
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-gray-700 truncate">
+                              <h4
+                                className="font-semibold text-gray-700 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                                onClick={() => navigate(`/product/${item._id}`)}
+                              >
                                 {item.title || "Unknown Product"}
                               </h4>
                               <div className="flex items-center gap-4 mt-1">
@@ -423,14 +582,12 @@ const AddToCart = () => {
                                 📦 {item.stockMessage || "Currently out of stock"}
                               </div>
                             </div>
-
                             {/* Out of Stock Badge */}
                             <div className="text-center">
                               <div className="bg-red-100 text-red-800 px-3 py-2 rounded-lg font-medium text-sm">
                                 OUT OF STOCK
                               </div>
                             </div>
-
                             {/* Price (crossed out) */}
                             <div className="text-right">
                               <div className="font-bold text-lg text-gray-500 line-through">
@@ -438,7 +595,6 @@ const AddToCart = () => {
                               </div>
                               <div className="text-sm text-red-600">Unavailable</div>
                             </div>
-
                             {/* Remove Button */}
                             <button
                               className="text-red-500 hover:text-red-700 p-2 transition-colors"
@@ -481,7 +637,6 @@ const AddToCart = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
-
               <div className="space-y-4">
                 {/* Price Breakdown */}
                 <div className="flex justify-between text-gray-600">
@@ -490,31 +645,25 @@ const AddToCart = () => {
                   </span>
                   <span>₹{originalTotal.toFixed(2)}</span>
                 </div>
-
                 {outOfStockItems.length > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>Out of Stock ({outOfStockItems.length})</span>
                     <span>Excluded</span>
                   </div>
                 )}
-
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
                   <span>-₹{(originalTotal - subtotal).toFixed(2)}</span>
                 </div>
-
                 <div className="flex justify-between text-gray-600">
                   <span>Delivery Charges</span>
                   <span className="text-green-600">Free</span>
                 </div>
-
                 <hr className="border-gray-200" />
-
                 <div className="flex justify-between text-xl font-bold text-gray-900">
                   <span>Total Amount</span>
                   <span>₹{subtotal.toFixed(2)}</span>
                 </div>
-
                 {originalTotal - subtotal > 0 && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                     <p className="text-green-800 text-sm font-medium">
@@ -523,7 +672,6 @@ const AddToCart = () => {
                   </div>
                 )}
               </div>
-
               {/* Checkout Button */}
               <div className="mt-6">
                 {hasOutOfStockItem && (
@@ -535,7 +683,6 @@ const AddToCart = () => {
                     </div>
                   </div>
                 )}
-
                 <button
                   onClick={() => navigate("/checkout")}
                   disabled={availableItems.length === 0 || hasOutOfStockItem}
@@ -552,7 +699,6 @@ const AddToCart = () => {
                       : `Proceed to Checkout (${availableItems.length} items)`}
                 </button>
               </div>
-
               {/* Security Features */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="font-semibold text-gray-900 mb-3">Why shop with us?</h3>
@@ -579,6 +725,50 @@ const AddToCart = () => {
           </div>
         </div>
       </div>
+
+      {/* Address Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
+          <div ref={modalRef} className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
+            {addresses.length === 0 ? (
+              <p className="text-gray-500">No addresses saved yet.</p>
+            ) : (
+              addresses.map((addr, idx) => (
+                <div key={addr._id || idx} className="border p-3 rounded mb-2 relative">
+                  <input
+                    type="radio"
+                    name="selectedAddress"
+                    checked={selectedAddress?._id === addr._id}
+                    onChange={() => handleAddressSelect(addr)}
+                  />
+                  <span className="ml-2 font-medium">
+                    {addr.name}, {addr.pincode}
+                  </span>
+                  <p className="text-sm text-gray-600">
+                    {addr.line1}, {addr.city}, {addr.landmark}
+                  </p>
+                  <button
+                    onClick={() => confirmDelete(addr._id)}
+                    className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))
+            )}
+            <button
+              onClick={() => {
+                setShowAddressModal(false)
+                navigate("/address")
+              }}
+              className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
+            >
+              Add New Address
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

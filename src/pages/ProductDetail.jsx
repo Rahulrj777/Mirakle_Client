@@ -5,7 +5,7 @@ import { API_BASE } from "../utils/api"
 import { useDispatch, useSelector } from "react-redux"
 import { addToCart, setCartItem } from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
-import { FaShareAlt } from "react-icons/fa";
+import { FaWhatsapp } from "react-icons/fa"
 
 const ProductDetail = () => {
   const { id } = useParams()
@@ -29,7 +29,6 @@ const ProductDetail = () => {
   const [modalImage, setModalImage] = useState("")
   const [shareLoading, setShareLoading] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [showNotifyModal, setShowNotifyModal] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState("")
   const [notifyLoading, setNotifyLoading] = useState(false)
@@ -73,6 +72,14 @@ const ProductDetail = () => {
     return conditions.some((condition) => condition)
   }, [product, selectedVariant])
 
+  // Check if current variant is in cart
+  const isInCart = useMemo(() => {
+    if (!product || !selectedVariant || !cartItems.length) return false
+    const variantKey = selectedVariant._id || selectedVariant.size || selectedVariantIndex
+    const variantId = `${product._id}_${variantKey}`
+    return cartItems.some((item) => item._id === product._id && item.variantId === variantId)
+  }, [product, selectedVariant, selectedVariantIndex, cartItems])
+
   const token = user?.token
 
   const fetchProduct = useCallback(async () => {
@@ -99,7 +106,7 @@ const ProductDetail = () => {
     } finally {
       setLoading(false)
     }
-  }, [id, user?.token])
+  }, [id])
 
   const fetchRelated = useCallback(async () => {
     try {
@@ -112,7 +119,7 @@ const ProductDetail = () => {
   }, [id])
 
   const loadCartSafely = useCallback(async () => {
-    if (!token || cartItems.length > 0) return
+    if (!token) return
     try {
       const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
       const cartData = response.data
@@ -127,7 +134,7 @@ const ProductDetail = () => {
       console.error("Failed to load cart:", error)
       dispatch(setCartItem([]))
     }
-  }, [token, cartItems.length, dispatch])
+  }, [token, dispatch])
 
   useEffect(() => {
     if (id) {
@@ -230,6 +237,10 @@ const ProductDetail = () => {
     }
   }, [handleAddToCart, isOutOfStock, selectedVariant, navigate])
 
+  const handleGoToCart = useCallback(() => {
+    navigate("/cart")
+  }, [navigate])
+
   const handleShare = useCallback(
     async (platform) => {
       setShareLoading(true)
@@ -239,14 +250,6 @@ const ProductDetail = () => {
         switch (platform) {
           case "whatsapp":
             window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + url)}`)
-            break
-          case "facebook":
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)
-            break
-          case "twitter":
-            window.open(
-              `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
-            )
             break
           case "copy":
             await navigator.clipboard.writeText(url)
@@ -516,7 +519,6 @@ const ProductDetail = () => {
               }
             />
           </div>
-
           {/* Thumbnail Images */}
           <div className="flex gap-2 overflow-x-auto">
             {product.images?.others?.map((img, i) => (
@@ -552,7 +554,14 @@ const ProductDetail = () => {
               className="text-gray-500 hover:text-blue-600 transition-colors"
               title="Share product"
             >
-              <FaShareAlt />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                />
+              </svg>
             </button>
           </div>
 
@@ -587,17 +596,17 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* Enhanced Stock Status with Balance Count */}
+          {/* Updated Stock Status */}
           {isOutOfStock ? (
-            <div className="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 rounded-lg p-4 relative">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-lg font-bold">!</span>
+                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">✕</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-red-800 font-semibold text-lg">Out of Stock</h3>
+                  <h3 className="text-red-800 font-semibold">Out of Stock</h3>
                   <p className="text-red-600 text-sm">This variant is currently unavailable</p>
                   <button
                     onClick={() => setShowNotifyModal(true)}
@@ -607,42 +616,36 @@ const ProductDetail = () => {
                   </button>
                 </div>
               </div>
-              <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                0 Available
-              </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-green-50 to-emerald-100 border-l-4 border-green-500 rounded-lg p-4 relative">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-lg font-bold">✓</span>
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">📦</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-green-800 font-semibold text-lg">In Stock</h3>
+                  <h3 className="text-blue-800 font-semibold">Available</h3>
                   {typeof selectedVariant.stock === "number" && selectedVariant.stock <= 10 && (
                     <p className="text-orange-600 text-sm font-medium">
                       Only {selectedVariant.stock} left - Order soon!
                     </p>
                   )}
-                  <p className="text-green-600 text-sm">Ready to ship</p>
+                  <p className="text-blue-600 text-sm">Ready to ship</p>
                 </div>
-              </div>
-              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                {typeof selectedVariant.stock === "number" ? `${selectedVariant.stock} Available` : "In Stock"}
+                <div className="text-right">
+                  <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    {typeof selectedVariant.stock === "number" ? `${selectedVariant.stock} Available` : "In Stock"}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* Size/Variant Selection */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="font-medium text-gray-900">Select Size:</p>
-              <button onClick={() => setShowSizeGuide(true)} className="text-blue-600 hover:underline text-sm">
-                Size Guide
-              </button>
-            </div>
+            <p className="font-medium text-gray-900">Select Size:</p>
             <div className="flex gap-2 flex-wrap">
               {product.variants?.map((v, i) => {
                 const variantOutOfStock =
@@ -692,16 +695,25 @@ const ProductDetail = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={addingToCart}
-                  className="bg-orange-500 text-white px-6 py-4 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-lg"
-                >
-                  {addingToCart ? "Adding..." : "🛒 Add to Cart"}
-                </button>
+                {isInCart ? (
+                  <button
+                    onClick={handleGoToCart}
+                    className="bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 transition-all font-medium text-lg"
+                  >
+                    🛒 Go to Cart
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={addingToCart}
+                    className="bg-orange-500 text-white px-6 py-4 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-lg"
+                  >
+                    {addingToCart ? "Adding..." : "🛒 Add to Cart"}
+                  </button>
+                )}
                 <button
                   onClick={handleBuyNow}
-                  className="bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 transition-all font-medium text-lg"
+                  className="bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 transition-all font-medium text-lg"
                 >
                   ⚡ Buy Now
                 </button>
@@ -711,8 +723,8 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* All Sections in One Page */}
-      <div className="mt-16 space-y-12">
+      {/* Description and Details Sections - Moved below */}
+      <div className="mt-16 space-y-8">
         {/* Description Section */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -929,7 +941,7 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 <p className="text-sm text-gray-700 mb-3 leading-relaxed">{currentUserReview.comment}</p>
-                {/* Review Images */}
+                {/* Review Images - Fixed path */}
                 {currentUserReview.images && currentUserReview.images.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {currentUserReview.images.map((image, index) => (
@@ -940,6 +952,9 @@ const ProductDetail = () => {
                         loading="lazy"
                         className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                         onClick={() => handleImageClick(image.startsWith("http") ? image : `${API_BASE}${image}`)}
+                        onError={(e) => {
+                          e.target.src = "/placeholder.svg?height=80&width=80"
+                        }}
                       />
                     ))}
                   </div>
@@ -975,7 +990,7 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
-                {/* Review Images */}
+                {/* Review Images - Fixed path */}
                 {review.images && review.images.length > 0 && (
                   <div className="mb-3">
                     <div className="flex flex-wrap gap-2">
@@ -987,6 +1002,9 @@ const ProductDetail = () => {
                           alt={`Review image ${index + 1}`}
                           className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
                           onClick={() => handleImageClick(image.startsWith("http") ? image : `${API_BASE}${image}`)}
+                          onError={(e) => {
+                            e.target.src = "/placeholder.svg?height=80&width=80"
+                          }}
                         />
                       ))}
                     </div>
@@ -1021,7 +1039,6 @@ const ProductDetail = () => {
               const price = firstVariant?.price || 0
               const discount = firstVariant?.discountPercent || 0
               const finalPrice = (price - (price * discount) / 100).toFixed(2)
-
               return (
                 <div
                   key={p._id}
@@ -1098,43 +1115,27 @@ const ProductDetail = () => {
         </div>
       )}
 
-      {/* Share Modal */}
+      {/* Updated Share Modal - Only WhatsApp and Copy Link */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold mb-4">Share this product</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <button
                 onClick={() => handleShare("whatsapp")}
                 disabled={shareLoading}
-                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
+                className="flex items-center justify-center gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-all"
               >
-                <span className="text-green-500">📱</span>
-                WhatsApp
-              </button>
-              <button
-                onClick={() => handleShare("facebook")}
-                disabled={shareLoading}
-                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
-              >
-                <span className="text-blue-600">📘</span>
-                Facebook
-              </button>
-              <button
-                onClick={() => handleShare("twitter")}
-                disabled={shareLoading}
-                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
-              >
-                <span className="text-blue-400">🐦</span>
-                Twitter
+                <FaWhatsapp className="text-green-500 text-xl" />
+                <span>Share on WhatsApp</span>
               </button>
               <button
                 onClick={() => handleShare("copy")}
                 disabled={shareLoading}
-                className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-all"
+                className="flex items-center justify-center gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-all"
               >
-                <span>📋</span>
-                Copy Link
+                <span className="text-xl">📋</span>
+                <span>Copy Link</span>
               </button>
             </div>
             <button
@@ -1174,61 +1175,6 @@ const ProductDetail = () => {
               >
                 Cancel
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Size Guide Modal */}
-      {showSizeGuide && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Size Guide</h3>
-              <button onClick={() => setShowSizeGuide(false)} className="text-gray-500 hover:text-gray-700">
-                ✕
-              </button>
-            </div>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">Please refer to the size chart below to find your perfect fit.</p>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 p-2 text-left">Size</th>
-                      <th className="border border-gray-300 p-2 text-left">Chest (inches)</th>
-                      <th className="border border-gray-300 p-2 text-left">Waist (inches)</th>
-                      <th className="border border-gray-300 p-2 text-left">Length (inches)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-gray-300 p-2">S</td>
-                      <td className="border border-gray-300 p-2">36-38</td>
-                      <td className="border border-gray-300 p-2">30-32</td>
-                      <td className="border border-gray-300 p-2">26-27</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-gray-300 p-2">M</td>
-                      <td className="border border-gray-300 p-2">38-40</td>
-                      <td className="border border-gray-300 p-2">32-34</td>
-                      <td className="border border-gray-300 p-2">27-28</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-gray-300 p-2">L</td>
-                      <td className="border border-gray-300 p-2">40-42</td>
-                      <td className="border border-gray-300 p-2">34-36</td>
-                      <td className="border border-gray-300 p-2">28-29</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-gray-300 p-2">XL</td>
-                      <td className="border border-gray-300 p-2">42-44</td>
-                      <td className="border border-gray-300 p-2">36-38</td>
-                      <td className="border border-gray-300 p-2">29-30</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
             </div>
           </div>
         </div>
