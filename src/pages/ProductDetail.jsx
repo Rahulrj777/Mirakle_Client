@@ -79,7 +79,7 @@ const ProductDetail = () => {
     try {
       setLoading(true)
       setError("")
-      const res = await axios.get(`${API_BASE}/api/shop/all-products`)
+      const res = await axios.get(`${API_BASE}/api/products/all-products`)
       const found = res.data.find((p) => p._id === id)
       if (found) {
         setProduct(found)
@@ -483,7 +483,7 @@ const ProductDetail = () => {
           </li>
           <li>/</li>
           <li>
-            <a href="/products/allproduct" className="hover:text-blue-600">
+            <a href="/shop/allproduct" className="hover:text-blue-600">
               Products
             </a>
           </li>
