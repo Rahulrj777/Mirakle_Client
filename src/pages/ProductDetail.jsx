@@ -616,7 +616,7 @@ const ProductDetail = () => {
                     <p className="text-blue-600 text-sm">Ready to ship</p>
                   </div>
                   <div className="text-right">
-                    <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-medium">
                       {selectedVariant.stock} Available
                     </div>
                   </div>
