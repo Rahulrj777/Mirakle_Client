@@ -29,6 +29,8 @@ const ProductDetail = () => {
   const [modalImage, setModalImage] = useState("")
   const [shareLoading, setShareLoading] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [notifyEmail, setNotifyEmail] = useState("")
+  const [notifyLoading, setNotifyLoading] = useState(false)
   const [productViews, setProductViews] = useState(0)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [productVideo, setProductVideo] = useState("")
