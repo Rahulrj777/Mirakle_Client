@@ -228,9 +228,7 @@ const ProductDetail = () => {
   ])
 
   const handleBuyNow = useCallback(async () => {
-    await handleAddToCart();
     if (!isOutOfStock && selectedVariant) {
-      // Build a complete product object
       const productForBuyNow = {
         _id: selectedVariant._id,
         title: product.title, 
