@@ -53,7 +53,7 @@ const ShopingPage = () => {
             className="pl-10 pr-4 py-2 border rounded w-full"
           />
           {searchTerm.trim() !== "" && suggestions.length > 0 && (
-            <ul className="absolute z-10 w-full bg-white shadow-md mt-1 rounded max-h-60 overflow-y-auto border">
+            <ul className="absolute z-50 w-full bg-white shadow-md mt-1 rounded max-h-60 overflow-y-auto border">
               {suggestions.map((product) => (
                 <li
                   key={product._id}
