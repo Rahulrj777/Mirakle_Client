@@ -852,7 +852,7 @@ const ProductDetail = () => {
                     {reviewImagePreviews.map((preview, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={preview || "/placeholder.svg?height=80&width=80"}
+                          src={preview.url || "/placeholder.svg?height=80&width=80"}
                           alt={`Preview ${index + 1}`}
                           loading="lazy"
                           className="w-20 h-20 object-cover rounded border"
