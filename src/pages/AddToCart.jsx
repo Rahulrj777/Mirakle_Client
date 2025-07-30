@@ -44,9 +44,15 @@ const AddToCart = () => {
   const userId = user?.user?.userId || user?.user?._id
   const token = user?.token
 
-  // Enhanced stock checking function - Fixed to properly detect out of stock items
+  // Enhanced stock checking function - Fixed to handle undefined values properly
   const isItemOutOfStock = (item) => {
     if (!item) return true
+
+    // If stock information is completely missing, we need to sync first
+    // But for now, treat undefined stock as available (will be synced)
+    if (item.stock === undefined && item.isOutOfStock === undefined && item.stockMessage === undefined) {
+      return false // Assume available until we get proper stock info
+    }
 
     // Check explicit out of stock flags first
     if (item.isOutOfStock === true) return true
@@ -92,41 +98,130 @@ const AddToCart = () => {
     return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   }, [availableItems])
 
-  // Fix cart persistence - sync with backend on load
-  useEffect(() => {
-    const syncCartFromBackend = async () => {
-      if (!token || !userId) {
-        setCartReady(true)
-        return
+  // Enhanced cart sync function that ensures stock information is included
+  const syncCartFromBackend = async () => {
+    if (!token || !userId) {
+      setCartReady(true)
+      return
+    }
+
+    try {
+      console.log("🔄 Syncing cart from backend...")
+      const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
+      const backendCart = response.data
+
+      // Handle different response formats
+      let cartItemsArray = []
+      if (backendCart && Array.isArray(backendCart.items)) {
+        cartItemsArray = backendCart.items
+      } else if (Array.isArray(backendCart)) {
+        cartItemsArray = backendCart
       }
-      try {
-        const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
-        const backendCart = response.data
-        if (backendCart && Array.isArray(backendCart.items)) {
-          dispatch(setCartItem(backendCart.items))
-          localStorage.setItem(`cart_${userId}`, JSON.stringify(backendCart.items))
-        } else if (Array.isArray(backendCart)) {
-          dispatch(setCartItem(backendCart))
-          localStorage.setItem(`cart_${userId}`, JSON.stringify(backendCart))
+
+      console.log("📦 Raw cart from backend:", cartItemsArray)
+
+      // If we have cart items but they lack stock info, sync with products
+      if (cartItemsArray.length > 0) {
+        const enrichedCartItems = await enrichCartItemsWithStock(cartItemsArray)
+        dispatch(setCartItem(enrichedCartItems))
+        localStorage.setItem(`cart_${userId}`, JSON.stringify(enrichedCartItems))
+        console.log("✅ Cart synced and enriched with stock info")
+      } else {
+        dispatch(setCartItem([]))
+        console.log("✅ Empty cart synced")
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync cart from backend:", error)
+      // Try to load from localStorage as fallback
+      const localCart = localStorage.getItem(`cart_${userId}`)
+      if (localCart) {
+        try {
+          const parsedCart = JSON.parse(localCart)
+          if (Array.isArray(parsedCart)) {
+            const enrichedCartItems = await enrichCartItemsWithStock(parsedCart)
+            dispatch(setCartItem(enrichedCartItems))
+          }
+        } catch (parseError) {
+          console.error("Failed to parse local cart:", parseError)
+          dispatch(setCartItem([]))
         }
-      } catch (error) {
-        console.error("Failed to sync cart from backend:", error)
-        const localCart = localStorage.getItem(`cart_${userId}`)
-        if (localCart) {
-          try {
-            const parsedCart = JSON.parse(localCart)
-            if (Array.isArray(parsedCart)) {
-              dispatch(setCartItem(parsedCart))
-            }
-          } catch (parseError) {
-            console.error("Failed to parse local cart:", parseError)
-            dispatch(setCartItem([]))
+      } else {
+        dispatch(setCartItem([]))
+      }
+    } finally {
+      setCartReady(true)
+    }
+  }
+
+  // Function to enrich cart items with current stock information
+  const enrichCartItemsWithStock = async (cartItemsArray) => {
+    try {
+      console.log("🔍 Enriching cart items with stock info...")
+      const productsResponse = await axiosWithToken(token).get(`${API_BASE}/api/products/all-products`)
+      const allProducts = productsResponse.data
+
+      const enrichedItems = cartItemsArray.map((cartItem) => {
+        const currentProduct = allProducts.find((p) => p._id === cartItem._id)
+
+        if (!currentProduct) {
+          console.log(`❌ Product not found: ${cartItem.title}`)
+          return {
+            ...cartItem,
+            isOutOfStock: true,
+            stock: 0,
+            stockMessage: "Product no longer available",
           }
         }
-      } finally {
-        setCartReady(true)
-      }
+
+        const currentVariant = currentProduct.variants?.find((v) => v.size === cartItem.size)
+
+        if (!currentVariant) {
+          console.log(`❌ Variant not found: ${cartItem.title} - ${cartItem.size}`)
+          return {
+            ...cartItem,
+            isOutOfStock: true,
+            stock: 0,
+            stockMessage: "Variant no longer available",
+          }
+        }
+
+        // Determine if out of stock
+        const isOutOfStock =
+          currentProduct.isOutOfStock === true ||
+          currentVariant.isOutOfStock === true ||
+          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0) ||
+          currentVariant.stock === "0" ||
+          currentVariant.stock === 0
+
+        const enrichedItem = {
+          ...cartItem,
+          isOutOfStock,
+          stock: currentVariant.stock,
+          stockMessage: isOutOfStock ? "Currently out of stock" : null,
+          originalPrice: currentVariant.price,
+          discountPercent: currentVariant.discountPercent || 0,
+          currentPrice: currentVariant.price - (currentVariant.price * (currentVariant.discountPercent || 0)) / 100,
+        }
+
+        console.log(`✅ Enriched ${cartItem.title}:`, {
+          stock: enrichedItem.stock,
+          isOutOfStock: enrichedItem.isOutOfStock,
+          stockMessage: enrichedItem.stockMessage,
+        })
+
+        return enrichedItem
+      })
+
+      return enrichedItems
+    } catch (error) {
+      console.error("❌ Failed to enrich cart items with stock:", error)
+      // Return original items if enrichment fails
+      return cartItemsArray
     }
+  }
+
+  // Fix cart persistence - sync with backend on load
+  useEffect(() => {
     syncCartFromBackend()
   }, [token, userId, dispatch])
 
@@ -166,58 +261,21 @@ const AddToCart = () => {
       })
   }, [cartReady, token, userId, dispatch, addressesLoaded])
 
-  // Stock sync using existing product API - Fixed to preserve stock status
+  // Stock sync using existing product API - Enhanced version
   const syncCartWithStock = async () => {
     if (!cartReady || !token || !userId || cartItems.length === 0) return
+
     try {
       setStockSyncLoading(true)
-      const response = await axiosWithToken(token).get(`${API_BASE}/api/products/all-products`)
-      const allProducts = response.data
+      console.log("🔄 Manual stock sync initiated...")
 
-      const updatedCartItems = cartItems.map((cartItem) => {
-        const currentProduct = allProducts.find((p) => p._id === cartItem._id)
-        if (!currentProduct) {
-          return {
-            ...cartItem,
-            isOutOfStock: true,
-            stock: 0,
-            stockMessage: "Product no longer available",
-          }
-        }
+      const enrichedCartItems = await enrichCartItemsWithStock(cartItems)
+      dispatch(setCartItem(enrichedCartItems))
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(enrichedCartItems))
 
-        const currentVariant = currentProduct.variants?.find((v) => v.size === cartItem.size)
-        if (!currentVariant) {
-          return {
-            ...cartItem,
-            isOutOfStock: true,
-            stock: 0,
-            stockMessage: "Variant no longer available",
-          }
-        }
-
-        // More conservative stock checking
-        const isOutOfStock =
-          currentProduct.isOutOfStock === true ||
-          currentVariant.isOutOfStock === true ||
-          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0) ||
-          currentVariant.stock === "0" ||
-          currentVariant.stock === 0
-
-        return {
-          ...cartItem,
-          isOutOfStock,
-          stock: currentVariant.stock,
-          stockMessage: isOutOfStock ? "Currently out of stock" : null,
-          originalPrice: currentVariant.price,
-          discountPercent: currentVariant.discountPercent || 0,
-          currentPrice: currentVariant.price - (currentVariant.price * (currentVariant.discountPercent || 0)) / 100,
-        }
-      })
-
-      dispatch(setCartItem(updatedCartItems))
-      localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCartItems))
+      console.log("✅ Manual stock sync completed")
     } catch (error) {
-      console.error("Failed to sync cart with stock:", error)
+      console.error("❌ Manual stock sync failed:", error)
     } finally {
       setStockSyncLoading(false)
     }
@@ -287,20 +345,22 @@ const AddToCart = () => {
     }
   }
 
-  // Debug stock status - Enhanced logging
+  // Enhanced debug logging
   useEffect(() => {
-    console.log("=== CART STOCK DEBUG ===")
+    console.log("=== ENHANCED CART STOCK DEBUG ===")
     cartItems.forEach((item, index) => {
       console.log(`Item ${index + 1}: ${item.title}`)
       console.log(`  - stock: ${item.stock} (type: ${typeof item.stock})`)
       console.log(`  - isOutOfStock: ${item.isOutOfStock}`)
       console.log(`  - stockMessage: ${item.stockMessage}`)
+      console.log(`  - originalPrice: ${item.originalPrice}`)
+      console.log(`  - currentPrice: ${item.currentPrice}`)
       console.log(`  - Detected as out of stock: ${isItemOutOfStock(item)}`)
       console.log("---")
     })
     console.log(`Available items: ${availableItems.length}`)
     console.log(`Out of stock items: ${outOfStockItems.length}`)
-    console.log("======================")
+    console.log("================================")
   }, [cartItems, availableItems, outOfStockItems])
 
   const handleQuantityChange = async (item, action) => {
@@ -377,7 +437,7 @@ const AddToCart = () => {
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading cart...</p>
+              <p className="text-gray-600">Loading cart and syncing stock...</p>
             </div>
           </div>
         </div>
@@ -388,28 +448,26 @@ const AddToCart = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Hidden Header - Keep functionality but hide visually */}
-        <div className="hidden">
-          <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-                <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
+        {/* Visible Header for debugging - Show stock sync button */}
+        <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+              <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
+                <p className="text-sm text-gray-500">Items</p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-900">{cartItems?.length || 0}</p>
-                  <p className="text-sm text-gray-500">Items</p>
-                </div>
-                <button
-                  onClick={handleManualStockSync}
-                  disabled={stockSyncLoading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
-                  title="Refresh stock status"
-                >
-                  {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
-                </button>
-              </div>
+              <button
+                onClick={handleManualStockSync}
+                disabled={stockSyncLoading}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm"
+                title="Refresh stock status"
+              >
+                {stockSyncLoading ? "🔄 Syncing..." : "🔄 Refresh Stock"}
+              </button>
             </div>
           </div>
         </div>
