@@ -44,18 +44,27 @@ const AddToCart = () => {
   const userId = user?.user?.userId || user?.user?._id
   const token = user?.token
 
-  // Enhanced stock checking function
+  // Enhanced stock checking function - Fixed logic
   const isItemOutOfStock = (item) => {
     if (!item) return true
-    const outOfStockConditions = [
-      item.isOutOfStock === true,
-      item.stock === 0,
-      item.stock === "0",
-      typeof item.stock === "number" && item.stock <= 0,
-      item.stockMessage && item.stockMessage.toLowerCase().includes("out of stock"),
-      item.isOutOfStock !== false && (item.stock === undefined || item.stock === null),
-    ]
-    return outOfStockConditions.some(Boolean)
+
+    // Check explicit out of stock flags first
+    if (item.isOutOfStock === true) return true
+
+    // Check stock numbers
+    if (typeof item.stock === "number") {
+      return item.stock <= 0
+    }
+
+    // Check string stock values
+    if (item.stock === "0" || item.stock === 0) return true
+
+    // Check stock message
+    if (item.stockMessage && item.stockMessage.toLowerCase().includes("out of stock")) return true
+
+    // If stock is undefined or null but isOutOfStock is not explicitly false, consider it available
+    // This prevents items from being marked as out of stock when they shouldn't be
+    return false
   }
 
   // Separate available and out-of-stock items
@@ -151,13 +160,14 @@ const AddToCart = () => {
       })
   }, [cartReady, token, userId, dispatch, addressesLoaded])
 
-  // Stock sync using existing product API - Fixed to prevent constant syncing
+  // Stock sync using existing product API - Fixed to preserve stock status
   const syncCartWithStock = async () => {
     if (!cartReady || !token || !userId || cartItems.length === 0) return
     try {
       setStockSyncLoading(true)
       const response = await axiosWithToken(token).get(`${API_BASE}/api/products/all-products`)
       const allProducts = response.data
+
       const updatedCartItems = cartItems.map((cartItem) => {
         const currentProduct = allProducts.find((p) => p._id === cartItem._id)
         if (!currentProduct) {
@@ -168,6 +178,7 @@ const AddToCart = () => {
             stockMessage: "Product no longer available",
           }
         }
+
         const currentVariant = currentProduct.variants?.find((v) => v.size === cartItem.size)
         if (!currentVariant) {
           return {
@@ -177,12 +188,15 @@ const AddToCart = () => {
             stockMessage: "Variant no longer available",
           }
         }
+
+        // More conservative stock checking
         const isOutOfStock =
           currentProduct.isOutOfStock === true ||
           currentVariant.isOutOfStock === true ||
-          currentVariant.stock === 0 ||
+          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0) ||
           currentVariant.stock === "0" ||
-          (typeof currentVariant.stock === "number" && currentVariant.stock <= 0)
+          currentVariant.stock === 0
+
         return {
           ...cartItem,
           isOutOfStock,
@@ -193,6 +207,7 @@ const AddToCart = () => {
           currentPrice: currentVariant.price - (currentVariant.price * (currentVariant.discountPercent || 0)) / 100,
         }
       })
+
       dispatch(setCartItem(updatedCartItems))
       localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCartItems))
     } catch (error) {
@@ -265,6 +280,19 @@ const AddToCart = () => {
       console.error("Failed to remove item:", error)
     }
   }
+
+  // Debug stock status
+  useEffect(() => {
+    console.log(
+      "Cart items stock status:",
+      cartItems.map((item) => ({
+        title: item.title,
+        stock: item.stock,
+        isOutOfStock: item.isOutOfStock,
+        stockMessage: item.stockMessage,
+      })),
+    )
+  }, [cartItems])
 
   const handleQuantityChange = async (item, action) => {
     try {

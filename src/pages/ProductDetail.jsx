@@ -29,9 +29,6 @@ const ProductDetail = () => {
   const [modalImage, setModalImage] = useState("")
   const [shareLoading, setShareLoading] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [showNotifyModal, setShowNotifyModal] = useState(false)
-  const [notifyEmail, setNotifyEmail] = useState("")
-  const [notifyLoading, setNotifyLoading] = useState(false)
   const [productViews, setProductViews] = useState(0)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [productVideo, setProductVideo] = useState("")
@@ -268,31 +265,6 @@ const ProductDetail = () => {
     },
     [product],
   )
-
-  const handleNotifyWhenAvailable = useCallback(async () => {
-    if (!notifyEmail.trim()) {
-      alert("Please enter a valid email address")
-      return
-    }
-    setNotifyLoading(true)
-    try {
-      await axios.post(`${API_BASE}/api/products/${id}/notify`, {
-        email: notifyEmail,
-        variantId: selectedVariant._id,
-        userId: user?.user?._id,
-        productTitle: product.title,
-        variantSize: selectedVariant.size,
-      })
-      alert("You'll be notified when this item is back in stock!")
-      setShowNotifyModal(false)
-      setNotifyEmail("")
-    } catch (error) {
-      console.error("Notify request failed:", error)
-      alert("Failed to set up notification")
-    } finally {
-      setNotifyLoading(false)
-    }
-  }, [notifyEmail, id, selectedVariant, user, product])
 
   const handleImageClick = useCallback((imageUrl) => {
     setModalImage(imageUrl)
@@ -608,12 +580,7 @@ const ProductDetail = () => {
                 <div className="flex-1">
                   <h3 className="text-red-800 font-semibold">Out of Stock</h3>
                   <p className="text-red-600 text-sm">This variant is currently unavailable</p>
-                  <button
-                    onClick={() => setShowNotifyModal(true)}
-                    className="text-blue-600 hover:underline text-sm mt-1"
-                  >
-                    Notify me when available
-                  </button>
+                  <p className="text-blue-600 text-sm mt-1">Check back later for availability</p>
                 </div>
               </div>
             </div>
@@ -723,8 +690,8 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Description and Details Sections - Moved below */}
-      <div className="mt-16 space-y-8">
+      {/* Description and Details Sections - Moved below the main grid */}
+      <div className="mt-12 space-y-8">
         {/* Description Section */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -762,8 +729,10 @@ const ProductDetail = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Reviews Section */}
+      {/* Reviews Section */}
+      <div className="mt-16 space-y-8">
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center gap-2 mb-6">
             <span className="text-2xl">⭐</span>
@@ -941,17 +910,17 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 <p className="text-sm text-gray-700 mb-3 leading-relaxed">{currentUserReview.comment}</p>
-                {/* Review Images - Fixed path */}
+                {/* Review Images - Simplified */}
                 {currentUserReview.images && currentUserReview.images.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {currentUserReview.images.map((image, index) => (
                       <img
                         key={index}
-                        src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                        src={image || "/placeholder.svg?height=80&width=80"}
                         alt={`Review image ${index + 1}`}
                         loading="lazy"
                         className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleImageClick(image.startsWith("http") ? image : `${API_BASE}${image}`)}
+                        onClick={() => handleImageClick(image)}
                         onError={(e) => {
                           e.target.src = "/placeholder.svg?height=80&width=80"
                         }}
@@ -990,18 +959,18 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
-                {/* Review Images - Fixed path */}
+                {/* Review Images - Simplified */}
                 {review.images && review.images.length > 0 && (
                   <div className="mb-3">
                     <div className="flex flex-wrap gap-2">
                       {review.images.map((image, index) => (
                         <img
                           key={index}
-                          src={image.startsWith("http") ? image : `${API_BASE}${image}`}
+                          src={image || "/placeholder.svg?height=80&width=80"}
                           loading="lazy"
                           alt={`Review image ${index + 1}`}
                           className="w-20 h-20 object-cover rounded border cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => handleImageClick(image.startsWith("http") ? image : `${API_BASE}${image}`)}
+                          onClick={() => handleImageClick(image)}
                           onError={(e) => {
                             e.target.src = "/placeholder.svg?height=80&width=80"
                           }}
@@ -1144,38 +1113,6 @@ const ProductDetail = () => {
             >
               Cancel
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Notify When Available Modal */}
-      {showNotifyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold mb-4">Get notified when available</h3>
-            <p className="text-sm text-gray-600 mb-4">We'll send you an email when this item is back in stock.</p>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={notifyEmail}
-              onChange={(e) => setNotifyEmail(e.target.value)}
-              className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleNotifyWhenAvailable}
-                disabled={notifyLoading || !notifyEmail.trim()}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {notifyLoading ? "Setting up..." : "Notify Me"}
-              </button>
-              <button
-                onClick={() => setShowNotifyModal(false)}
-                className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-all"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}
