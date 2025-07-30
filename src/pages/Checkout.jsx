@@ -27,7 +27,14 @@ const Checkout = () => {
         localStorage.setItem("buyNowProduct", JSON.stringify(prodFromState));
       } else {
         const saved = localStorage.getItem("buyNowProduct");
-        if (saved) setProduct(JSON.parse(saved));
+        if (saved) {
+          try {
+            setProduct(JSON.parse(saved));
+          } catch {
+            localStorage.removeItem("buyNowProduct"); // corrupt? clear
+            setProduct(null);
+          }
+        }
       }
     }
   }, [location.state, mode]);
@@ -116,47 +123,55 @@ const Checkout = () => {
                 key={i}
               >
                 <img
-                  src={item?.images?.others?.[0]?.url || "/placeholder.jpg"}
-                  alt={item.title}
+                  src={
+                    item?.images?.others?.[0]?.url ||
+                    item?.images?.[0]?.url ||
+                    "/placeholder.jpg"
+                  }
+                  alt={item.title || "Product Image"}
                   className="w-20 h-20 rounded-lg object-cover border"
                 />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{item.title}</h3>
+                  <h3 className="font-semibold text-lg">{item.title || "Untitled Product"}</h3>
                   {item.size && (
                     <div className="text-sm text-gray-500 mb-1">
                       Size: {item.size}
                     </div>
                   )}
                   <div className="text-green-600 font-semibold">
-                    ₹{item.currentPrice} × {item.quantity || 1}
+                    ₹{item.currentPrice ?? "N/A"} × {item.quantity || 1}
                   </div>
                 </div>
+
                 {mode === "cart" && (
-                  <div className="flex items-center space-x-1 border rounded px-2 py-1 bg-white shadow-sm">
+                  <>
+                    <div className="flex items-center space-x-1 border rounded px-2 py-1 bg-white shadow-sm">
+                      <button
+                        className="text-lg px-2 disabled:opacity-50"
+                        onClick={() => handleDecrement(item)}
+                        disabled={item.quantity <= 1}
+                        aria-label={`Decrease quantity of ${item.title}`}
+                      >
+                        -
+                      </button>
+                      <span className="px-2">{item.quantity}</span>
+                      <button
+                        className="text-lg px-2"
+                        onClick={() => handleIncrement(item)}
+                        aria-label={`Increase quantity of ${item.title}`}
+                      >
+                        +
+                      </button>
+                    </div>
                     <button
-                      className="text-lg px-2"
-                      onClick={() => handleDecrement(item)}
-                      disabled={item.quantity <= 1}
+                      className="ml-2 px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600"
+                      onClick={() => handleRemove(item)}
+                      title="Remove from cart"
+                      aria-label={`Remove ${item.title} from cart`}
                     >
-                      -
+                      🗑
                     </button>
-                    <span className="px-2">{item.quantity}</span>
-                    <button
-                      className="text-lg px-2"
-                      onClick={() => handleIncrement(item)}
-                    >
-                      +
-                    </button>
-                  </div>
-                )}
-                {mode === "cart" && (
-                  <button
-                    className="ml-2 px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600"
-                    onClick={() => handleRemove(item)}
-                    title="Remove from cart"
-                  >
-                    🗑
-                  </button>
+                  </>
                 )}
               </div>
             ))}

@@ -230,14 +230,25 @@ const ProductDetail = () => {
   const handleBuyNow = useCallback(async () => {
     await handleAddToCart();
     if (!isOutOfStock && selectedVariant) {
+      // Build a complete product object
+      const productForBuyNow = {
+        _id: selectedVariant._id,
+        title: product.title, // Get from main product
+        images: product.images, // Get from main product or variant
+        size: selectedVariant.size, // If variants have size
+        currentPrice: selectedVariant.currentPrice, // or selectedVariant.price
+        quantity: 1,
+        variantId: selectedVariant.variantId, // If needed
+        // Add any other fields your Checkout expects
+      };
       navigate("/checkout", {
         state: {
           mode: "buy-now",
-          product: selectedVariant,
+          product: productForBuyNow,
         },
       });
     }
-  }, [handleAddToCart, isOutOfStock, selectedVariant, navigate]);
+  }, [handleAddToCart, isOutOfStock, selectedVariant, product, navigate]);
 
   const handleGoToCart = useCallback(() => {
     navigate("/AddToCart")
