@@ -9,8 +9,8 @@ const Checkout = () => {
   const mode = location.state?.mode || "cart";
 
   // Redux cart
-  const cartItems = useSelector((state) => state.cart.cartItems || []);
-  const cartReady = useSelector((state) => state.cart.cartReady || false);
+  const cartItems = useSelector((state) => state.cart.items || []);
+  const cartReady = useSelector((state) => state.cart.cartReady);
 
   // ✅ Load product for Buy Now
   useEffect(() => {
@@ -78,46 +78,54 @@ const Checkout = () => {
   );
 
   return (
-    <div className="max-w-5xl mx-auto mt-10 p-6 border rounded shadow bg-white">
+    <div className="max-w-6xl mx-auto mt-10 p-6">
       <h1 className="text-2xl font-bold mb-6">Checkout</h1>
 
-      {/* ✅ Product List */}
-      <div className="space-y-4">
-        {items.map((item, index) => {
-          const imageUrl = item?.images?.others?.[0]?.url || "/placeholder.jpg";
-          return (
-            <div key={index} className="flex gap-4 border p-4 rounded shadow-sm">
-              <img
-                src={imageUrl}
-                alt={item.title}
-                loading="lazy"
-                className="w-28 h-28 object-cover rounded"
-              />
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold">{item.title}</h2>
-                {item.size && (
-                  <p className="mt-1 text-gray-600">Size: {item.size}</p>
-                )}
-                <p className="text-green-600 font-bold text-lg mt-2">
-                  ₹{item.currentPrice} x {item.quantity || 1}
-                </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Product List */}
+        <div className="lg:col-span-2 space-y-4">
+          {items.map((item, index) => {
+            const imageUrl = item?.images?.others?.[0]?.url || "/placeholder.jpg";
+            return (
+              <div key={index} className="flex gap-4 border p-4 rounded shadow-sm">
+                <img
+                  src={imageUrl}
+                  alt={item.title}
+                  loading="lazy"
+                  className="w-28 h-28 object-cover rounded"
+                />
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold">{item.title}</h2>
+                  {item.size && (
+                    <p className="mt-1 text-gray-600">Size: {item.size}</p>
+                  )}
+                  <p className="text-green-600 font-bold text-lg mt-2">
+                    ₹{item.currentPrice} × {item.quantity || 1}
+                  </p>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
 
-      {/* ✅ Summary */}
-      <div className="mt-6 text-right border-t pt-4">
-        <p className="text-lg font-semibold">
-          Total: ₹{total.toLocaleString()}
-        </p>
-        <button
-          className="mt-4 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 cursor-pointer"
-          onClick={() => alert("Proceeding to payment (not implemented)")}
-        >
-          Proceed to Payment
-        </button>
+        {/* Right: Summary */}
+        <div className="border p-6 rounded shadow h-fit">
+          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+          <div className="flex justify-between mb-2">
+            <span>Total Items:</span>
+            <span>{items.length}</span>
+          </div>
+          <div className="flex justify-between text-lg font-bold mb-4">
+            <span>Total:</span>
+            <span>₹{total.toLocaleString()}</span>
+          </div>
+          <button
+            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 cursor-pointer"
+            onClick={() => alert("Proceeding to payment (not implemented)")}
+          >
+            Proceed to Payment
+          </button>
+        </div>
       </div>
     </div>
   );
