@@ -28,7 +28,7 @@ const AddToCart = () => {
   const selectedAddress = useSelector((state) => state.cart?.selectedAddress)
 
   const [cartReady, setCartReady] = useState(false)
-  const [stockSyncLoading, setStockSyncLoading] = useState(false)
+  const [ setStockSyncLoading] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(false)

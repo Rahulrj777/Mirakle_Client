@@ -230,12 +230,12 @@ const ProductDetail = () => {
   const handleBuyNow = useCallback(async () => {
     await handleAddToCart()
     if (!isOutOfStock && selectedVariant) {
-      navigate("/cart")
+      navigate("/checkout")
     }
   }, [handleAddToCart, isOutOfStock, selectedVariant, navigate])
 
   const handleGoToCart = useCallback(() => {
-    navigate("/cart")
+    navigate("/AddToCart")
   }, [navigate])
 
   const handleShare = useCallback(
