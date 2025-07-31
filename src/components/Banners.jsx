@@ -456,9 +456,11 @@ const Banners = () => {
           {searchTerm.trim() && suggestions.length > 0 && (
             <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow-md max-h-60 md:max-h-80 overflow-y-auto w-full text-sm text-black">
               {suggestions.map((item) => {
-                // Defensive: pick first valid image URL or use placeholder
                 const imgUrl =
-                  Array.isArray(item.images?.others) && item.images.others.length > 0 && typeof item.images.others[0]?.url === "string" && item.images.others[0].url.startsWith("http")
+                  Array.isArray(item.images?.others) &&
+                  item.images.others.length > 0 &&
+                  typeof item.images.others[0]?.url === "string" &&
+                  item.images.others[0].url.startsWith("http")
                     ? item.images.others[0].url
                     : "/placeholder.svg";
 
