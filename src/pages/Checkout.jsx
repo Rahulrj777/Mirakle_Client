@@ -14,6 +14,8 @@ const Checkout = () => {
   const cartReady = useSelector((state) => state.cart.cartReady);
   const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
 
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+
   useEffect(() => {
     if (mode === "buy-now") {
       const prodFromState = location.state?.product;
@@ -34,7 +36,7 @@ const Checkout = () => {
     }
   }, [location.state, mode]);
 
-  // Redirect to login if not logged in
+  // Redirect if not logged in
   if (!token) {
     navigate("/login");
     return null;
@@ -76,6 +78,7 @@ const Checkout = () => {
 
   const items = mode === "buy-now" ? [product] : cartItems;
 
+  // Calculate subtotal, discount, and total
   const subtotal = items.reduce(
     (sum, item) => sum + (item.originalPrice || item.currentPrice || 0) * (item.quantity || 1),
     0
@@ -105,6 +108,10 @@ const Checkout = () => {
     });
   };
 
+  const handleCheckout = () => {
+    alert(`Proceeding with ${paymentMethod.toUpperCase()} payment of ₹${total}`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4 lg:px-16">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -118,7 +125,6 @@ const Checkout = () => {
                   key={i}
                   className="flex items-center justify-between border-b pb-4 last:border-none last:pb-0"
                 >
-                  {/* Product Info */}
                   <div className="flex gap-4 items-center">
                     <img
                       src={
@@ -140,7 +146,6 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {/* Quantity and Price */}
                   <div className="flex items-center gap-6">
                     {mode === "cart" && (
                       <div className="flex items-center border rounded overflow-hidden">
@@ -178,38 +183,88 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* RIGHT: Order Summary */}
-        <div className="bg-white rounded-lg shadow p-6 h-fit sticky top-20">
-          <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-          <div className="space-y-2 text-gray-700">
-            <div className="flex justify-between">
-              <span>Price ({items.length} items)</span>
-              <span>₹{subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-green-600">
-              <span>Discount</span>
-              <span>-₹{discount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span>Delivery Charges</span>
-              <span className="text-green-600">Free</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold mt-2">
-              <span>Total Amount</span>
-              <span>₹{total.toFixed(2)}</span>
-            </div>
-            {discount > 0 && (
-              <div className="bg-green-50 text-green-700 text-sm mt-3 p-2 rounded">
-                🎉 You saved ₹{discount.toFixed(2)} on this order!
+        {/* RIGHT: Order Summary + Payment Methods */}
+        <div className="bg-white rounded-lg shadow p-6 h-fit sticky top-20 space-y-6">
+          {/* Order Summary */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+            <div className="space-y-2 text-gray-700">
+              <div className="flex justify-between">
+                <span>Price ({items.length} items)</span>
+                <span>₹{subtotal.toFixed(2)}</span>
               </div>
-            )}
+              <div className="flex justify-between text-green-600">
+                <span>Discount</span>
+                <span>-₹{discount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span>Delivery Charges</span>
+                <span className="text-green-600">Free</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold mt-2">
+                <span>Total Amount</span>
+                <span>₹{total.toFixed(2)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="bg-green-50 text-green-700 text-sm mt-3 p-2 rounded">
+                  🎉 You saved ₹{discount.toFixed(2)} on this order!
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Payment Methods */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Select Payment Method</h2>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="upi"
+                  checked={paymentMethod === "upi"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>UPI / Google Pay / PhonePe</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cod"
+                  checked={paymentMethod === "cod"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>Cash on Delivery (COD)</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="card"
+                  checked={paymentMethod === "card"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>Credit / Debit Card</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="wallet"
+                  checked={paymentMethod === "wallet"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>Wallet / Netbanking</span>
+              </label>
+            </div>
           </div>
 
           <button
-            className="w-full mt-6 py-3 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold text-lg"
-            onClick={() => alert("Proceeding to Checkout...")}
+            className="w-full py-3 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold text-lg"
+            onClick={handleCheckout}
           >
-            Proceed to Checkout ({items.length} items)
+            Pay ₹{total.toFixed(2)}
           </button>
         </div>
       </div>
