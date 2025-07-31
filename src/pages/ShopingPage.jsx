@@ -88,7 +88,6 @@ const ShopingPage = () => {
             const imageUrl = hasValidImage
               ? variantImage
               : "/placeholder.svg?height=150&width=150";
-            console.log("Product:", product.title, "Variant image:", product.variants?.[0]?.images?.[0]?.url, "Others image:", product.images?.others?.[0]?.url);
             const isOut = product.isOutOfStock
             const variant = product.variants?.[0]
             const discount = variant?.discountPercent || 0
