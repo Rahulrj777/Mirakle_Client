@@ -665,14 +665,13 @@ const ProductDetail = () => {
                   <button
                     key={`variant-${i}`}
                     onClick={() => handleSizeClick(v, i)}
-                    disabled={variantOutOfStock}
                     className={`px-4 py-3 border rounded-lg cursor-pointer transition-all font-medium relative min-w-[60px] ${
                       i === selectedVariantIndex
                         ? variantOutOfStock
-                          ? "bg-red-100 text-red-600 border-red-300 cursor-not-allowed"
+                          ? "bg-red-100 text-red-600 border-red-300"
                           : "bg-blue-600 text-white border-blue-600 shadow-md"
                         : variantOutOfStock
-                          ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                          ? "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
                           : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
                     }`}
                   >
@@ -686,6 +685,12 @@ const ProductDetail = () => {
                 )
               })}
             </div>
+            {/* Add helpful text for out of stock variants */}
+            {isOutOfStock && (
+              <p className="text-sm text-gray-500 italic">
+                💡 You can still view details of out-of-stock variants, but they cannot be purchased.
+              </p>
+            )}
           </div>
 
           {/* Action Buttons */}
