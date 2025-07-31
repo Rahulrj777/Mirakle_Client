@@ -71,10 +71,16 @@ const ProductDetail = () => {
 
   // Get current variant images or fallback to product images
   const currentVariantImages = useMemo(() => {
-    if (!selectedVariant || !selectedVariant.images || selectedVariant.images.length === 0) {
-      return product?.images?.others || []
+    // First try to get variant-specific images
+    if (selectedVariant?.images && selectedVariant.images.length > 0) {
+      return selectedVariant.images
     }
-    return selectedVariant.images
+    // Fallback to common product images
+    if (product?.images?.others && product.images.others.length > 0) {
+      return product.images.others
+    }
+    // Final fallback to empty array
+    return []
   }, [selectedVariant, product])
 
   // Check if current variant is in cart
@@ -101,7 +107,7 @@ const ProductDetail = () => {
           setSelectedVariantIndex(0)
           // Set initial image from variant or product
           const variantImages = found.variants[0].images || found.images?.others || []
-          setSelectedImage(variantImages[0]?.url || "")
+          setSelectedImage(variantImages[0]?.url || "/placeholder.svg?height=500&width=500")
         }
         setProductViews((prev) => prev + 1)
       } else {
@@ -166,6 +172,8 @@ const ProductDetail = () => {
       const variantImages = variant.images || product?.images?.others || []
       if (variantImages.length > 0) {
         setSelectedImage(variantImages[0].url)
+      } else {
+        setSelectedImage("/placeholder.svg?height=500&width=500")
       }
     },
     [product],
@@ -1029,7 +1037,11 @@ const ProductDetail = () => {
           <h2 className="text-2xl font-bold mb-6">You Might Also Like</h2>
           <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {relatedProducts.slice(0, 10).map((p) => {
-              const mainImage = p.images?.others?.[0]?.url || "/placeholder.svg?height=200&width=200"
+              // Use the same logic as in admin panel for consistent image display
+              const mainImage =
+                p?.variants?.[0]?.images?.[0]?.url ||
+                p?.images?.others?.[0]?.url ||
+                "/placeholder.svg?height=200&width=200"
               const firstVariant = p.variants?.[0]
               const price = firstVariant?.price || 0
               const discount = firstVariant?.discountPercent || 0
