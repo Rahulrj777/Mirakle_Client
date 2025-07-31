@@ -23,12 +23,11 @@ const AddToCart = () => {
     const items = state.cart?.items
     return Array.isArray(items) ? items : []
   })
-
   const addresses = useSelector((state) => state.cart?.addresses || [])
   const selectedAddress = useSelector((state) => state.cart?.selectedAddress)
 
   const [cartReady, setCartReady] = useState(false)
-  const [setStockSyncLoading] = useState(false)
+  const [stockSyncLoading, setStockSyncLoading] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(false)
@@ -44,15 +43,9 @@ const AddToCart = () => {
   const userId = user?.user?.userId || user?.user?._id
   const token = user?.token
 
-  // Enhanced stock checking function - Fixed to handle undefined values properly
+  // Enhanced stock checking function
   const isItemOutOfStock = (item) => {
     if (!item) return true
-
-    // If stock information is completely missing, we need to sync first
-    // But for now, treat undefined stock as available (will be synced)
-    if (item.stock === undefined && item.isOutOfStock === undefined && item.stockMessage === undefined) {
-      return false // Assume available until we get proper stock info
-    }
 
     // Check explicit out of stock flags first
     if (item.isOutOfStock === true) return true
@@ -75,7 +68,6 @@ const AddToCart = () => {
       }
     }
 
-    // If none of the above conditions are met, item is in stock
     return false
   }
 
@@ -98,62 +90,28 @@ const AddToCart = () => {
     return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   }, [availableItems])
 
-  // Enhanced cart sync function that ensures stock information is included
-  const syncCartFromBackend = async () => {
-    if (!token || !userId) {
-      setCartReady(true)
-      return
+  // Function to get the correct image URL for cart items
+  const getCartItemImage = (item) => {
+    // Try variant-specific images first
+    if (item.variantImages && Array.isArray(item.variantImages) && item.variantImages.length > 0) {
+      return item.variantImages[0]?.url || item.variantImages[0]
     }
 
-    try {
-      console.log("🔄 Syncing cart from backend...")
-      const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
-      const backendCart = response.data
-
-      // Handle different response formats
-      let cartItemsArray = []
-      if (backendCart && Array.isArray(backendCart.items)) {
-        cartItemsArray = backendCart.items
-      } else if (Array.isArray(backendCart)) {
-        cartItemsArray = backendCart
-      }
-
-      console.log("📦 Raw cart from backend:", cartItemsArray)
-
-      // If we have cart items but they lack stock info, sync with products
-      if (cartItemsArray.length > 0) {
-        const enrichedCartItems = await enrichCartItemsWithStock(cartItemsArray)
-        dispatch(setCartItem(enrichedCartItems))
-        localStorage.setItem(`cart_${userId}`, JSON.stringify(enrichedCartItems))
-        console.log("✅ Cart synced and enriched with stock info")
-      } else {
-        dispatch(setCartItem([]))
-        console.log("✅ Empty cart synced")
-      }
-    } catch (error) {
-      console.error("❌ Failed to sync cart from backend:", error)
-      // Try to load from localStorage as fallback
-      const localCart = localStorage.getItem(`cart_${userId}`)
-      if (localCart) {
-        try {
-          const parsedCart = JSON.parse(localCart)
-          if (Array.isArray(parsedCart)) {
-            const enrichedCartItems = await enrichCartItemsWithStock(parsedCart)
-            dispatch(setCartItem(enrichedCartItems))
-          }
-        } catch (parseError) {
-          console.error("Failed to parse local cart:", parseError)
-          dispatch(setCartItem([]))
-        }
-      } else {
-        dispatch(setCartItem([]))
-      }
-    } finally {
-      setCartReady(true)
+    // Try images.others (legacy format)
+    if (item.images?.others && Array.isArray(item.images.others) && item.images.others.length > 0) {
+      return item.images.others[0]?.url || item.images.others[0]
     }
+
+    // Try direct images array
+    if (Array.isArray(item.images) && item.images.length > 0) {
+      return item.images[0]?.url || item.images[0]
+    }
+
+    // Fallback to placeholder
+    return "/placeholder.svg?height=80&width=80"
   }
 
-  // Function to enrich cart items with current stock information
+  // Function to enrich cart items with current stock and variant information
   const enrichCartItemsWithStock = async (cartItemsArray) => {
     try {
       console.log("🔍 Enriching cart items with stock info...")
@@ -162,7 +120,6 @@ const AddToCart = () => {
 
       const enrichedItems = cartItemsArray.map((cartItem) => {
         const currentProduct = allProducts.find((p) => p._id === cartItem._id)
-
         if (!currentProduct) {
           console.log(`❌ Product not found: ${cartItem.title}`)
           return {
@@ -174,7 +131,6 @@ const AddToCart = () => {
         }
 
         const currentVariant = currentProduct.variants?.find((v) => v.size === cartItem.size)
-
         if (!currentVariant) {
           console.log(`❌ Variant not found: ${cartItem.title} - ${cartItem.size}`)
           return {
@@ -201,12 +157,19 @@ const AddToCart = () => {
           originalPrice: currentVariant.price,
           discountPercent: currentVariant.discountPercent || 0,
           currentPrice: currentVariant.price - (currentVariant.price * (currentVariant.discountPercent || 0)) / 100,
+          // Update images to use variant-specific images
+          variantImages: currentVariant.images || [],
+          // Keep legacy format for compatibility
+          images: {
+            others: currentVariant.images || currentProduct.images?.others || [],
+          },
         }
 
         console.log(`✅ Enriched ${cartItem.title}:`, {
           stock: enrichedItem.stock,
           isOutOfStock: enrichedItem.isOutOfStock,
           stockMessage: enrichedItem.stockMessage,
+          imageCount: enrichedItem.variantImages?.length || 0,
         })
 
         return enrichedItem
@@ -215,8 +178,61 @@ const AddToCart = () => {
       return enrichedItems
     } catch (error) {
       console.error("❌ Failed to enrich cart items with stock:", error)
-      // Return original items if enrichment fails
       return cartItemsArray
+    }
+  }
+
+  // Enhanced cart sync function
+  const syncCartFromBackend = async () => {
+    if (!token || !userId) {
+      setCartReady(true)
+      return
+    }
+
+    try {
+      console.log("🔄 Syncing cart from backend...")
+      const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
+      const backendCart = response.data
+
+      let cartItemsArray = []
+      if (backendCart && Array.isArray(backendCart.items)) {
+        cartItemsArray = backendCart.items
+      } else if (Array.isArray(backendCart)) {
+        cartItemsArray = backendCart
+      }
+
+      console.log("📦 Raw cart from backend:", cartItemsArray)
+
+      if (cartItemsArray.length > 0) {
+        const enrichedCartItems = await enrichCartItemsWithStock(cartItemsArray)
+        dispatch(setCartItem(enrichedCartItems))
+        localStorage.setItem(`cart_${userId}`, JSON.stringify(enrichedCartItems))
+        console.log("✅ Cart synced and enriched with stock info")
+      } else {
+        dispatch(setCartItem([]))
+        console.log("✅ Empty cart synced")
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync cart from backend:", error)
+
+      // Try to load from localStorage as fallback
+      const localCart = localStorage.getItem(`cart_${userId}`)
+      if (localCart) {
+        try {
+          const parsedCart = JSON.parse(localCart)
+          if (Array.isArray(parsedCart)) {
+            const enrichedCartItems = await enrichCartItemsWithStock(parsedCart)
+            dispatch(setCartItem(enrichedCartItems))
+          }
+        } catch (parseError) {
+          console.error("Failed to parse local cart:", parseError)
+          dispatch(setCartItem([]))
+        }
+      } else {
+        dispatch(setCartItem([]))
+      }
+    } finally {
+      setCartReady(true)
     }
   }
 
@@ -228,6 +244,7 @@ const AddToCart = () => {
   // Load addresses
   useEffect(() => {
     if (!cartReady || !token || !userId || addressesLoaded) return
+
     setAddressesLoading(true)
     axiosWithToken(token)
       .get(`${API_BASE}/api/users/address`)
@@ -235,6 +252,7 @@ const AddToCart = () => {
         if (Array.isArray(res.data.addresses)) {
           dispatch(setAddresses(res.data.addresses))
           setAddressesLoaded(true)
+
           const savedAddressStr = localStorage.getItem(`deliveryAddress_${userId}`)
           if (savedAddressStr) {
             try {
@@ -261,18 +279,16 @@ const AddToCart = () => {
       })
   }, [cartReady, token, userId, dispatch, addressesLoaded])
 
-  // Stock sync using existing product API - Enhanced version
+  // Stock sync using existing product API
   const syncCartWithStock = async () => {
     if (!cartReady || !token || !userId || cartItems.length === 0) return
 
     try {
       setStockSyncLoading(true)
       console.log("🔄 Manual stock sync initiated...")
-
       const enrichedCartItems = await enrichCartItemsWithStock(cartItems)
       dispatch(setCartItem(enrichedCartItems))
       localStorage.setItem(`cart_${userId}`, JSON.stringify(enrichedCartItems))
-
       console.log("✅ Manual stock sync completed")
     } catch (error) {
       console.error("❌ Manual stock sync failed:", error)
@@ -284,9 +300,11 @@ const AddToCart = () => {
   // Debounced cart sync to backend
   useEffect(() => {
     if (!cartReady || !token || !userId) return
+
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current)
     }
+
     syncTimeoutRef.current = setTimeout(() => {
       localStorage.setItem(`cart_${userId}`, JSON.stringify(cartItems))
       axiosWithToken(token)
@@ -298,6 +316,7 @@ const AddToCart = () => {
           console.error("❌ Cart sync failed:", err)
         })
     }, 500)
+
     return () => {
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current)
@@ -312,9 +331,11 @@ const AddToCart = () => {
         setShowAddressModal(false)
       }
     }
+
     if (showAddressModal) {
       document.addEventListener("mousedown", handleClickOutside)
     }
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
@@ -331,6 +352,7 @@ const AddToCart = () => {
         (cartItem) => !(cartItem._id === item._id && cartItem.variantId === item.variantId),
       )
       localStorage.setItem(`cart_${userId}`, JSON.stringify(updatedCart))
+
       if (token) {
         try {
           await axiosWithToken(token).delete(`${API_BASE}/api/cart/item`, {
@@ -344,24 +366,6 @@ const AddToCart = () => {
       console.error("Failed to remove item:", error)
     }
   }
-
-  // Enhanced debug logging
-  useEffect(() => {
-    console.log("=== ENHANCED CART STOCK DEBUG ===")
-    cartItems.forEach((item, index) => {
-      console.log(`Item ${index + 1}: ${item.title}`)
-      console.log(`  - stock: ${item.stock} (type: ${typeof item.stock})`)
-      console.log(`  - isOutOfStock: ${item.isOutOfStock}`)
-      console.log(`  - stockMessage: ${item.stockMessage}`)
-      console.log(`  - originalPrice: ${item.originalPrice}`)
-      console.log(`  - currentPrice: ${item.currentPrice}`)
-      console.log(`  - Detected as out of stock: ${isItemOutOfStock(item)}`)
-      console.log("---")
-    })
-    console.log(`Available items: ${availableItems.length}`)
-    console.log(`Out of stock items: ${outOfStockItems.length}`)
-    console.log("================================")
-  }, [cartItems, availableItems, outOfStockItems])
 
   const handleQuantityChange = async (item, action) => {
     try {
@@ -450,9 +454,37 @@ const AddToCart = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Shopping Cart Header */}
         <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-            <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
+              <p className="text-gray-600 mt-1">Review your items and proceed to checkout</p>
+            </div>
+            {cartItems.length > 0 && (
+              <button
+                onClick={handleManualStockSync}
+                disabled={stockSyncLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {stockSyncLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Syncing...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    <span>Refresh Stock</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -460,7 +492,7 @@ const AddToCart = () => {
           {/* Cart Items */}
           <div className="lg:col-span-2">
             {/* Address Section */}
-            <div className="bg-white p-4 rounded shadow flex justify-between items-center mb-4">
+            <div className="bg-white p-4 rounded-lg shadow-sm flex justify-between items-center mb-4">
               {addressesLoading ? (
                 <div className="flex items-center animate-pulse space-x-4">
                   <div className="rounded-full bg-gray-300 h-4 w-4"></div>
@@ -479,12 +511,18 @@ const AddToCart = () => {
                       {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.landmark}
                     </p>
                   </div>
-                  <button onClick={() => setShowAddressModal(true)} className="text-blue-600 hover:underline text-sm">
+                  <button
+                    onClick={() => setShowAddressModal(true)}
+                    className="text-blue-600 hover:underline text-sm font-medium"
+                  >
                     Change
                   </button>
                 </>
               ) : (
-                <button onClick={() => setShowAddressModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded">
+                <button
+                  onClick={() => setShowAddressModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   Select Address
                 </button>
               )}
@@ -541,12 +579,17 @@ const AddToCart = () => {
                             <div className="flex-shrink-0">
                               <img
                                 className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
-                                src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
+                                src={getCartItemImage(item) || "/placeholder.svg"}
                                 alt={item.title || "Product"}
                                 loading="lazy"
                                 onClick={() => navigate(`/product/${item._id}`)}
+                                onError={(e) => {
+                                  console.error("Image load error for cart item:", item.title)
+                                  e.target.src = "/placeholder.svg?height=80&width=80"
+                                }}
                               />
                             </div>
+
                             {/* Product Details - Clickable title */}
                             <div className="flex-1 min-w-0">
                               <h4
@@ -566,19 +609,22 @@ const AddToCart = () => {
                                 </div>
                               )}
                             </div>
-                            {/* Centered Quantity Controls */}
+
+                            {/* Quantity Controls */}
                             <div className="flex flex-col items-center gap-2">
                               <div className="flex items-center border rounded-lg">
                                 <button
-                                  className="px-3 py-2 text-lg hover:bg-gray-100 transition-colors"
+                                  className="px-3 py-2 text-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
                                   onClick={() => handleQuantityChange(item, "decrement")}
                                   disabled={item.quantity <= 1}
                                 >
                                   −
                                 </button>
-                                <span className="px-4 py-2 font-medium">{item.quantity || 0}</span>
+                                <span className="px-4 py-2 font-medium min-w-[3rem] text-center">
+                                  {item.quantity || 0}
+                                </span>
                                 <button
-                                  className="px-3 py-2 text-lg hover:bg-gray-100 transition-colors"
+                                  className="px-3 py-2 text-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
                                   onClick={() => handleQuantityChange(item, "increment")}
                                   disabled={typeof item.stock === "number" ? item.quantity >= item.stock : false}
                                 >
@@ -586,12 +632,19 @@ const AddToCart = () => {
                                 </button>
                               </div>
                             </div>
+
                             {/* Price */}
                             <div className="text-right">
                               <div className="font-bold text-lg text-gray-900">
                                 ₹{((item.currentPrice || 0) * (item.quantity || 0)).toFixed(2)}
                               </div>
+                              {item.discountPercent > 0 && (
+                                <div className="text-sm text-gray-500 line-through">
+                                  ₹{((item.originalPrice || 0) * (item.quantity || 0)).toFixed(2)}
+                                </div>
+                              )}
                             </div>
+
                             {/* Remove Button */}
                             <button
                               className="text-red-500 hover:text-red-700 p-2 transition-colors"
@@ -631,12 +684,16 @@ const AddToCart = () => {
                             <div className="flex-shrink-0">
                               <img
                                 className="w-20 h-20 object-cover rounded-lg border grayscale opacity-60 cursor-pointer hover:opacity-40 transition-opacity"
-                                src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
+                                src={getCartItemImage(item) || "/placeholder.svg"}
                                 alt={item.title || "Product"}
                                 loading="lazy"
                                 onClick={() => navigate(`/product/${item._id}`)}
+                                onError={(e) => {
+                                  e.target.src = "/placeholder.svg?height=80&width=80"
+                                }}
                               />
                             </div>
+
                             {/* Product Details - Clickable title */}
                             <div className="flex-1 min-w-0">
                               <h4
@@ -654,12 +711,14 @@ const AddToCart = () => {
                                 📦 {item.stockMessage || "Currently out of stock"}
                               </div>
                             </div>
-                            {/* Centered Out of Stock Badge */}
+
+                            {/* Out of Stock Badge */}
                             <div className="flex flex-col items-center">
                               <div className="bg-red-100 text-red-800 px-4 py-2 rounded-lg font-medium text-sm">
                                 OUT OF STOCK
                               </div>
                             </div>
+
                             {/* Price (crossed out) */}
                             <div className="text-right">
                               <div className="font-bold text-lg text-gray-500 line-through">
@@ -667,6 +726,7 @@ const AddToCart = () => {
                               </div>
                               <div className="text-sm text-red-600">Unavailable</div>
                             </div>
+
                             {/* Remove Button */}
                             <button
                               className="text-red-500 hover:text-red-700 p-2 transition-colors"
@@ -709,6 +769,7 @@ const AddToCart = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+
               <div className="space-y-4">
                 {/* Price Breakdown */}
                 <div className="flex justify-between text-gray-600">
@@ -717,25 +778,31 @@ const AddToCart = () => {
                   </span>
                   <span>₹{originalTotal.toFixed(2)}</span>
                 </div>
+
                 {outOfStockItems.length > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>Out of Stock ({outOfStockItems.length})</span>
                     <span>Excluded</span>
                   </div>
                 )}
+
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
                   <span>-₹{(originalTotal - subtotal).toFixed(2)}</span>
                 </div>
+
                 <div className="flex justify-between text-gray-600">
                   <span>Delivery Charges</span>
                   <span className="text-green-600">Free</span>
                 </div>
+
                 <hr className="border-gray-200" />
+
                 <div className="flex justify-between text-xl font-bold text-gray-900">
                   <span>Total Amount</span>
                   <span>₹{subtotal.toFixed(2)}</span>
                 </div>
+
                 {originalTotal - subtotal > 0 && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                     <p className="text-green-800 text-sm font-medium">
@@ -744,6 +811,7 @@ const AddToCart = () => {
                   </div>
                 )}
               </div>
+
               {/* Checkout Button */}
               <div className="mt-6">
                 {hasOutOfStockItem && (
@@ -755,6 +823,7 @@ const AddToCart = () => {
                     </div>
                   </div>
                 )}
+
                 <button
                   onClick={() => navigate("/checkout")}
                   disabled={availableItems.length === 0 || hasOutOfStockItem}
@@ -771,6 +840,7 @@ const AddToCart = () => {
                       : `Proceed to Checkout (${availableItems.length} items)`}
                 </button>
               </div>
+
               {/* Security Features */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="font-semibold text-gray-900 mb-3">Why shop with us?</h3>
@@ -801,43 +871,63 @@ const AddToCart = () => {
       {/* Address Modal */}
       {showAddressModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
-          <div ref={modalRef} className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div ref={modalRef} className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto mx-4">
             <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
+
             {addresses.length === 0 ? (
-              <p className="text-gray-500">No addresses saved yet.</p>
+              <p className="text-gray-500 mb-4">No addresses saved yet.</p>
             ) : (
-              addresses.map((addr, idx) => (
-                <div key={addr._id || idx} className="border p-3 rounded mb-2 relative">
-                  <input
-                    type="radio"
-                    name="selectedAddress"
-                    checked={selectedAddress?._id === addr._id}
-                    onChange={() => handleAddressSelect(addr)}
-                  />
-                  <span className="ml-2 font-medium">
-                    {addr.name}, {addr.pincode}
-                  </span>
-                  <p className="text-sm text-gray-600">
-                    {addr.line1}, {addr.city}, {addr.landmark}
-                  </p>
-                  <button
-                    onClick={() => confirmDelete(addr._id)}
-                    className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
+              <div className="space-y-3 mb-4">
+                {addresses.map((addr, idx) => (
+                  <div
+                    key={addr._id || idx}
+                    className="border p-3 rounded-lg relative hover:bg-gray-50 transition-colors"
                   >
-                    Delete
-                  </button>
-                </div>
-              ))
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="selectedAddress"
+                        checked={selectedAddress?._id === addr._id}
+                        onChange={() => handleAddressSelect(addr)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">
+                          {addr.name}, {addr.pincode}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {addr.line1}, {addr.city}, {addr.landmark}
+                        </p>
+                      </div>
+                    </label>
+                    <button
+                      onClick={() => confirmDelete(addr._id)}
+                      className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
-            <button
-              onClick={() => {
-                setShowAddressModal(false)
-                navigate("/address")
-              }}
-              className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
-            >
-              Add New Address
-            </button>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowAddressModal(false)
+                  navigate("/address")
+                }}
+                className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Add New Address
+              </button>
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
