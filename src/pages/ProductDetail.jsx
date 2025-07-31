@@ -685,12 +685,6 @@ const ProductDetail = () => {
                 )
               })}
             </div>
-            {/* Add helpful text for out of stock variants */}
-            {isOutOfStock && (
-              <p className="text-sm text-gray-500 italic">
-                💡 You can still view details of out-of-stock variants, but they cannot be purchased.
-              </p>
-            )}
           </div>
 
           {/* Action Buttons */}
