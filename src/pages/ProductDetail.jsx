@@ -71,15 +71,24 @@ const ProductDetail = () => {
 
   // Get current variant images or fallback to product images
   const currentVariantImages = useMemo(() => {
+    console.log("🔍 Getting images for variant:", selectedVariant?.size)
+    console.log("🔍 Variant images:", selectedVariant?.images)
+    console.log("🔍 Product common images:", product?.images?.others)
+
     // First try to get variant-specific images
-    if (selectedVariant?.images && selectedVariant.images.length > 0) {
+    if (selectedVariant?.images && Array.isArray(selectedVariant.images) && selectedVariant.images.length > 0) {
+      console.log("✅ Using variant-specific images:", selectedVariant.images.length)
       return selectedVariant.images
     }
-    // Fallback to common product images
-    if (product?.images?.others && product.images.others.length > 0) {
+
+    // Fallback to common product images (for old products that haven't been migrated)
+    if (product?.images?.others && Array.isArray(product.images.others) && product.images.others.length > 0) {
+      console.log("⚠️ Using common product images as fallback:", product.images.others.length)
       return product.images.others
     }
+
     // Final fallback to empty array
+    console.log("❌ No images found, using empty array")
     return []
   }, [selectedVariant, product])
 
@@ -685,6 +694,12 @@ const ProductDetail = () => {
                 )
               })}
             </div>
+            {/* Add helpful text for out of stock variants */}
+            {isOutOfStock && (
+              <p className="text-sm text-gray-500 italic">
+                💡 You can still view details of out-of-stock variants, but they cannot be purchased.
+              </p>
+            )}
           </div>
 
           {/* Action Buttons */}
