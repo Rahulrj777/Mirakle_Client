@@ -69,6 +69,14 @@ const ProductDetail = () => {
     return conditions.some((condition) => condition)
   }, [product, selectedVariant])
 
+  // Get current variant images or fallback to product images
+  const currentVariantImages = useMemo(() => {
+    if (!selectedVariant || !selectedVariant.images || selectedVariant.images.length === 0) {
+      return product?.images?.others || []
+    }
+    return selectedVariant.images
+  }, [selectedVariant, product])
+
   // Check if current variant is in cart
   const isInCart = useMemo(() => {
     if (!product || !selectedVariant || !cartItems.length) return false
@@ -87,11 +95,13 @@ const ProductDetail = () => {
       const found = res.data.find((p) => p._id === id)
       if (found) {
         setProduct(found)
-        setSelectedImage(found.images?.others?.[0]?.url || "")
         setProductVideo(found.video || "")
         if (found.variants && found.variants.length > 0) {
           setSelectedVariant(found.variants[0])
           setSelectedVariantIndex(0)
+          // Set initial image from variant or product
+          const variantImages = found.variants[0].images || found.images?.others || []
+          setSelectedImage(variantImages[0]?.url || "")
         }
         setProductViews((prev) => prev + 1)
       } else {
@@ -148,10 +158,18 @@ const ProductDetail = () => {
     loadCartSafely()
   }, [loadCartSafely])
 
-  const handleSizeClick = useCallback((variant, index) => {
-    setSelectedVariant(variant)
-    setSelectedVariantIndex(index)
-  }, [])
+  const handleSizeClick = useCallback(
+    (variant, index) => {
+      setSelectedVariant(variant)
+      setSelectedVariantIndex(index)
+      // Update selected image when variant changes
+      const variantImages = variant.images || product?.images?.others || []
+      if (variantImages.length > 0) {
+        setSelectedImage(variantImages[0].url)
+      }
+    },
+    [product],
+  )
 
   const handleAddToCart = useCallback(async () => {
     if (addingToCart) return
@@ -179,7 +197,7 @@ const ProductDetail = () => {
     const productToAdd = {
       _id: product._id,
       title: product.title,
-      images: product.images,
+      images: { others: currentVariantImages }, // Use variant-specific images
       variantId: variantId,
       size:
         selectedVariant.size ||
@@ -225,27 +243,28 @@ const ProductDetail = () => {
     isOutOfStock,
     product,
     token,
+    currentVariantImages,
   ])
 
   const handleBuyNow = useCallback(async () => {
     if (!isOutOfStock && selectedVariant) {
       const productForBuyNow = {
         _id: selectedVariant._id,
-        title: product.title, 
-        images: product.images, 
-        size: selectedVariant.size, 
+        title: product.title,
+        images: { others: currentVariantImages }, // Use variant-specific images
+        size: selectedVariant.size,
         currentPrice: selectedVariant.currentPrice,
         quantity: 1,
         variantId: selectedVariant.variantId,
-      };
+      }
       navigate("/checkout", {
         state: {
           mode: "buy-now",
           product: productForBuyNow,
         },
-      });
+      })
     }
-  }, [handleAddToCart, isOutOfStock, selectedVariant, product, navigate]);
+  }, [handleAddToCart, isOutOfStock, selectedVariant, product, navigate, currentVariantImages])
 
   const handleGoToCart = useCallback(() => {
     navigate("/AddToCart")
@@ -504,9 +523,9 @@ const ProductDetail = () => {
               }
             />
           </div>
-          {/* Thumbnail Images */}
+          {/* Thumbnail Images - Now shows variant-specific images */}
           <div className="flex gap-2 overflow-x-auto">
-            {product.images?.others?.map((img, i) => (
+            {currentVariantImages?.map((img, i) => (
               <img
                 key={i}
                 src={img.url || "/placeholder.svg?height=80&width=80"}
@@ -598,7 +617,8 @@ const ProductDetail = () => {
               </div>
             </div>
           ) : (
-            typeof selectedVariant.stock === "number" &&selectedVariant.stock <= 10 && (
+            typeof selectedVariant.stock === "number" &&
+            selectedVariant.stock <= 10 && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex-shrink-0">
@@ -1014,6 +1034,7 @@ const ProductDetail = () => {
               const price = firstVariant?.price || 0
               const discount = firstVariant?.discountPercent || 0
               const finalPrice = (price - (price * discount) / 100).toFixed(2)
+
               return (
                 <div
                   key={p._id}
