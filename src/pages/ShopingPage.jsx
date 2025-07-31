@@ -79,7 +79,6 @@ const ShopingPage = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {displayedProducts.map((product) => {
             const frontImage = product.images?.[0]?.url || ""
-            console.log("Product:", product.title, "Image URL:", frontImage);
             const isOut = product.isOutOfStock
             const variant = product.variants?.[0]
             const discount = variant?.discountPercent || 0
