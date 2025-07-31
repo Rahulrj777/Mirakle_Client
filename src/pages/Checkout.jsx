@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
 const Checkout = () => {
-  // All hooks at the top, ALWAYS called
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -11,14 +10,10 @@ const Checkout = () => {
   const [product, setProduct] = useState(null);
   const mode = location.state?.mode || "cart";
 
-  // Redux state selectors
   const cartItems = useSelector((state) => state.cart.items || []);
   const cartReady = useSelector((state) => state.cart.cartReady);
-
-  // Auth token
   const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
 
-  // Buy now logic
   useEffect(() => {
     if (mode === "buy-now") {
       const prodFromState = location.state?.product;
@@ -31,7 +26,7 @@ const Checkout = () => {
           try {
             setProduct(JSON.parse(saved));
           } catch {
-            localStorage.removeItem("buyNowProduct"); // corrupt? clear
+            localStorage.removeItem("buyNowProduct");
             setProduct(null);
           }
         }
@@ -39,7 +34,7 @@ const Checkout = () => {
     }
   }, [location.state, mode]);
 
-  // Early returns AFTER hooks
+  // Redirect to login if not logged in
   if (!token) {
     navigate("/login");
     return null;
@@ -79,159 +74,142 @@ const Checkout = () => {
     );
   }
 
-  // Choose which items we're showing
   const items = mode === "buy-now" ? [product] : cartItems;
 
-  // Calculation
   const subtotal = items.reduce(
+    (sum, item) => sum + (item.originalPrice || item.currentPrice || 0) * (item.quantity || 1),
+    0
+  );
+  const total = items.reduce(
     (sum, item) => sum + (item.currentPrice || 0) * (item.quantity || 1),
     0
   );
-  const SHIPPING = 49;
-  const total = subtotal + SHIPPING;
+  const discount = subtotal - total;
 
-  // Handlers (change these to your actual Redux action creators if you use them)
   const handleIncrement = (item) => {
     dispatch({
       type: "cart/incrementQuantity",
-      payload: { _id: item._id, variantId: item.variantId }
+      payload: { _id: item._id, variantId: item.variantId },
     });
   };
   const handleDecrement = (item) => {
     dispatch({
       type: "cart/decrementQuantity",
-      payload: { _id: item._id, variantId: item.variantId }
+      payload: { _id: item._id, variantId: item.variantId },
     });
   };
   const handleRemove = (item) => {
     dispatch({
       type: "cart/removeFromCart",
-      payload: { _id: item._id, variantId: item.variantId }
+      payload: { _id: item._id, variantId: item.variantId },
     });
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 flex justify-center py-12 px-2">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-10 bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-gray-100 py-10 px-4 lg:px-16">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT: Product List */}
-        <div className="col-span-2 p-8">
-          <h2 className="text-2xl font-semibold mb-6">Your Items</h2>
-          <div className="space-y-5">
-            {items.map((item, i) => (
-              <div
-                className="flex items-center gap-6 p-5 rounded-xl shadow bg-neutral-50 border"
-                key={i}
-              >
-                <img
-                  src={
-                    item?.images?.others?.[0]?.url ||
-                    item?.images?.[0]?.url ||
-                    "/placeholder.jpg"
-                  }
-                  alt={item.title || "Product Image"}
-                  className="w-20 h-20 rounded-lg object-cover border"
-                />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{item.title || "Untitled Product"}</h3>
-                  {item.size && (
-                    <div className="text-sm text-gray-500 mb-1">
-                      Size: {item.size}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Available Items ({items.length})</h2>
+            <div className="space-y-4">
+              {items.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between border-b pb-4 last:border-none last:pb-0"
+                >
+                  {/* Product Info */}
+                  <div className="flex gap-4 items-center">
+                    <img
+                      src={
+                        item?.images?.others?.[0]?.url ||
+                        item?.images?.[0]?.url ||
+                        "/placeholder.jpg"
+                      }
+                      alt={item.title || "Product"}
+                      className="w-20 h-20 object-cover rounded border"
+                    />
+                    <div>
+                      <h3 className="font-medium">{item.title || "Untitled Product"}</h3>
+                      {item.size && <p className="text-sm text-gray-500">Size: {item.size}</p>}
+                      {item.stock && (
+                        <p className="text-xs text-orange-500 mt-1">
+                          ⚡ Only {item.stock} left in stock
+                        </p>
+                      )}
                     </div>
-                  )}
-                  <div className="text-green-600 font-semibold">
-                    ₹{item.currentPrice ?? "N/A"} × {item.quantity || 1}
+                  </div>
+
+                  {/* Quantity and Price */}
+                  <div className="flex items-center gap-6">
+                    {mode === "cart" && (
+                      <div className="flex items-center border rounded overflow-hidden">
+                        <button
+                          onClick={() => handleDecrement(item)}
+                          disabled={item.quantity <= 1}
+                          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                        >
+                          -
+                        </button>
+                        <span className="px-4">{item.quantity}</span>
+                        <button
+                          onClick={() => handleIncrement(item)}
+                          className="px-3 py-1 bg-gray-100 hover:bg-gray-200"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
+                    <div className="text-lg font-semibold">
+                      ₹{((item.currentPrice || 0) * (item.quantity || 1)).toFixed(2)}
+                    </div>
+                    {mode === "cart" && (
+                      <button
+                        onClick={() => handleRemove(item)}
+                        className="text-red-500 hover:text-red-700 text-lg"
+                      >
+                        🗑
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                {mode === "cart" && (
-                  <>
-                    <div className="flex items-center space-x-1 border rounded px-2 py-1 bg-white shadow-sm">
-                      <button
-                        className="text-lg px-2 disabled:opacity-50"
-                        onClick={() => handleDecrement(item)}
-                        disabled={item.quantity <= 1}
-                        aria-label={`Decrease quantity of ${item.title}`}
-                      >
-                        -
-                      </button>
-                      <span className="px-2">{item.quantity}</span>
-                      <button
-                        className="text-lg px-2"
-                        onClick={() => handleIncrement(item)}
-                        aria-label={`Increase quantity of ${item.title}`}
-                      >
-                        +
-                      </button>
-                    </div>
-                    <button
-                      className="ml-2 px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600"
-                      onClick={() => handleRemove(item)}
-                      title="Remove from cart"
-                      aria-label={`Remove ${item.title} from cart`}
-                    >
-                      🗑
-                    </button>
-                  </>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* RIGHT: Order Summary + Card Details */}
-        <div className="p-8 bg-gradient-to-b from-blue-100 via-white to-blue-50 rounded-xl shadow h-fit">
-          <h2 className="text-xl font-semibold mb-8">Card Details</h2>
-          <div className="mb-8">
-            {/* Card logos */}
-            <div className="flex gap-2 mb-4">
-              <img src="/visa-logo.png" alt="Visa" className="h-7" />
-              <img src="/mastercard-logo.png" alt="MC" className="h-7" />
-              <img src="/rupay-logo.png" alt="RuPay" className="h-7" />
+        {/* RIGHT: Order Summary */}
+        <div className="bg-white rounded-lg shadow p-6 h-fit sticky top-20">
+          <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+          <div className="space-y-2 text-gray-700">
+            <div className="flex justify-between">
+              <span>Price ({items.length} items)</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
-            <input
-              type="text"
-              placeholder="Name on Card"
-              className="w-full py-2 mb-3 px-3 rounded border focus:outline-none"
-            />
-            <input
-              type="text"
-              placeholder="Card Number"
-              maxLength={19}
-              className="w-full py-2 mb-3 px-3 rounded border focus:outline-none"
-            />
-            <div className="flex gap-3">
-              <input
-                type="text"
-                placeholder="MM/YY"
-                className="w-1/2 py-2 px-3 rounded border focus:outline-none"
-              />
-              <input
-                type="text"
-                placeholder="CVV"
-                maxLength={4}
-                className="w-1/2 py-2 px-3 rounded border focus:outline-none"
-              />
+            <div className="flex justify-between text-green-600">
+              <span>Discount</span>
+              <span>-₹{discount.toFixed(2)}</span>
             </div>
+            <div className="flex justify-between border-b pb-2">
+              <span>Delivery Charges</span>
+              <span className="text-green-600">Free</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold mt-2">
+              <span>Total Amount</span>
+              <span>₹{total.toFixed(2)}</span>
+            </div>
+            {discount > 0 && (
+              <div className="bg-green-50 text-green-700 text-sm mt-3 p-2 rounded">
+                🎉 You saved ₹{discount.toFixed(2)} on this order!
+              </div>
+            )}
           </div>
-          <div className="mb-8">
-            <div className="flex justify-between mb-2">
-              <span>Subtotal</span>
-              <span>₹{subtotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between mb-2">
-              <span>Shipping</span>
-              <span>₹{SHIPPING}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold border-t pt-3">
-              <span>Total (incl. tax)</span>
-              <span>₹{total.toLocaleString()}</span>
-            </div>
-          </div>
+
           <button
-            className="w-full py-3 rounded bg-green-500 hover:bg-green-600 text-white font-bold text-lg shadow"
-            onClick={() => alert("Proceeding to payment (not implemented)")}
+            className="w-full mt-6 py-3 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold text-lg"
+            onClick={() => alert("Proceeding to Checkout...")}
           >
-            ₹{total.toLocaleString()} — Checkout
+            Proceed to Checkout ({items.length} items)
           </button>
         </div>
       </div>
