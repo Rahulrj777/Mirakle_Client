@@ -5,8 +5,6 @@ import { FaRegUser } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { clearUser } from "../Redux/cartSlice";
-import axios from "axios";
-import { API_BASE } from "../utils/api";
 
 const Header = () => {
   const location = useLocation();
@@ -25,58 +23,10 @@ const Header = () => {
   });
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-
-  const searchBoxRef = useRef(null);
   const dropdownRef = useRef(null);
 
   // Check if route is active
   const isActive = useCallback((path) => location.pathname === path, [location.pathname]);
-
-  // Handle search suggestions click outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
-        setSuggestions([]);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Handle search input
-  const handleSearchChange = useCallback(async (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-
-    if (!value.trim()) {
-      setSuggestions([]);
-      return;
-    }
-
-    try {
-      const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`);
-      setSuggestions(Array.isArray(res.data) ? res.data.slice(0, 6) : []);
-    } catch (error) {
-      console.error("Search error:", error);
-      setSuggestions([]);
-    }
-  }, []);
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && searchTerm.trim()) {
-      navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`);
-      setSuggestions([]);
-      setSearchTerm("");
-    }
-  };
-
-  const handleSelectSuggestion = (id) => {
-    navigate(`/product/${id}`);
-    setSuggestions([]);
-    setSearchTerm("");
-  };
 
   // Handle user dropdown click outside
   useEffect(() => {
@@ -146,42 +96,9 @@ const Header = () => {
           ))}
         </ul>
       </nav>
-      {/* Search & Icons */}
-      <div className="flex items-center gap-5 text-[24px] relative">
-        {/* Search Box */}
-        <div className="relative" ref={searchBoxRef}>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Search..."
-            className="w-[200px] px-3 py-1.5 text-sm text-black border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
-          />
-          {searchTerm.trim() && suggestions.length > 0 && (
-            <ul className="absolute top-full left-0 z-50 bg-white text-black border mt-1 rounded shadow-md max-h-60 overflow-y-auto w-full text-sm">
-              {suggestions.map((item) => (
-                <li
-                  key={item._id}
-                  onClick={() => handleSelectSuggestion(item._id)}
-                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                >
-                  <div className="flex items-center gap-2">
-                    {item.images?.others?.[0]?.url && (
-                      <img
-                        src={item.images.others[0].url}
-                        alt={item.title}
-                        className="w-8 h-8 object-cover rounded"
-                      />
-                    )}
-                    <span className="flex-1 truncate">{item.title}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
 
+      {/* Icons */}
+      <div className="flex items-center gap-5 text-[24px] relative">
         {/* User Icon */}
         {user ? (
           <div ref={dropdownRef} className="relative">
