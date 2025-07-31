@@ -457,12 +457,11 @@ const Banners = () => {
             <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow-md max-h-60 md:max-h-80 overflow-y-auto w-full text-sm text-black">
               {suggestions.map((item) => {
                 const imgUrl =
-                  Array.isArray(item.images?.others) &&
-                  item.images.others.length > 0 &&
-                  typeof item.images.others[0]?.url === "string" &&
-                  item.images.others[0].url.startsWith("http")
-                    ? item.images.others[0].url
-                    : "/placeholder.svg";
+                  (Array.isArray(item.variants?.[0]?.images) && item.variants[0].images.length > 0 && typeof item.variants[0].images[0].url === "string" && item.variants[0].images[0].url.startsWith("http"))
+                    ? item.variants[0].images[0].url
+                    : (Array.isArray(item.images?.others) && item.images.others.length > 0 && typeof item.images.others[0].url === "string" && item.images.others[0].url.startsWith("http"))
+                      ? item.images.others[0].url
+                      : "/placeholder.svg";
 
                 return (
                   <li
@@ -492,6 +491,7 @@ const Banners = () => {
               })}
             </ul>
           )}
+
           {/* ✅ ADDED: Message for no search results */}
           {searchTerm.trim() && suggestions.length === 0 && (
             <div className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow w-full p-3 text-sm text-gray-500">
