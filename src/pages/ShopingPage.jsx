@@ -81,6 +81,8 @@ const ShopingPage = () => {
             const frontImage = product.images?.others?.[0]?.url || "";
             const hasValidImage = typeof frontImage === "string" && frontImage.startsWith("http");
             const imageUrl = hasValidImage ? frontImage : "/placeholder.svg?height=150&width=150";
+            console.log("Product:", product.title, product.images);
+            console.log("Front image URL:", product.images?.others?.[0]?.url);
             const isOut = product.isOutOfStock
             const variant = product.variants?.[0]
             const discount = variant?.discountPercent || 0
