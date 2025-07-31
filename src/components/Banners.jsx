@@ -327,7 +327,7 @@ const Banners = () => {
                 img && (
                   <img
                     key={`${img._id || i}-${i}`}
-                    src={img.imageUrl || "/placeholder.svg"} // ✅ Use direct imageUrl (Cloudinary URL)
+                    src={img.imageUrl || "/placeholder.svg"}
                     alt={img.title || `Slide ${i + 1}`}
                     loading="lazy"
                     decoding="async"
@@ -454,28 +454,40 @@ const Banners = () => {
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
           />
           {searchTerm.trim() && suggestions.length > 0 && (
-            <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto w-full">
-              {suggestions.map((item) => (
-                <li
-                  key={item._id}
-                  onClick={() => handleSelectSuggestion(item._id)}
-                  className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                >
-                  <div className="flex items-center gap-3">
-                    {item.images?.others?.[0]?.url && (
-                      <img
-                        src={item.images.others[0].url || "/placeholder.svg"}
-                        alt={item.title}
-                        loading="lazy"
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.title}</div>
-                    </div>
-                  </div>
-                </li>
-              ))}
+            <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow-md max-h-60 md:max-h-80 overflow-y-auto w-full text-sm text-black">
+              {suggestions.map((item) => {
+                // Defensive: pick first valid image URL or use placeholder
+                const imgUrl =
+                  Array.isArray(item.images?.others) && item.images.others.length > 0 && typeof item.images.others[0]?.url === "string" && item.images.others[0].url.startsWith("http")
+                    ? item.images.others[0].url
+                    : "/placeholder.svg";
+
+                return (
+                  <li
+                    key={item._id}
+                    onClick={() => handleSelectSuggestion(item._id)}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 flex items-center gap-3"
+                    role="option"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        handleSelectSuggestion(item._id);
+                      }
+                    }}
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={item.title || "Product Image"}
+                      loading="lazy"
+                      className="w-8 h-8 md:w-10 md:h-10 object-cover rounded"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.svg";
+                      }}
+                    />
+                    <span className="flex-1 truncate">{item.title}</span>
+                  </li>
+                );
+              })}
             </ul>
           )}
           {/* ✅ ADDED: Message for no search results */}

@@ -159,25 +159,40 @@ const Header = () => {
             className="w-[200px] px-3 py-1.5 text-sm text-black border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400"
           />
           {searchTerm.trim() && suggestions.length > 0 && (
-            <ul className="absolute top-full left-0 z-50 bg-white text-black border mt-1 rounded shadow-md max-h-60 overflow-y-auto w-full text-sm">
-              {suggestions.map((item) => (
-                <li
-                  key={item._id}
-                  onClick={() => handleSelectSuggestion(item._id)}
-                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                >
-                  <div className="flex items-center gap-2">
-                    {item.images?.others?.[0]?.url && (
-                      <img
-                        src={item.images.others[0].url}
-                        alt={item.title}
-                        className="w-8 h-8 object-cover rounded"
-                      />
-                    )}
+            <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow-md max-h-60 md:max-h-80 overflow-y-auto w-full text-sm text-black">
+              {suggestions.map((item) => {
+                // Defensive: pick first valid image URL or use placeholder
+                const imgUrl =
+                  Array.isArray(item.images?.others) && item.images.others.length > 0 && typeof item.images.others[0]?.url === "string" && item.images.others[0].url.startsWith("http")
+                    ? item.images.others[0].url
+                    : "/placeholder.svg";
+
+                return (
+                  <li
+                    key={item._id}
+                    onClick={() => handleSelectSuggestion(item._id)}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 flex items-center gap-3"
+                    role="option"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        handleSelectSuggestion(item._id);
+                      }
+                    }}
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={item.title || "Product Image"}
+                      loading="lazy"
+                      className="w-8 h-8 md:w-10 md:h-10 object-cover rounded"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.svg";
+                      }}
+                    />
                     <span className="flex-1 truncate">{item.title}</span>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
