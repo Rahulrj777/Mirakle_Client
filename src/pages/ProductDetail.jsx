@@ -71,15 +71,24 @@ const ProductDetail = () => {
 
   // Get current variant images or fallback to product images
   const currentVariantImages = useMemo(() => {
+    console.log("🔍 Getting images for variant:", selectedVariant?.size)
+    console.log("🔍 Variant images:", selectedVariant?.images)
+    console.log("🔍 Product common images:", product?.images?.others)
+
     // First try to get variant-specific images
-    if (selectedVariant?.images && selectedVariant.images.length > 0) {
+    if (selectedVariant?.images && Array.isArray(selectedVariant.images) && selectedVariant.images.length > 0) {
+      console.log("✅ Using variant-specific images:", selectedVariant.images.length)
       return selectedVariant.images
     }
-    // Fallback to common product images
-    if (product?.images?.others && product.images.others.length > 0) {
+
+    // Fallback to common product images (for old products that haven't been migrated)
+    if (product?.images?.others && Array.isArray(product.images.others) && product.images.others.length > 0) {
+      console.log("⚠️ Using common product images as fallback:", product.images.others.length)
       return product.images.others
     }
+
     // Final fallback to empty array
+    console.log("❌ No images found, using empty array")
     return []
   }, [selectedVariant, product])
 
@@ -665,14 +674,13 @@ const ProductDetail = () => {
                   <button
                     key={`variant-${i}`}
                     onClick={() => handleSizeClick(v, i)}
-                    disabled={variantOutOfStock}
                     className={`px-4 py-3 border rounded-lg cursor-pointer transition-all font-medium relative min-w-[60px] ${
                       i === selectedVariantIndex
                         ? variantOutOfStock
-                          ? "bg-red-100 text-red-600 border-red-300 cursor-not-allowed"
+                          ? "bg-red-100 text-red-600 border-red-300"
                           : "bg-blue-600 text-white border-blue-600 shadow-md"
                         : variantOutOfStock
-                          ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                          ? "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
                           : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
                     }`}
                   >
@@ -686,6 +694,12 @@ const ProductDetail = () => {
                 )
               })}
             </div>
+            {/* Add helpful text for out of stock variants */}
+            {isOutOfStock && (
+              <p className="text-sm text-gray-500 italic">
+                💡 You can still view details of out-of-stock variants, but they cannot be purchased.
+              </p>
+            )}
           </div>
 
           {/* Action Buttons */}
