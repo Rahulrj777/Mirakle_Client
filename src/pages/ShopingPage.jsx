@@ -79,6 +79,8 @@ const ShopingPage = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {displayedProducts.map((product) => {
             const frontImage = product.images?.others?.[0]?.url || ""
+            const validImage = frontImage && frontImage.startsWith("http") ? frontImage : "/placeholder.svg?height=150&width=150";
+            console.log("Product:", product.title, "Image URL:", frontImage);
             const isOut = product.isOutOfStock
             const variant = product.variants?.[0]
             const discount = variant?.discountPercent || 0
@@ -107,7 +109,7 @@ const ShopingPage = () => {
                   )}
 
                   <img
-                    src={frontImage.url || "/placeholder.svg?height=150&width=150"}
+                    src={validImage || "/placeholder.svg?height=150&width=150"}
                     alt={product.title}
                     loading="lazy"
                     className={`w-full h-40 object-cover hover:scale-105 transition-transform duration-300 rounded-t ${
