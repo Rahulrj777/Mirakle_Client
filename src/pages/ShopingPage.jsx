@@ -78,7 +78,10 @@ const ShopingPage = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {displayedProducts.map((product) => {
-            const frontImage = product.images?.[0]?.url || product.images?.others?.[0]?.url || ""
+            const frontImage =
+              (Array.isArray(product.images) && product.images[0]?.url) ||
+              (Array.isArray(product.images?.others) && product.images.others[0]?.url) ||
+              "";
             const hasValidImage = typeof frontImage === "string" && frontImage.startsWith("http");
             const imageUrl = hasValidImage ? frontImage : "/placeholder.svg?height=150&width=150";
             const isOut = product.isOutOfStock
