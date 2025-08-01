@@ -187,39 +187,55 @@ const ProductDetail = () => {
   )
 
   const handleAddToCart = useCallback(async () => {
-    if (addingToCart) return
+    if (addingToCart) return;
     if (!user?.token) {
-      alert("Please login to add items to cart")
-      navigate("/login_signup")
-      return
+      alert("Please login to add items to cart");
+      navigate("/login_signup");
+      return;
     }
     if (!selectedVariant) {
-      alert("Please select a variant")
-      return
+      alert("Please select a variant");
+      return;
     }
     if (isOutOfStock) {
-      alert("This product variant is currently out of stock")
-      return
+      alert("This product variant is currently out of stock");
+      return;
     }
 
-    setAddingToCart(true)
+    setAddingToCart(true);
+
     const variantKey =
       selectedVariant._id ||
       selectedVariant.size ||
-      (selectedVariant.weight ? `${selectedVariant.weight.value}_${selectedVariant.weight.unit}` : selectedVariantIndex)
-    const variantId = `${product._id}_${variantKey}`
+      (selectedVariant.weight
+        ? `${selectedVariant.weight.value}_${selectedVariant.weight.unit}`
+        : selectedVariantIndex);
+    const variantId = `${product._id}_${variantKey}`;
+
+    // ✅ Ensure we always have a string main image
+    const firstImage =
+      currentVariantImages?.[0]?.url ||
+      product.images?.others?.[0]?.url ||
+      "/placeholder.svg?height=80&width=80";
 
     const productToAdd = {
       _id: product._id,
       title: product.title,
-      images: { others: currentVariantImages }, // Use variant-specific images
+      images: {
+        main: firstImage,                 // ✅ always present
+        others: currentVariantImages || [] // ✅ keep array of objects
+      },
       variantId: variantId,
       size:
         selectedVariant.size ||
-        (selectedVariant.weight ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}` : "N/A"),
+        (selectedVariant.weight
+          ? `${selectedVariant.weight.value} ${selectedVariant.weight.unit}`
+          : "N/A"),
       weight: {
         value: selectedVariant?.weight?.value || selectedVariant?.size,
-        unit: selectedVariant?.weight?.unit || (selectedVariant?.size ? "size" : "unit"),
+        unit:
+          selectedVariant?.weight?.unit ||
+          (selectedVariant?.size ? "size" : "unit"),
       },
       originalPrice: Number.parseFloat(selectedVariant.price),
       discountPercent: Number.parseFloat(selectedVariant.discountPercent) || 0,
@@ -227,25 +243,28 @@ const ProductDetail = () => {
       stock: selectedVariant.stock,
       isOutOfStock: selectedVariant.isOutOfStock || false,
       stockMessage: isOutOfStock ? "Currently out of stock" : null,
-    }
+    };
 
     try {
-      dispatch(addToCart(productToAdd))
+      dispatch(addToCart(productToAdd));
+
       const backendPayload = {
         productId: product._id,
         variantIndex: selectedVariantIndex,
         variantId: variantId,
-      }
+        image: firstImage, // ✅ Optional: save in DB for quicker rendering
+      };
+
       try {
-        await axiosWithToken(token).post(`${API_BASE}/api/cart/add`, backendPayload)
+        await axiosWithToken(token).post(`${API_BASE}/api/cart/add`, backendPayload);
       } catch (syncError) {
-        console.warn("Backend sync failed, but item added to local cart:", syncError)
+        console.warn("Backend sync failed, but item added to local cart:", syncError);
       }
     } catch (err) {
-      console.error("Add to cart failed:", err)
-      alert("Something went wrong while adding to cart")
+      console.error("Add to cart failed:", err);
+      alert("Something went wrong while adding to cart");
     } finally {
-      setAddingToCart(false)
+      setAddingToCart(false);
     }
   }, [
     addingToCart,
@@ -259,7 +278,7 @@ const ProductDetail = () => {
     product,
     token,
     currentVariantImages,
-  ])
+  ]);
 
   const handleBuyNow = useCallback(async () => {
     if (!isOutOfStock && selectedVariant) {
