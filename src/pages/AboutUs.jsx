@@ -25,7 +25,7 @@ const AboutUs = () => {
           </motion.p>
         </div>
         <img
-          src={logo} 
+          // src={} 
           alt="Mirakle Products"
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 opacity-20"
         />
@@ -35,7 +35,7 @@ const AboutUs = () => {
       <section className="max-w-6xl mx-auto px-6 py-16 md:px-12">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.img
-            src={logo}
+            // src={}
             alt="Mission"
             className="rounded-2xl shadow-lg w-full object-cover"
             initial={{ opacity: 0, scale: 0.9 }}
