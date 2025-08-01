@@ -541,27 +541,34 @@ const ProductDetail = () => {
           {/* Thumbnail Images - Now shows variant-specific images */}
           <div className="flex gap-2 overflow-x-auto">
             {currentVariantImages?.map((img, i) => (
-              <img
-                key={i}
-                src={img.url || "/placeholder.svg?height=80&width=80"}
-                onClick={() => setSelectedImage(img.url)}
-                className={`w-20 h-20 object-cover border cursor-pointer transition-all flex-shrink-0 rounded ${
-                  selectedImage === img.url ? "border-blue-500 scale-105" : "hover:scale-105"
-                }`}
-                alt={`${product.title} ${i + 1}`}
-                loading="lazy"
-              />
-            ))}
-            {/* Video thumbnail if available */}
-            {productVideo && (
               <div
-                onClick={() => setShowVideoModal(true)}
-                className="w-20 h-20 bg-gray-200 border cursor-pointer transition-all flex-shrink-0 hover:scale-105 flex items-center justify-center rounded"
+                key={i}
+                className={`relative w-20 h-20 flex-shrink-0 rounded overflow-hidden border ${
+                  selectedImage === img.url ? "border-blue-500" : "border-gray-200"
+                }`}
               >
-                <span className="text-2xl">▶️</span>
+                <img
+                  src={img.url || "/placeholder.svg?height=80&width=80"}
+                  onClick={() => setSelectedImage(img.url)}
+                  className={`w-full h-full object-cover cursor-pointer transition-transform duration-200 ${
+                    selectedImage === img.url ? "scale-105" : "hover:scale-105"
+                  }`}
+                  alt={`${product.title} ${i + 1}`}
+                  loading="lazy"
+                />
               </div>
-            )}
-          </div>
+            ))}
+
+  {/* Video thumbnail if available */}
+  {productVideo && (
+    <div
+      onClick={() => setShowVideoModal(true)}
+      className="w-20 h-20 bg-gray-200 border border-gray-200 cursor-pointer transition-transform duration-200 flex-shrink-0 hover:scale-105 flex items-center justify-center rounded"
+    >
+      <span className="text-2xl">▶️</span>
+    </div>
+  )}
+</div>
         </div>
 
         {/* Product Info - This will scroll normally */}
