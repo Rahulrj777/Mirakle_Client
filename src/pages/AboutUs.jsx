@@ -3,8 +3,8 @@ import Natural from "../assets/Natural.png";
 import Preservatives from "../assets/Preservatives.png";
 import Satisfaction from "../assets/Satisfaction.png";
 import Health from "../assets/healthy.png";
-// import MissionImg from "../assets/mission.jpg"; 
-// import HeroImg from "../assets/hero-products.png";
+import Earth from "../assets/earth.jpg"; 
+import Bg from "../assets/bg.jpg";
 
 const AboutUs = () => {
   const coreValues = [
@@ -37,7 +37,7 @@ const AboutUs = () => {
           </motion.p>
         </div>
         <img
-          // src={HeroImg}
+          src={Bg}
           alt="Mirakle Products"
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 opacity-20"
         />
@@ -47,7 +47,7 @@ const AboutUs = () => {
       <section className="max-w-6xl mx-auto px-6 py-16 md:px-12">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.img
-            // src={MissionImg}
+            src={Earth}
             alt="Mission"
             className="rounded-2xl shadow-lg w-full object-cover"
             initial={{ opacity: 0, scale: 0.9 }}
