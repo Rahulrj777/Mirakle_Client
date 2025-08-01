@@ -212,7 +212,6 @@ const ProductDetail = () => {
         : selectedVariantIndex);
     const variantId = `${product._id}_${variantKey}`;
 
-    // ✅ Ensure we always have a string main image
     const firstImage =
       currentVariantImages?.[0]?.url ||
       product.images?.others?.[0]?.url ||
@@ -222,10 +221,10 @@ const ProductDetail = () => {
       _id: product._id,
       title: product.title,
       images: {
-        main: firstImage,                 // ✅ always present
-        others: currentVariantImages || [] // ✅ keep array of objects
+        main: firstImage,
+        others: (currentVariantImages || []).map(img => ({ url: img.url })), // ✅ clean JSON
       },
-      variantId: variantId,
+      variantId,
       size:
         selectedVariant.size ||
         (selectedVariant.weight
@@ -252,7 +251,7 @@ const ProductDetail = () => {
         productId: product._id,
         variantIndex: selectedVariantIndex,
         variantId: variantId,
-        image: firstImage, // ✅ Optional: save in DB for quicker rendering
+        image: firstImage,
       };
 
       try {
