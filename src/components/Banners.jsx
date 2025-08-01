@@ -1,5 +1,3 @@
-"use client"
-
 import logo from "../assets/logo.png"
 import axios from "axios"
 import { API_BASE } from "../utils/api"
@@ -331,7 +329,7 @@ const Banners = () => {
                     alt={img.title || `Slide ${i + 1}`}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover flex-shrink-0"
+                    className="w-full h-full object-contain flex-shrink-0"
                     style={{ width: `${100 / extendedImages.length}%` }}
                   />
                 ),
@@ -498,7 +496,7 @@ const Banners = () => {
                 src={item.imageUrl || "/placeholder.svg"}
                 loading="lazy"
                 alt={item.title || `Banner ${i + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
               {item.title && (
                 <div className="absolute bottom-1 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
