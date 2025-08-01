@@ -94,11 +94,11 @@ const ProductType = () => {
                     <div className="relative w-full h-[150px] mb-2">
                       <img
                         key={`${item._id}-${i}`}
-                        src={item.imageUrl || "/placeholder.svg?height=150&width=150&text=Product Type Image"} // Use imageUrl directly (Cloudinary URL)
+                        src={item.imageUrl || "/placeholder.svg?height=150&width=150&text=Product Type Image"} 
                         alt={item.title || "Product"}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-contain hover:scale-120 transition-transform duration-300"
+                        className="w-full h-full object-contain hover:scale-100 transition-transform duration-300"
                       />
                       {item.discountPercent > 0 && (
                         <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
