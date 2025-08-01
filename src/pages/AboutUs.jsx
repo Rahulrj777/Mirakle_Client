@@ -1,7 +1,19 @@
 import { motion } from "framer-motion";
-import logo from "../assets/logo.png"
+import Natural from "../assets/Natural.png";
+import Preservatives from "../assets/Preservatives.png";
+import Satisfaction from "../assets/Satisfaction.png";
+import Health from "../assets/healthy.png";
+import MissionImg from "../assets/mission.jpg"; // add a mission image
+import HeroImg from "../assets/hero-products.png"; // add a hero products image
 
 const AboutUs = () => {
+  const coreValues = [
+    { title: "100% Natural Ingredients", img: Natural },
+    { title: "No Preservatives", img: Preservatives },
+    { title: "Customer Satisfaction", img: Satisfaction },
+    { title: "Health & Purity First", img: Health },
+  ];
+
   return (
     <div className="bg-gray-50">
       {/* Hero Section */}
@@ -25,7 +37,7 @@ const AboutUs = () => {
           </motion.p>
         </div>
         <img
-          // src={} 
+          src={HeroImg}
           alt="Mirakle Products"
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 opacity-20"
         />
@@ -35,7 +47,7 @@ const AboutUs = () => {
       <section className="max-w-6xl mx-auto px-6 py-16 md:px-12">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.img
-            // src={}
+            src={MissionImg}
             alt="Mission"
             className="rounded-2xl shadow-lg w-full object-cover"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -74,12 +86,7 @@ const AboutUs = () => {
           </motion.h2>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { title: "100% Natural Ingredients", img: "/value1.jpg" },
-              { title: "No Preservatives", img: "/value2.jpg" },
-              { title: "Customer Satisfaction", img: "/value3.jpg" },
-              { title: "Health & Purity First", img: "/value4.jpg" },
-            ].map((value, i) => (
+            {coreValues.map((value, i) => (
               <motion.div
                 key={i}
                 className="bg-gray-50 p-6 rounded-2xl shadow hover:shadow-lg transition-all flex flex-col items-center"
