@@ -367,7 +367,7 @@ const Banners = () => {
           )}
         </div>
 
-        <div className="absolute top-8 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
+        <div className="absolute top-5 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
           <img src={logo || "/placeholder.svg"} alt="logo" className="w-[150px] h-auto object-contain" />
           {/* Nav Links */}
           <nav>
@@ -437,7 +437,7 @@ const Banners = () => {
         </div>
       </div>
 
-      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-12">
+      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
         {/* Search */}
         <div className="px-2 relative" ref={searchContainerRef}>
           {" "}
