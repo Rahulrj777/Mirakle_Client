@@ -306,7 +306,7 @@ const Banners = () => {
     <div className="w-full h-full flex">
       <div className="w-[80%] mx-auto mt-6 px-4 flex gap-6 h-[510px]">
         <div
-          className="w-full h-full relative rounded-xl overflow-hidden"
+          className="w-full h-full relative rounded-xl overflow-hidden "
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
@@ -489,7 +489,7 @@ const Banners = () => {
           {sideImages.map((item, i) => (
             <div
               key={item._id || i}
-              className="relative w-full h-[140px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition cursor-pointer"
+              className="relative w-full h-[130px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition cursor-pointer"
               onClick={() => handleSideBannerClick(item)}
             >
               <img
