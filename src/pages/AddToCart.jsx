@@ -541,7 +541,11 @@ const AddToCart = () => {
                             <div className="flex-shrink-0">
                               <img
                                 className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
-                                src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
+                                src={
+                                  item.images?.main ||
+                                  item.images?.others?.[0]?.url ||
+                                  "/placeholder.svg?height=80&width=80"
+                                }
                                 alt={item.title || "Product"}
                                 loading="lazy"
                                 onClick={() => navigate(`/product/${item._id}`)}
@@ -630,8 +634,12 @@ const AddToCart = () => {
                             {/* Product Image - Clickable */}
                             <div className="flex-shrink-0">
                               <img
-                                className="w-20 h-20 object-cover rounded-lg border grayscale opacity-60 cursor-pointer hover:opacity-40 transition-opacity"
-                                src={item.images?.others?.[0]?.url || "/placeholder.svg?height=80&width=80"}
+                                className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                src={
+                                  item.images?.main ||
+                                  item.images?.others?.[0]?.url ||
+                                  "/placeholder.svg?height=80&width=80"
+                                }
                                 alt={item.title || "Product"}
                                 loading="lazy"
                                 onClick={() => navigate(`/product/${item._id}`)}
