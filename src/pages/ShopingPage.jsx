@@ -16,8 +16,33 @@ const ShopingPage = () => {
     handleSearchChange,
     handleSuggestionClick,
     handleKeyDown,
-  } = useShopProducts() 
+  } = useShopProducts()
   const pageTitle = getShopPageTitle(location, filterType)
+
+  // ⭐ Render star component
+  const renderStars = (rating) => {
+    return (
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <svg
+            key={star}
+            xmlns="http://www.w3.org/2000/svg"
+            fill={rating >= star ? "#facc15" : "none"}
+            viewBox="0 0 24 24"
+            stroke="#facc15"
+            className="w-4 h-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.973a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.387 2.46a1 1 0 00-.364 1.118l1.287 3.973c.3.921-.755 1.688-1.54 1.118l-3.387-2.46a1 1 0 00-1.175 0l-3.387 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.973a1 1 0 00-.364-1.118l-3.387-2.46c-.784-.57-.38-1.81.588-1.81h4.18a1 1 0 00.951-.69l1.286-3.973z"
+            />
+          </svg>
+        ))}
+      </div>
+    )
+  }
 
   if (loading) {
     return <div className="text-center py-10">Loading products...</div>
@@ -30,6 +55,7 @@ const ShopingPage = () => {
   return (
     <div className="max-w-6xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-3 text-center">{pageTitle}</h1>
+
       {/* Filter Controls */}
       <div className="flex justify-between items-center my-8 flex-wrap gap-4 w-full">
         <select
@@ -40,6 +66,8 @@ const ShopingPage = () => {
           <option value="all">All Products</option>
           <option value="offer">Offer Products</option>
         </select>
+
+        {/* Search Bar */}
         <div className="relative w-full md:w-1/2">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
             <FiSearch />
@@ -67,11 +95,13 @@ const ShopingPage = () => {
           )}
         </div>
       </div>
+
       {searchTerm && (
         <p className="text-sm text-gray-500 mb-2">
           Showing results for "<strong>{searchTerm}</strong>" and other products.
         </p>
       )}
+
       {/* Product Grid */}
       {displayedProducts.length === 0 ? (
         <p className="text-center text-gray-500 mt-10">No products found.</p>
@@ -80,19 +110,29 @@ const ShopingPage = () => {
           {displayedProducts.map((product) => {
             const variantImage =
               product.variants?.[0]?.images?.[0]?.url ||
-              product.images?.others?.[0]?.url || "";
+              product.images?.others?.[0]?.url || ""
 
             const hasValidImage =
-              typeof variantImage === "string" && variantImage.startsWith("http");
+              typeof variantImage === "string" && variantImage.startsWith("http")
 
             const imageUrl = hasValidImage
               ? variantImage
-              : "/placeholder.svg?height=150&width=150";
+              : "/placeholder.svg?height=150&width=150"
+
             const isOut = product.isOutOfStock
             const variant = product.variants?.[0]
             const discount = variant?.discountPercent || 0
             const originalPrice = variant?.price || 0
             const finalPrice = originalPrice - (originalPrice * discount) / 100
+
+            // Calculate avg rating if missing
+            const avgRating =
+              product.avgRating && product.avgRating > 0
+                ? product.avgRating
+                : product.reviews && product.reviews.length > 0
+                ? product.reviews.reduce((acc, r) => acc + (r.rating || 0), 0) /
+                  product.reviews.length
+                : 0
 
             return (
               <Link to={`/product/${product._id}`} key={product._id} className="block">
@@ -128,16 +168,31 @@ const ShopingPage = () => {
                     <h2 className="text-base font-semibold truncate" title={product.title}>
                       {product.title}
                     </h2>
+
                     {variant && (
                       <>
                         <p className="text-sm text-gray-500 mt-1">{variant.size}</p>
                         <div className="mt-2 flex gap-2 items-center">
                           {discount > 0 && (
-                            <span className="text-gray-400 line-through text-sm">₹{originalPrice.toFixed(2)}</span>
+                            <span className="text-gray-400 line-through text-sm">
+                              ₹{originalPrice.toFixed(2)}
+                            </span>
                           )}
-                          <span className="text-green-600 font-bold text-base">₹{finalPrice.toFixed(2)}</span>
+                          <span className="text-green-600 font-bold text-base">
+                            ₹{finalPrice.toFixed(2)}
+                          </span>
                         </div>
                       </>
+                    )}
+
+                    {/* ⭐ Rating & Review Count */}
+                    {product.reviews && product.reviews.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <div className="flex">{renderStars(avgRating)}</div>
+                        <span className="text-xs text-gray-500">
+                          ({product.reviews.length})
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
