@@ -313,7 +313,7 @@ const Banners = () => {
           {/* Slider */}
           <div
             ref={sliderRef}
-            className="flex h-full"
+            className="flex h-full rounded-xl overflow-hidden"
             style={{
               transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
               width: `${extendedImages.length * 100}%`,
@@ -329,7 +329,7 @@ const Banners = () => {
                     alt={img.title || `Slide ${i + 1}`}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-contain flex-shrink-0"
+                    className="w-full h-full object-cover flex-shrink-0 rounded-xl"
                     style={{ width: `${100 / extendedImages.length}%` }}
                   />
                 ),
