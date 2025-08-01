@@ -437,7 +437,7 @@ const Banners = () => {
         </div>
       </div>
 
-      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
+      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-13">
         {/* Search */}
         <div className="px-2 relative" ref={searchContainerRef}>
           {" "}
