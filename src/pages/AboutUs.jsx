@@ -1,46 +1,133 @@
 import React from "react";
+import { motion } from "framer-motion";
 
 const AboutUs = () => {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 text-gray-800">
-      <h1 className="text-4xl font-bold mb-6 text-center">About Mirakle</h1>
+    <div className="bg-gray-50">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-r from-green-500 to-green-700 text-white py-16 px-6 md:px-12">
+        <div className="max-w-6xl mx-auto text-center">
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-5xl md:text-6xl font-extrabold mb-4"
+          >
+            About <span className="text-yellow-300">Mirakle</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.3 }}
+            className="text-lg md:text-xl max-w-3xl mx-auto"
+          >
+            Bringing 100% natural flavors to your kitchen since 2025 — Pure Masalas, Sauces & Food Essentials.
+          </motion.p>
+        </div>
+        <img
+          src="/about-hero.jpg" // 🔹 Replace with your real image
+          alt="Mirakle Products"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 opacity-20"
+        />
+      </section>
 
-      <p className="mb-4 text-lg">
-        At <strong>Mirakle</strong>, our passion is to bring 100% natural food products to your kitchen.
-        Established in 2025, we specialize in crafting pure masalas, sauces, and other flavorful additions
-        made without any artificial colors or chemicals.
-      </p>
+      {/* Mission Section */}
+      <section className="max-w-6xl mx-auto px-6 py-16 md:px-12">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <motion.img
+            src="/about-mission.jpg" // 🔹 Replace with your real image
+            alt="Mission"
+            className="rounded-2xl shadow-lg w-full object-cover"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
+            loading="lazy"
+          />
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-3xl font-bold text-green-700 mb-4">Our Mission</h2>
+            <p className="text-lg text-gray-700 mb-4">
+              To deliver high-quality, chemical-free, and preservative-free food products
+              that capture the essence of traditional taste while promoting health and wellness.
+            </p>
+            <p className="text-lg text-gray-700">
+              We believe in the power of nature, creating products that are 100% natural and
+              crafted with love for every kitchen.
+            </p>
+          </motion.div>
+        </div>
+      </section>
 
-      <p className="mb-4 text-lg">
-        Our journey started with a simple idea — to make cooking healthier and tastier using nature's own
-        ingredients. Today, Mirakle stands for quality, honesty, and purity.
-      </p>
+      {/* Core Values Section */}
+      <section className="bg-white py-16">
+        <div className="max-w-6xl mx-auto px-6 md:px-12 text-center">
+          <motion.h2
+            className="text-3xl font-bold text-green-700 mb-10"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            Our Core Values
+          </motion.h2>
 
-      <h2 className="text-2xl font-semibold mt-8 mb-4">Our Mission</h2>
-      <p className="mb-4 text-lg">
-        To deliver high-quality, chemical-free, and preservative-free food products that preserve the essence of traditional taste while promoting well-being.
-      </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { title: "100% Natural Ingredients", img: "/value1.jpg" },
+              { title: "No Preservatives", img: "/value2.jpg" },
+              { title: "Customer Satisfaction", img: "/value3.jpg" },
+              { title: "Health & Purity First", img: "/value4.jpg" },
+            ].map((value, i) => (
+              <motion.div
+                key={i}
+                className="bg-gray-50 p-6 rounded-2xl shadow hover:shadow-lg transition-all flex flex-col items-center"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: i * 0.2 }}
+              >
+                <img
+                  src={value.img}
+                  alt={value.title}
+                  className="w-24 h-24 object-cover rounded-full mb-4 border-4 border-green-100"
+                  loading="lazy"
+                />
+                <h3 className="font-semibold text-lg text-gray-800">{value.title}</h3>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      <h2 className="text-2xl font-semibold mt-8 mb-4">Our Core Values</h2>
-      <ul className="list-disc list-inside text-lg space-y-2">
-        <li>100% Natural Ingredients</li>
-        <li>No Artificial Colors or Preservatives</li>
-        <li>Customer Satisfaction</li>
-        <li>Health & Purity First</li>
-        <li>Affordable Quality</li>
-      </ul>
-
-      <h2 className="text-2xl font-semibold mt-8 mb-4">What We Offer</h2>
-      <p className="mb-4 text-lg">
-        We currently offer a range of handcrafted masalas, sauces, and food essentials. Each product goes
-        through strict quality checks to ensure it meets our natural standards.
-      </p>
-
-      <h2 className="text-2xl font-semibold mt-8 mb-4">Join Us On Our Journey</h2>
-      <p className="text-lg">
-        Whether you’re a home cook or a food lover, we welcome you to experience the magic of natural flavors
-        with Mirakle. Follow us on social media and be part of our growing community.
-      </p>
+      {/* CTA Section */}
+      <section className="bg-green-600 text-white py-16 text-center">
+        <motion.h2
+          className="text-3xl md:text-4xl font-bold mb-4"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          Join Our Natural Journey
+        </motion.h2>
+        <motion.p
+          className="text-lg max-w-2xl mx-auto mb-8"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+        >
+          Follow us and be part of our mission to bring natural, preservative-free flavors to
+          every kitchen.
+        </motion.p>
+        <motion.a
+          href="/shop/allproduct"
+          className="inline-block bg-yellow-400 text-green-800 font-semibold px-6 py-3 rounded-lg shadow hover:bg-yellow-300 transition"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Explore Products
+        </motion.a>
+      </section>
     </div>
   );
 };
