@@ -1084,6 +1084,18 @@ const ProductDetail = () => {
                       <span className="text-green-600 font-bold">₹{finalPrice}</span>
                       {discount > 0 && <span className="text-xs text-gray-400 line-through">₹{price}</span>}
                     </div>
+                    {p.reviews && p.reviews.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <div className="flex">
+                          {renderStars(
+                            p.avgRating && p.avgRating > 0
+                              ? p.avgRating
+                              : p.reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / p.reviews.length
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">({p.reviews.length})</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
