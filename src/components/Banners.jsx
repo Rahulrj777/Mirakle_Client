@@ -489,7 +489,7 @@ const Banners = () => {
           {sideImages.map((item, i) => (
             <div
               key={item._id || i}
-              className="relative w-full h-[130px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition cursor-pointer"
+              className="relative w-[260px] h-[130px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition cursor-pointer"
               onClick={() => handleSideBannerClick(item)}
             >
               <img
