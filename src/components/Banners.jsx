@@ -376,7 +376,7 @@ const Banners = () => {
                 { path: "/", list: "Home" },
                 { path: "/shop/allproduct", list: "Shop" },
                 { path: "/About_Us", list: "About Us" },
-                { path: "/Contect_Us", list: "Contact Us" },
+                { path: "/Contact_Us", list: "Contact Us" },
               ].map((item) => (
                 <li key={item.path} className="cursor-pointer flex flex-col items-center">
                   <Link
