@@ -544,7 +544,7 @@ const ProductDetail = () => {
               <div
                 key={i}
                 className={`relative w-20 h-20 flex-shrink-0 rounded overflow-hidden border ${
-                  selectedImage === img.url ? "border-blue-500" : "border-gray-200"
+                  selectedImage === img.url ? "border-green-500" : "border-gray-200"
                 }`}
               >
                 <img
