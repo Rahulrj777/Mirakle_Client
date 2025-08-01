@@ -29,7 +29,6 @@ const ProductDetail = () => {
   const [modalImage, setModalImage] = useState("")
   const [shareLoading, setShareLoading] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [productViews, setProductViews] = useState(0)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [productVideo, setProductVideo] = useState("")
   const [zoom, setZoom] = useState(false)
@@ -118,7 +117,6 @@ const ProductDetail = () => {
           const variantImages = found.variants[0].images || found.images?.others || []
           setSelectedImage(variantImages[0]?.url || "/placeholder.svg?height=500&width=500")
         }
-        setProductViews((prev) => prev + 1)
       } else {
         setError("Product not found")
       }
@@ -596,7 +594,6 @@ const ProductDetail = () => {
               ({product.reviews?.length || 0} review{product.reviews?.length !== 1 ? "s" : ""})
             </span>
             <span className="text-sm text-gray-400">|</span>
-            <span className="text-sm text-gray-500">{productViews} views</span>
           </div>
 
           {/* Price */}
