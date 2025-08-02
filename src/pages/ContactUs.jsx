@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 
 const ContactUs = () => {
@@ -17,15 +15,14 @@ const ContactUs = () => {
     setStatus("Sending...")
 
     try {
-      // 🔥 CHANGE THIS LINE - Use local API instead of external server
-      const response = await fetch("/api/contact", {
-        // ← Changed from external URL
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      })
+      const response = await fetch(
+        "https://mirakle-website-server.onrender.com/api/contact",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        }
+      )
 
       if (!response.ok) {
         const errorData = await response.json()
