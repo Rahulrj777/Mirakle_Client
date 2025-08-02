@@ -1,20 +1,21 @@
-import { useState } from "react"
+import { useState } from "react";
 
 const ContactUs = () => {
-  const [form, setForm] = useState({ name: "", email: "", message: "" })
-  const [status, setStatus] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [status, setStatus] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setStatus("Sending...")
+    e.preventDefault();
+    setIsLoading(true);
+    setStatus("Sending...");
 
     try {
+      // 🔹 API endpoint for saving messages
       const response = await fetch(
         "https://mirakle-website-server.onrender.com/api/contact",
         {
@@ -22,63 +23,31 @@ const ContactUs = () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
         }
-      )
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
-      }
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to save message");
 
-      const data = await response.json()
-      console.log("✅ Message sent successfully:", data)
-      setStatus("Message sent successfully!")
-      setForm({ name: "", email: "", message: "" })
+      console.log("✅ Message saved successfully:", data);
+      setStatus("Message sent successfully!");
+      setForm({ name: "", email: "", message: "" });
     } catch (err) {
-      console.error("❌ Error sending message:", err)
-      setStatus("Failed to send message. Please try again.")
+      console.error("❌ Error sending message:", err);
+      setStatus("Failed to send message. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 text-gray-800">
       <h1 className="text-4xl font-bold mb-6 text-center">Contact Us</h1>
       <p className="text-lg mb-4 text-center">
-        We'd love to hear from you! Whether you have a question, feedback, or just want to say hello, reach out to us
-        anytime.
+        We'd love to hear from you! Whether you have a question, feedback, or
+        just want to say hello, reach out to us anytime.
       </p>
+
       <div className="bg-white shadow-lg rounded-2xl p-6 space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold">Email</h2>
-          <p className="text-lg">miraklefoodproducts@gmail.com</p>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold">Phone</h2>
-          <p className="text-lg">+91 63838 42861</p>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold">Support Hours</h2>
-          <p className="text-lg">24×7 Available</p>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold">Expected Response Time</h2>
-          <p className="text-lg">Within 24 hours</p>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold">Follow Us</h2>
-          <div className="flex space-x-4 mt-2">
-            <a href="#" className="text-blue-500 hover:underline">
-              Instagram
-            </a>
-            <a href="#" className="text-blue-500 hover:underline">
-              Facebook
-            </a>
-            <a href="#" className="text-blue-500 hover:underline">
-              YouTube
-            </a>
-          </div>
-        </div>
         <form className="space-y-4 mt-6" onSubmit={handleSubmit}>
           <div>
             <label className="block text-lg font-medium">Name</label>
@@ -127,14 +96,20 @@ const ContactUs = () => {
             {isLoading ? "Sending..." : "Send Message"}
           </button>
           {status && (
-            <p className={`text-sm mt-2 ${status.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
+            <p
+              className={`text-sm mt-2 ${
+                status.includes("successfully")
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
               {status}
             </p>
-          )}  
+          )}
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ContactUs
+export default ContactUs;
