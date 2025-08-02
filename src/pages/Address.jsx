@@ -128,6 +128,7 @@ const Address = () => {
         />
         <input
           name="phone"
+          type="tel"
           onChange={handleChange}
           value={form.phone}
           placeholder="Phone"
