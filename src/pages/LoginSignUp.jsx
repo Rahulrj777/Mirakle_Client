@@ -48,20 +48,22 @@ const LoginSignUp = () => {
     try {
       setLoading(true);
 
-      // Call signup directly (OTP already verified)
-      const res = await axios.post(`${API_BASE}/api/users/signup`, {
+      // Signup the user (account creation only)
+      await axios.post(`${API_BASE}/api/users/signup`, {
         name: name.trim(),
         email: email.trim(),
         password,
       });
 
-      alert("✅ Account created successfully!");
-      localStorage.setItem(
-        "mirakleUser",
-        JSON.stringify({ user: res.data.user, token: res.data.token })
-      );
-
-      navigate("/");
+      alert("✅ Account created successfully! Please sign in.");
+      setIsSignUp(false);  // Switch to Sign-In page
+      setName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setOtp("");
+      setOtpSent(false);
+      setOtpVerified(false);
     } catch (err) {
       console.error("Signup error:", err);
       alert("❌ " + (err.response?.data?.message || "Signup failed"));
