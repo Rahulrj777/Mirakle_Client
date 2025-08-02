@@ -40,7 +40,7 @@ const Footer = () => {
         {/* Right: Contact + Social */}
         <div className="flex flex-col gap-3 md:w-1/2">
           <h3 className="font-semibold">Contact:</h3>
-          <p>CUSTOMER CARE: <strong>936-058-7969</strong> (10AM TO 6PM)</p>
+          <p>CUSTOMER CARE: <strong>638-384-2861</strong> (10AM TO 6PM)</p>
 
           <h3 className="font-semibold mt-2">Social Link:</h3>
           <div className="flex gap-4 items-center">
