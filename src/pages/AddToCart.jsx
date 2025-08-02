@@ -349,13 +349,6 @@ const AddToCart = () => {
     console.log("=== ENHANCED CART STOCK DEBUG ===")
     cartItems.forEach((item, index) => {
       console.log(`Item ${index + 1}: ${item.title}`)
-      console.log(`  - stock: ${item.stock} (type: ${typeof item.stock})`)
-      console.log(`  - isOutOfStock: ${item.isOutOfStock}`)
-      console.log(`  - stockMessage: ${item.stockMessage}`)
-      console.log(`  - originalPrice: ${item.originalPrice}`)
-      console.log(`  - currentPrice: ${item.currentPrice}`)
-      console.log(`  - Detected as out of stock: ${isItemOutOfStock(item)}`)
-      console.log("---")
     })
     console.log(`Available items: ${availableItems.length}`)
     console.log(`Out of stock items: ${outOfStockItems.length}`)
