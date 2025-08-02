@@ -26,12 +26,22 @@ const AddToCart = () => {
 
   const addresses = useSelector((state) => state.cart?.addresses || [])
   const selectedAddress = useSelector((state) => state.cart?.selectedAddress)
-
   const [cartReady, setCartReady] = useState(false)
   const [setStockSyncLoading] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [addressesLoaded, setAddressesLoaded] = useState(false)
   const [addressesLoading, setAddressesLoading] = useState(false)
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    house: "",
+    street: "",
+    city: "",
+    landmark: "",
+    pincode: "",
+  });
 
   const user = useMemo(() => {
     try {
@@ -397,6 +407,20 @@ const AddToCart = () => {
     }
   }
 
+  const handleEditAddress = (addr) => {
+    setForm({
+      name: addr.name || "",
+      phone: addr.phone || "",
+      house: (addr.line1?.split(",")[0] ?? "").trim(),
+      street: (addr.line1?.split(",")[1] ?? "").trim(),
+      city: addr.city || "",
+      landmark: addr.landmark || "",
+      pincode: addr.pincode || "",
+    });
+    setEditingAddressId(addr._id);
+    setShowAddressForm(true);
+  };
+
   const handleDeleteAddress = async (id) => {
     try {
       const res = await axiosWithToken(token).delete(`${API_BASE}/api/users/address/${id}`)
@@ -418,20 +442,6 @@ const AddToCart = () => {
       alert("Could not delete address. Please try again later.")
     }
   }
-
-  const handleEditAddress = (addr) => {
-    setForm({
-      name: addr.name,
-      phone: addr.phone,
-      house: addr.line1.split(",")[0] || "",
-      street: addr.line1.split(",").slice(1).join(",") || "",
-      city: addr.city,
-      landmark: addr.landmark,
-      pincode: addr.pincode,
-    });
-    setEditingAddressId(addr._id);  
-    setShowAddressForm(true);   
-  };
 
   if (!cartReady) {
     return (
