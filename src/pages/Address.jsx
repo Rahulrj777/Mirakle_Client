@@ -63,6 +63,7 @@ const Address = () => {
 
   const handleSaveAddress = async (e) => {
     e.preventDefault();
+    console.log("Saving address...");
 
     const newAddress = {
       name: form.name,
@@ -124,6 +125,7 @@ const Address = () => {
       alert("Could not save address");
     }
   };
+  console.log("handleSaveAddress is", typeof handleSaveAddress);
 
   return (
     <div className="max-w-lg mx-auto p-4">
