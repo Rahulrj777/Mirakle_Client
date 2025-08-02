@@ -478,6 +478,9 @@ const AddToCart = () => {
                     <p className="text-md">
                       {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.landmark}
                     </p>
+                    <p className="text-md">
+                      {selectAddress.phone}
+                    </p>
                   </div>
                   <button onClick={() => setShowAddressModal(true)} className="text-blue-600 hover:underline text-sm">
                     Change
