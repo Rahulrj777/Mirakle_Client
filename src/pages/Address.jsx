@@ -9,6 +9,8 @@ import { API_BASE } from "../utils/api"
 const Address = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -62,7 +64,8 @@ const Address = () => {
   }
 
   const handleSaveAddress = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+
     const newAddress = {
       name: form.name,
       phone: form.phone,
@@ -71,47 +74,58 @@ const Address = () => {
       pincode: form.pincode,
       landmark: form.landmark,
       type: "HOME",
-    }
+    };
 
     try {
-      const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token
+      const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
       if (!token) {
-        alert("Login required")
-        return
+        alert("Login required");
+        return;
       }
 
-      // Save to backend
-      const response = await fetch(`${API_BASE}/api/users/address`, {
-        method: "POST",
+      // Determine if we are editing or adding
+      const method = editingAddressId ? "PUT" : "POST";
+      const url = editingAddressId
+        ? `${API_BASE}/api/users/address/${editingAddressId}`
+        : `${API_BASE}/api/users/address`;
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newAddress),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        // Get the newly created address with _id from backend response
-        const savedAddress = data.addresses[data.addresses.length - 1]
+        const updatedAddress =
+          method === "POST"
+            ? data.addresses[data.addresses.length - 1] // new one
+            : data.addresses.find((a) => a._id === editingAddressId); // edited one
 
-        // Update Redux with the complete address (including _id)
-        dispatch(addAddress(savedAddress))
-        dispatch(selectAddress(savedAddress))
+        // Update Redux and LocalStorage
+        dispatch(addAddress(updatedAddress));
+        dispatch(selectAddress(updatedAddress));
+        localStorage.setItem("deliveryAddress", JSON.stringify(updatedAddress));
 
-        // Save to localStorage with the complete address data
-        localStorage.setItem("deliveryAddress", JSON.stringify(savedAddress))
+        // Reset editing state and close modal
+        setEditingAddressId(null);
+        setShowAddressForm(false);
 
-        navigate("/addtocart")
+        if (!editingAddressId) {
+          navigate("/addtocart"); // only redirect on add
+        }
       } else {
-        throw new Error(data.message || "Failed to save address")
+        throw new Error(data.message || "Failed to save address");
       }
     } catch (err) {
-      console.error("Failed to save address:", err)
-      alert("Could not save address")
+      console.error("Failed to save address:", err);
+      alert("Could not save address");
     }
-  }
+  };
 
   return (
     <div className="max-w-lg mx-auto p-4">

@@ -419,6 +419,20 @@ const AddToCart = () => {
     }
   }
 
+  const handleEditAddress = (addr) => {
+    setForm({
+      name: addr.name,
+      phone: addr.phone,
+      house: addr.line1.split(",")[0] || "",
+      street: addr.line1.split(",").slice(1).join(",") || "",
+      city: addr.city,
+      landmark: addr.landmark,
+      pincode: addr.pincode,
+    });
+    setEditingAddressId(addr._id);  
+    setShowAddressForm(true);   
+  };
+
   if (!cartReady) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -820,15 +834,22 @@ const AddToCart = () => {
                   <p className="text-sm text-gray-600">
                     {addr.line1}, {addr.city}, {addr.landmark}
                   </p>
-                  <p className="text-sm text-gray-600">
-                    {addr.phone}
-                  </p>
-                  <button
-                    onClick={() => confirmDelete(addr._id)}
-                    className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
-                  >
-                    Delete
-                  </button>
+                  <p className="text-sm text-gray-600">{addr.phone}</p>
+
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <button
+                      onClick={() => handleEditAddress(addr)}
+                      className="text-blue-500 text-xs hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => confirmDelete(addr._id)}
+                      className="text-red-500 text-xs hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))
             )}
