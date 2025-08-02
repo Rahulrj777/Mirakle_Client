@@ -44,26 +44,19 @@ const AddToCart = () => {
   const userId = user?.user?.userId || user?.user?._id
   const token = user?.token
 
-  // Enhanced stock checking function - Fixed to handle undefined values properly
   const isItemOutOfStock = (item) => {
     if (!item) return true
 
-    // If stock information is completely missing, we need to sync first
-    // But for now, treat undefined stock as available (will be synced)
     if (item.stock === undefined && item.isOutOfStock === undefined && item.stockMessage === undefined) {
-      return false // Assume available until we get proper stock info
+      return false 
     }
 
-    // Check explicit out of stock flags first
     if (item.isOutOfStock === true) return true
 
-    // Check stock numbers - if stock is 0 or negative
     if (typeof item.stock === "number" && item.stock <= 0) return true
 
-    // Check string stock values
     if (item.stock === "0") return true
 
-    // Check stock message for out of stock indicators
     if (item.stockMessage) {
       const message = item.stockMessage.toLowerCase()
       if (
@@ -75,11 +68,9 @@ const AddToCart = () => {
       }
     }
 
-    // If none of the above conditions are met, item is in stock
     return false
   }
 
-  // Separate available and out-of-stock items
   const availableItems = useMemo(() => {
     return cartItems.filter((item) => !isItemOutOfStock(item))
   }, [cartItems])
@@ -98,7 +89,6 @@ const AddToCart = () => {
     return availableItems.reduce((acc, item) => acc + (item.originalPrice || 0) * (item.quantity || 0), 0)
   }, [availableItems])
 
-  // Enhanced cart sync function that ensures stock information is included
   const syncCartFromBackend = async () => {
     if (!token || !userId) {
       setCartReady(true)
@@ -110,7 +100,6 @@ const AddToCart = () => {
       const response = await axiosWithToken(token).get(`${API_BASE}/api/cart`)
       const backendCart = response.data
 
-      // Handle different response formats
       let cartItemsArray = []
       if (backendCart && Array.isArray(backendCart.items)) {
         cartItemsArray = backendCart.items
@@ -479,7 +468,7 @@ const AddToCart = () => {
                       {selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.landmark}
                     </p>
                     <p className="text-md">
-                      {selectAddress.phone}
+                      {selectedAddress.phone}
                     </p>
                   </div>
                   <button onClick={() => setShowAddressModal(true)} className="text-blue-600 hover:underline text-sm">
