@@ -18,6 +18,8 @@ const LoginSignUp = () => {
   const [showSignUpPassword, setShowSignUpPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
@@ -120,6 +122,28 @@ const LoginSignUp = () => {
     }
   };
 
+  const sendOtp = async () => {
+  if (!email.trim()) return alert("Enter your email");
+  try {
+    await axios.post(`${API_BASE}/api/users/send-otp`, { email });
+    alert("✅ OTP sent to your email");
+    setOtpSent(true);
+  } catch (err) {
+    alert("❌ Failed to send OTP");
+  }
+};
+
+const verifyOtp = async () => {
+  try {
+    const res = await axios.post(`${API_BASE}/api/users/verify-otp`, { email, otp });
+    const { user, token } = res.data;
+    localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
+    navigate("/");
+  } catch (err) {
+    alert("❌ Invalid OTP");
+  }
+};
+
   const handleForgotPassword = () => {
     const userEmail = prompt("Enter your registered email:")
     if (!userEmail || !userEmail.trim()) return
@@ -220,6 +244,24 @@ const LoginSignUp = () => {
                 {showConfirmPassword ? <IoIosEye /> : <IoIosEyeOff />}
               </span>
             </div>
+            {otpSent ? (
+              <>
+                <input
+                  type="text"
+                  placeholder="Enter OTP"
+                  className="form-input"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+                <button className="form-button" onClick={verifyOtp}>
+                  Verify OTP
+                </button>
+              </>
+            ) : (
+              <button className="form-button" onClick={sendOtp}>
+                Send OTP
+              </button>
+            )}
             <button className="form-button" onClick={handleSignUp} disabled={loading}>
               {loading ? "CREATING..." : "SIGN UP"}
             </button>
