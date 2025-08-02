@@ -151,7 +151,7 @@ const verifyOtp = async () => {
 
   return (
     <div className="login-container bg-green-100">
-      <div className={`login-box min-h-[450px] ${isSignUp ? "signup-mode" : ""}`}>
+      <div className={`login-box min-h-[500px] ${isSignUp ? "signup-mode" : ""}`}>
         <div className="form-container sign-in-container">
           <div className="form-content">
             <h2 className="text-3xl font-bold mb-4 text-gray-800">Sign In</h2>
