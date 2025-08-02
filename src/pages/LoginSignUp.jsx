@@ -30,27 +30,41 @@ const LoginSignUp = () => {
   }, [navigate])
 
   const handleSignUp = async () => {
-    if (!otpSent) {
-      alert("Please request and verify OTP first!");
+    if (!otpVerified) {
+      alert("Please verify OTP before signing up!");
       return;
     }
-    if (!otp) {
-      alert("Enter OTP to verify!");
+
+    if (password !== confirmPassword) {
+      alert("❌ Passwords do not match!");
+      return;
+    }
+
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert("❌ Please fill all fields!");
       return;
     }
 
     try {
       setLoading(true);
-      // Verify OTP first
-      const res = await axios.post(`${API_BASE}/api/users/verify-otp`, { email, otp });
-      const { user, token } = res.data;
 
-      // Save user locally
-      localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
-      alert("✅ Account created & verified!");
+      // Call signup directly (OTP already verified)
+      const res = await axios.post(`${API_BASE}/api/users/signup`, {
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
+
+      alert("✅ Account created successfully!");
+      localStorage.setItem(
+        "mirakleUser",
+        JSON.stringify({ user: res.data.user, token: res.data.token })
+      );
+
       navigate("/");
     } catch (err) {
-      alert("❌ Invalid or expired OTP");
+      console.error("Signup error:", err);
+      alert("❌ " + (err.response?.data?.message || "Signup failed"));
     } finally {
       setLoading(false);
     }
@@ -136,7 +150,7 @@ const verifyOtp = async () => {
     console.log("✅ OTP Response:", res.data);
 
     alert("✅ OTP verified");
-    setOtpVerified(true); // ✅ allow signup
+    setOtpVerified(true); // allow sign up
   } catch (err) {
     console.log("❌ OTP Verify Error:", err.response?.data || err);
     alert("❌ Invalid or expired OTP");
