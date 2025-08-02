@@ -831,6 +831,9 @@ const AddToCart = () => {
                   <p className="text-sm text-gray-600">
                     {addr.line1}, {addr.city}, {addr.landmark}
                   </p>
+                  <p className="text-sm text-gray-600">
+                    {addr.phone}
+                  </p>
                   <button
                     onClick={() => confirmDelete(addr._id)}
                     className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
