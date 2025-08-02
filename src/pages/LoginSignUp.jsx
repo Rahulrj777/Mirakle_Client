@@ -261,9 +261,6 @@ const verifyOtp = async () => {
                 Send OTP
               </button>
             )}
-            <button className="form-button" onClick={handleSignUp} disabled={loading}>
-              {loading ? "CREATING..." : "SIGN UP"}
-            </button>
           </div>
         </div>
 
