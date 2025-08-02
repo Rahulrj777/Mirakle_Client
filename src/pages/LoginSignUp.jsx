@@ -129,12 +129,13 @@ const LoginSignUp = () => {
 };
 
 const verifyOtp = async () => {
+  console.log("Sending OTP verification:", { email, otp }); // ✅ Add this
+
   try {
     const res = await axios.post(`${API_BASE}/api/users/verify-otp`, { email, otp });
-    const { user, token } = res.data;
-    localStorage.setItem("mirakleUser", JSON.stringify({ user, token }));
-    navigate("/");
+    console.log("✅ OTP Response:", res.data);
   } catch (err) {
+    console.error("❌ OTP Verify Error:", err.response?.data || err.message);
     alert("❌ Invalid OTP");
   }
 };
