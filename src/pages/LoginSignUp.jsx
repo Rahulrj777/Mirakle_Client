@@ -6,7 +6,6 @@ import { API_BASE } from "../utils/api"
 import { IoIosEye, IoIosEyeOff } from "react-icons/io"
 import { useDispatch } from "react-redux"
 import { setCartItem, setUserId, setCartReady, clearUser } from "../Redux/cartSlice"
-// import { axiosWithToken } from "../utils/axiosWithToken"
 
 const LoginSignUp = () => {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -152,7 +151,7 @@ const verifyOtp = async () => {
 
   return (
     <div className="login-container bg-green-100">
-      <div className={`login-box min-h-[400px] ${isSignUp ? "signup-mode" : ""}`}>
+      <div className={`login-box min-h-[450px] ${isSignUp ? "signup-mode" : ""}`}>
         <div className="form-container sign-in-container">
           <div className="form-content">
             <h2 className="text-3xl font-bold mb-4 text-gray-800">Sign In</h2>
