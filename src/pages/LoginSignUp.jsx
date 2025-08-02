@@ -131,11 +131,15 @@ const LoginSignUp = () => {
 
 const verifyOtp = async () => {
   try {
+    console.log("Sending OTP verification:", { email, otp });
     const res = await axios.post(`${API_BASE}/api/users/verify-otp`, { email, otp });
-    alert("✅ OTP Verified!");
-    setOtpVerified(true); // ✅ allow signup now
+    console.log("✅ OTP Response:", res.data);
+
+    alert("✅ OTP verified");
+    setOtpVerified(true); // ✅ allow signup
   } catch (err) {
-    alert("❌ Invalid OTP");
+    console.log("❌ OTP Verify Error:", err.response?.data || err);
+    alert("❌ Invalid or expired OTP");
   }
 };
 
