@@ -18,6 +18,7 @@ const LoginSignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
   const [otp, setOtp] = useState("");
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -129,13 +130,11 @@ const LoginSignUp = () => {
 };
 
 const verifyOtp = async () => {
-  console.log("Sending OTP verification:", { email, otp }); // ✅ Add this
-
   try {
     const res = await axios.post(`${API_BASE}/api/users/verify-otp`, { email, otp });
-    console.log("✅ OTP Response:", res.data);
+    alert("✅ OTP Verified!");
+    setOtpVerified(true); // ✅ allow signup now
   } catch (err) {
-    console.error("❌ OTP Verify Error:", err.response?.data || err.message);
     alert("❌ Invalid OTP");
   }
 };
@@ -240,7 +239,7 @@ const verifyOtp = async () => {
                 {showConfirmPassword ? <IoIosEye /> : <IoIosEyeOff />}
               </span>
             </div>
-            {otpSent ? (
+            {otpSent && !otpVerified ? (
               <>
                 <input
                   type="text"
@@ -253,6 +252,10 @@ const verifyOtp = async () => {
                   Verify OTP
                 </button>
               </>
+            ) : otpVerified ? (
+              <button className="form-button" onClick={handleSignUp} disabled={loading}>
+                {loading ? "CREATING..." : "SIGN UP"}
+              </button>
             ) : (
               <button className="form-button" onClick={sendOtp}>
                 Send OTP
