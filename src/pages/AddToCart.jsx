@@ -826,52 +826,136 @@ const AddToCart = () => {
       {showAddressModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 overflow-y-auto z-50">
           <div ref={modalRef} className="bg-white p-6 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
-            {addresses.length === 0 ? (
-              <p className="text-gray-500">No addresses saved yet.</p>
-            ) : (
-              addresses.map((addr, idx) => (
-                <div key={addr._id || idx} className="border p-3 rounded mb-2 relative">
-                  <input
-                    type="radio"
-                    name="selectedAddress"
-                    checked={selectedAddress?._id === addr._id}
-                    onChange={() => handleAddressSelect(addr)}
-                  />
-                  <span className="ml-2 font-medium">
-                    {addr.name}, {addr.pincode}
-                  </span>
-                  <p className="text-sm text-gray-600">
-                    {addr.line1}, {addr.city}, {addr.landmark}
-                  </p>
-                  <p className="text-sm text-gray-600">{addr.phone}</p>
-
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    <button
-                      onClick={() => handleEditAddress(addr)}
-                      className="text-blue-500 text-xs hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => confirmDelete(addr._id)}
-                      className="text-red-500 text-xs hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
+            {showAddressForm ? (
+              // Render your address form here
+              <form onSubmit={handleSaveAddress} className="space-y-3">
+                <h2 className="text-xl font-bold mb-4">
+                  {editingAddressId ? "Edit Address" : "Add New Address"}
+                </h2>
+                <input
+                  name="name"
+                  onChange={(e) => setForm({...form, name: e.target.value})}
+                  value={form.name}
+                  placeholder="Name"
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <input
+                  name="phone"
+                  onChange={(e) => setForm({...form, phone: e.target.value})}
+                  value={form.phone}
+                  placeholder="Phone"
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <input
+                  name="house"
+                  onChange={(e) => setForm({...form, house: e.target.value})}
+                  value={form.house}
+                  placeholder="House / Flat"
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <input
+                  name="street"
+                  onChange={(e) => setForm({...form, street: e.target.value})}
+                  value={form.street}
+                  placeholder="Street"
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <input
+                  name="city"
+                  onChange={(e) => setForm({...form, city: e.target.value})}
+                  value={form.city}
+                  placeholder="City"
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <input
+                  name="landmark"
+                  onChange={(e) => setForm({...form, landmark: e.target.value})}
+                  value={form.landmark}
+                  placeholder="Landmark (optional)"
+                  className="w-full p-2 border rounded"
+                />
+                <input
+                  name="pincode"
+                  onChange={(e) => setForm({...form, pincode: e.target.value})}
+                  value={form.pincode}
+                  placeholder="Pincode"
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="bg-green-500 text-white px-4 py-2 rounded w-full"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded w-full"
+                    onClick={() => {
+                      setShowAddressForm(false);
+                      setEditingAddressId(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
-              ))
+              </form>
+            ) : (
+              // Your existing address list UI
+              <>
+                <h2 className="text-xl font-bold mb-4">Select Delivery Address</h2>
+                {addresses.length === 0 ? (
+                  <p className="text-gray-500">No addresses saved yet.</p>
+                ) : (
+                  addresses.map((addr, idx) => (
+                    <div key={addr._id || idx} className="border p-3 rounded mb-2 relative">
+                      <input
+                        type="radio"
+                        name="selectedAddress"
+                        checked={selectedAddress?._id === addr._id}
+                        onChange={() => handleAddressSelect(addr)}
+                      />
+                      <span className="ml-2 font-medium">
+                        {addr.name}, {addr.pincode}
+                      </span>
+                      <p className="text-sm text-gray-600">
+                        {addr.line1}, {addr.city}, {addr.landmark}
+                      </p>
+                      <p className="text-sm text-gray-600">{addr.phone}</p>
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <button
+                          onClick={() => handleEditAddress(addr)}
+                          className="text-blue-500 text-xs hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => confirmDelete(addr._id)}
+                          className="text-red-500 text-xs hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <button
+                  onClick={() => {
+                    setShowAddressModal(false)
+                    navigate("/address")
+                  }}
+                  className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
+                >
+                  Add New Address
+                </button>
+              </>
             )}
-            <button
-              onClick={() => {
-                setShowAddressModal(false)
-                navigate("/address")
-              }}
-              className="mt-4 w-full bg-blue-500 text-white py-2 rounded"
-            >
-              Add New Address
-            </button>
           </div>
         </div>
       )}
