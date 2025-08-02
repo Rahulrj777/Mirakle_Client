@@ -634,7 +634,7 @@ const AddToCart = () => {
                             {/* Product Image - Clickable */}
                             <div className="flex-shrink-0">
                               <img
-                                className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity grayscale opacity-60"
                                 src={
                                   item.images?.main ||
                                   item.images?.others?.[0]?.url ||
