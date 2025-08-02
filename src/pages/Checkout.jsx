@@ -1,6 +1,18 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { API_BASE } from "../utils/api";
+
+// Load Razorpay script
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const Checkout = () => {
   const location = useLocation();
@@ -8,13 +20,13 @@ const Checkout = () => {
   const dispatch = useDispatch();
 
   const [product, setProduct] = useState(null);
-  const mode = location.state?.mode || "cart";
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [loading, setLoading] = useState(false);
 
+  const mode = location.state?.mode || "cart";
   const cartItems = useSelector((state) => state.cart.items || []);
   const cartReady = useSelector((state) => state.cart.cartReady);
   const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
-
-  const [paymentMethod, setPaymentMethod] = useState("upi");
 
   useEffect(() => {
     if (mode === "buy-now") {
@@ -43,9 +55,7 @@ const Checkout = () => {
   }
 
   if (mode === "cart" && !cartReady) {
-    return (
-      <div className="text-center mt-20 text-gray-600">Loading your cart...</div>
-    );
+    return <div className="text-center mt-20 text-gray-600">Loading your cart...</div>;
   }
 
   if (mode === "buy-now" && !product) {
@@ -89,27 +99,65 @@ const Checkout = () => {
   );
   const discount = subtotal - total;
 
+  // Quantity controls
   const handleIncrement = (item) => {
-    dispatch({
-      type: "cart/incrementQuantity",
-      payload: { _id: item._id, variantId: item.variantId },
-    });
+    dispatch({ type: "cart/incrementQuantity", payload: { _id: item._id, variantId: item.variantId } });
   };
   const handleDecrement = (item) => {
-    dispatch({
-      type: "cart/decrementQuantity",
-      payload: { _id: item._id, variantId: item.variantId },
-    });
+    dispatch({ type: "cart/decrementQuantity", payload: { _id: item._id, variantId: item.variantId } });
   };
   const handleRemove = (item) => {
-    dispatch({
-      type: "cart/removeFromCart",
-      payload: { _id: item._id, variantId: item.variantId },
-    });
+    dispatch({ type: "cart/removeFromCart", payload: { _id: item._id, variantId: item.variantId } });
   };
 
-  const handleCheckout = () => {
-    alert(`Proceeding with ${paymentMethod.toUpperCase()} payment of ₹${total}`);
+  // Checkout with Razorpay for UPI
+  const handleCheckout = async () => {
+    if (paymentMethod !== "upi") {
+      alert(`Proceeding with ${paymentMethod.toUpperCase()} payment of ₹${total}`);
+      return;
+    }
+
+    setLoading(true);
+
+    const sdkLoaded = await loadRazorpay();
+    if (!sdkLoaded) {
+      alert("Razorpay SDK failed to load.");
+      setLoading(false);
+      return;
+    }
+
+    // Create Razorpay order via backend
+    const res = await fetch(`${API_BASE}/api/payment/create-order`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: total }),
+    });
+    const orderData = await res.json();
+
+    const options = {
+      key: "YOUR_RAZORPAY_KEY", // replace with your Key ID
+      amount: orderData.amount,
+      currency: "INR",
+      name: "Mirakle",
+      description: "Order Payment",
+      order_id: orderData.id,
+      handler: function (response) {
+        console.log("Payment Success:", response);
+        alert("✅ Payment Successful!");
+        navigate("/orders"); // Redirect to orders or success page
+      },
+      prefill: {
+        name: "Customer Name",
+        email: "customer@example.com",
+        contact: "9876543210",
+      },
+      theme: { color: "#F97316" },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+
+    setLoading(false);
   };
 
   return (
@@ -217,54 +265,32 @@ const Checkout = () => {
           <div>
             <h2 className="text-lg font-semibold mb-4">Select Payment Method</h2>
             <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="upi"
-                  checked={paymentMethod === "upi"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span>UPI / Google Pay / PhonePe</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="cod"
-                  checked={paymentMethod === "cod"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span>Cash on Delivery (COD)</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="card"
-                  checked={paymentMethod === "card"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span>Credit / Debit Card</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="wallet"
-                  checked={paymentMethod === "wallet"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span>Wallet / Netbanking</span>
-              </label>
+              {["upi","cod","card","wallet"].map((method) => (
+                <label key={method} className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value={method}
+                    checked={paymentMethod === method}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <span>
+                    {method === "upi" && "UPI / Google Pay / PhonePe"}
+                    {method === "cod" && "Cash on Delivery (COD)"}
+                    {method === "card" && "Credit / Debit Card"}
+                    {method === "wallet" && "Wallet / Netbanking"}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
 
           <button
             className="w-full py-3 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold text-lg"
             onClick={handleCheckout}
+            disabled={loading}
           >
-            Pay ₹{total.toFixed(2)}
+            {loading ? "Processing..." : `Pay ₹${total.toFixed(2)}`}
           </button>
         </div>
       </div>
