@@ -105,6 +105,9 @@ const Address = () => {
             ? data.addresses[data.addresses.length - 1] // new one
             : data.addresses.find((a) => a._id === editingAddressId); // edited one
 
+            console.log("setAddresses", setAddresses, typeof setAddresses);
+            console.log("selectAddress", selectAddress, typeof selectAddress);
+            
         // Update Redux and LocalStorage
         dispatch(selectAddress(updatedAddress));
         dispatch(setAddresses(data.addresses));
