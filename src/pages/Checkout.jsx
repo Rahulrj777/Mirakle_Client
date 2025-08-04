@@ -164,8 +164,8 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4 lg:px-16">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* LEFT: Product List - 50 % width */}
-        <div className="space-y-6">
+        {/* LEFT: Product List */}
+        <div className="space-y-6 h-fit sticky top-20 self-start">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Available Items ({items.length})</h2>
             <div className="space-y-4">
@@ -191,11 +191,9 @@ const Checkout = () => {
                   </div>
 
                   <div className="flex items-center gap-6">
-                    {/* Show quantity only, no + or - buttons */}
                     <div className="px-4 py-1 text-center font-semibold">
                       Qty: {item.quantity}
                     </div>
-
                     <div className="text-lg font-semibold">
                       ₹{((item.currentPrice || 0) * (item.quantity || 1)).toFixed(2)}
                     </div>
@@ -206,7 +204,7 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* RIGHT: Order Summary + Delivery Address + Payment Methods - 50 % width */}
+        {/* RIGHT: Order Summary + Delivery Address + Payment Methods */}
         <div className="bg-white rounded-lg shadow p-6 h-fit sticky top-20 space-y-6">
           {/* Delivery Address */}
           <div>
