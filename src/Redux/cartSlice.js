@@ -5,7 +5,7 @@ const initialState = {
   cartReady: false,
   userId: null,
   addresses: [],
-  selectedAddress: null,
+  selectedAddress: JSON.parse(localStorage.getItem("deliveryAddress")) || null,
 }
 
 const cartSlice = createSlice({
@@ -154,6 +154,7 @@ const cartSlice = createSlice({
     },
     selectAddress: (state, action) => {
       state.selectedAddress = action.payload
+      localStorage.setItem("deliveryAddress", JSON.stringify(action.payload));
     },
     initializeSelectedAddress: (state, action) => {
       state.selectedAddress = action.payload
