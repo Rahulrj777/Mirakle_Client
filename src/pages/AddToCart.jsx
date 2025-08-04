@@ -9,6 +9,7 @@ import {
   setCartItem,
   incrementQuantity,
   decrementQuantity,
+  addAddress,
 } from "../Redux/cartSlice"
 import { axiosWithToken } from "../utils/axiosWithToken"
 import { API_BASE } from "../utils/api"
@@ -501,7 +502,7 @@ const AddToCart = () => {
       }
     };
     console.log("handleSaveAddress is", typeof handleSaveAddress);
-    
+
   if (!cartReady) {
     return (
       <div className="min-h-screen bg-gray-50">
