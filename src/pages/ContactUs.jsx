@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 
 const ContactUs = () => {
   const user = useSelector(state => state.user.userInfo);
+  console.log("User info from store:", user);
   const [form, setForm] = useState({ name: "", message: "" });
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
