@@ -456,20 +456,20 @@ const Banners = () => {
                 <li
                   key={item._id}
                   onClick={() => handleSelectSuggestion(item._id)}
-                  className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                  className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 flex items-center gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    {item.images?.others?.[0] && (
-                      <img
-                        src={item.images.others[0] || "/placeholder.svg"}
-                        alt={item.title}
-                        loading="lazy"
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.title}</div>
-                    </div>
+                  <img
+                    src={
+                      item.images?.others?.[0]?.url ||
+                      item.images?.[0]?.url ||
+                      "/placeholder.svg"
+                    }
+                    alt={item.title || "Product image"}
+                    loading="lazy"
+                    className="w-10 h-10 object-cover rounded"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{item.title}</div>
                   </div>
                 </li>
               ))}
