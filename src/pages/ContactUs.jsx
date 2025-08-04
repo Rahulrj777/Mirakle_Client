@@ -21,7 +21,7 @@ const ContactUs = () => {
     setStatus("Sending...");
 
     try {
-      const response = await fetch("https://.../api/contact", {
+      const response = await fetch("https://mirakle-website-server.onrender.com/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
