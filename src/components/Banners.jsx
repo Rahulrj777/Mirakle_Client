@@ -473,11 +473,6 @@ const Banners = () => {
                   />
                   <div className="flex-1">
                     <div className="font-medium text-sm">{item.title}</div>
-                    {item.variants && item.variants.length > 0 && (
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        Size: {item.variants[0].size || "N/A"}
-                      </div>
-                    )}
                   </div>
                 </li>
               ))}
