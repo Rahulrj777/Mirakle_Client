@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDispatch } from "react-redux"
-import { addAddress, selectAddress } from "../Redux/cartSlice"
+import { selectAddress,setAddresses } from "../Redux/cartSlice"
 import { API_BASE } from "../utils/api"
 
 const Address = () => {
@@ -107,7 +107,7 @@ const Address = () => {
 
             console.log("setAddresses", setAddresses, typeof setAddresses);
             console.log("selectAddress", selectAddress, typeof selectAddress);
-            
+
         // Update Redux and LocalStorage
         dispatch(selectAddress(updatedAddress));
         dispatch(setAddresses(data.addresses));
