@@ -463,6 +463,8 @@ const Banners = () => {
                       item.images?.others?.[0]?.url ||
                       item.images?.[0]?.url ||
                       item.imageUrl ||
+                      item.variants?.[0]?.images?.[0]?.url ||
+                      item.variants?.[0]?.imageUrl ||
                       "/placeholder.svg"
                     }
                     alt={item.title || "Product image"}
