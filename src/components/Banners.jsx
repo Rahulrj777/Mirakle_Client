@@ -441,7 +441,6 @@ const Banners = () => {
         {/* Search */}
         <div className="px-2 relative" ref={searchContainerRef}>
           {" "}
-          {/* ✅ UPDATED: Apply ref here */}
           <input
             type="text"
             value={searchTerm}
@@ -460,9 +459,9 @@ const Banners = () => {
                   className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                 >
                   <div className="flex items-center gap-3">
-                    {item.images?.others?.[0]?.url && (
+                    {item.images?.others?.[0] && (
                       <img
-                        src={item.images.others[0].url || "/placeholder.svg"}
+                        src={item.images.others[0] || "/placeholder.svg"}
                         alt={item.title}
                         loading="lazy"
                         className="w-10 h-10 object-cover rounded"
