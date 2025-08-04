@@ -436,6 +436,72 @@ const AddToCart = () => {
     }
   }
 
+  const handleSaveAddress = async (e) => {
+      e.preventDefault();
+      console.log("Saving address...");
+  
+      const newAddress = {
+        name: form.name,
+        phone: form.phone,
+        line1: `${form.house}, ${form.street}`,
+        city: form.city,
+        pincode: form.pincode,
+        landmark: form.landmark,
+        type: "HOME",
+      };
+  
+      try {
+        const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
+        if (!token) {
+          alert("Login required");
+          return;
+        }
+  
+        // Determine if we are editing or adding
+        const method = editingAddressId ? "PUT" : "POST";
+        const url = editingAddressId
+          ? `${API_BASE}/api/users/address/${editingAddressId}`
+          : `${API_BASE}/api/users/address`;
+  
+        const response = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newAddress),
+        });
+  
+        const data = await response.json();
+  
+        if (response.ok) {
+          const updatedAddress =
+            method === "POST"
+              ? data.addresses[data.addresses.length - 1] // new one
+              : data.addresses.find((a) => a._id === editingAddressId); // edited one
+  
+          // Update Redux and LocalStorage
+          dispatch(addAddress(updatedAddress));
+          dispatch(selectAddress(updatedAddress));
+          localStorage.setItem("deliveryAddress", JSON.stringify(updatedAddress));
+  
+          // Reset editing state and close modal
+          setEditingAddressId(null);
+          setShowAddressForm(false);
+  
+          if (!editingAddressId) {
+            navigate("/addtocart"); // only redirect on add
+          }
+        } else {
+          throw new Error(data.message || "Failed to save address");
+        }
+      } catch (err) {
+        console.error("Failed to save address:", err);
+        alert("Could not save address");
+      }
+    };
+    console.log("handleSaveAddress is", typeof handleSaveAddress);
+    
   if (!cartReady) {
     return (
       <div className="min-h-screen bg-gray-50">
