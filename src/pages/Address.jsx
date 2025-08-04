@@ -106,8 +106,8 @@ const Address = () => {
             : data.addresses.find((a) => a._id === editingAddressId); // edited one
 
         // Update Redux and LocalStorage
-        dispatch(addAddress(updatedAddress));
         dispatch(selectAddress(updatedAddress));
+        dispatch(setAddresses(data.addresses));
         localStorage.setItem("deliveryAddress", JSON.stringify(updatedAddress));
 
         // Reset editing state and close modal
