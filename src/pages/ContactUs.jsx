@@ -65,19 +65,7 @@ const ContactUs = () => {
               autoComplete="name"
             />
           </div>
-
-          <div>
-            <label htmlFor="email" className="block text-lg font-medium">Email</label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              value={user?.email || ""}
-              disabled
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 cursor-not-allowed"
-            />
-          </div>
-
+          
           <div>
             <label htmlFor="message" className="block text-lg font-medium">Message</label>
             <textarea
