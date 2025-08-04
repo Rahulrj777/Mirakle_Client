@@ -76,7 +76,7 @@ const Banners = () => {
           console.error("Error fetching suggestions:", error)
           setSuggestions([])
         }
-      }, 300)
+      }, 150)
       setSearchTimeout(timeout)
     },
     [searchTimeout],
