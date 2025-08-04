@@ -26,6 +26,7 @@ const Checkout = () => {
   const mode = location.state?.mode || "cart";
   const cartItems = useSelector((state) => state.cart.items || []);
   const cartReady = useSelector((state) => state.cart.cartReady);
+  const selectedAddress = useSelector((state) => state.cart.selectedAddress);
   const token = JSON.parse(localStorage.getItem("mirakleUser"))?.token;
 
   useEffect(() => {
@@ -49,9 +50,14 @@ const Checkout = () => {
   }, [location.state, mode]);
 
   // Redirect if not logged in
+  useEffect(() => {
+    if (!token) {
+      navigate("/login");
+    }
+  }, [token, navigate]);
+
   if (!token) {
-    navigate("/login");
-    return null;
+    return null; // or a loader if you prefer
   }
 
   if (mode === "cart" && !cartReady) {
@@ -99,13 +105,8 @@ const Checkout = () => {
   );
   const discount = subtotal - total;
 
-  // Quantity controls
-  const handleIncrement = (item) => {
-    dispatch({ type: "cart/incrementQuantity", payload: { _id: item._id, variantId: item.variantId } });
-  };
-  const handleDecrement = (item) => {
-    dispatch({ type: "cart/decrementQuantity", payload: { _id: item._id, variantId: item.variantId } });
-  };
+  // Quantity controls removed — only show quantity
+
   const handleRemove = (item) => {
     dispatch({ type: "cart/removeFromCart", payload: { _id: item._id, variantId: item.variantId } });
   };
@@ -162,9 +163,9 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4 lg:px-16">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT: Product List */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* LEFT: Product List - 50 % width */}
+        <div className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Available Items ({items.length})</h2>
             <div className="space-y-4">
@@ -195,33 +196,26 @@ const Checkout = () => {
                   </div>
 
                   <div className="flex items-center gap-6">
-                    {mode === "cart" && (
-                      <div className="flex items-center border rounded overflow-hidden">
-                        <button
-                          onClick={() => handleDecrement(item)}
-                          disabled={item.quantity <= 1}
-                          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-                        >
-                          -
-                        </button>
-                        <span className="px-4">{item.quantity}</span>
-                        <button
-                          onClick={() => handleIncrement(item)}
-                          className="px-3 py-1 bg-gray-100 hover:bg-gray-200"
-                        >
-                          +
-                        </button>
-                      </div>
-                    )}
+                    {/* Show quantity only, no + or - buttons */}
+                    <div className="px-4 py-1 text-center font-semibold">
+                      Qty: {item.quantity}
+                    </div>
+
                     <div className="text-lg font-semibold">
                       ₹{((item.currentPrice || 0) * (item.quantity || 1)).toFixed(2)}
                     </div>
+
                     {mode === "cart" && (
                       <button
                         onClick={() => handleRemove(item)}
                         className="text-red-500 hover:text-red-700 text-lg"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -238,8 +232,22 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* RIGHT: Order Summary + Payment Methods */}
+        {/* RIGHT: Order Summary + Delivery Address + Payment Methods - 50 % width */}
         <div className="bg-white rounded-lg shadow p-6 h-fit sticky top-20 space-y-6">
+          {/* Delivery Address */}
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Delivery Address</h2>
+            {selectedAddress ? (
+              <div className="text-gray-700">
+                <p><strong>{selectedAddress.name}</strong></p>
+                <p>{selectedAddress.line1}, {selectedAddress.city}, {selectedAddress.pincode}</p>
+                <p>Phone: {selectedAddress.phone}</p>
+              </div>
+            ) : (
+              <div className="text-red-500">No delivery address selected.</div>
+            )}
+          </div>
+
           {/* Order Summary */}
           <div>
             <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
@@ -272,7 +280,7 @@ const Checkout = () => {
           <div>
             <h2 className="text-lg font-semibold mb-4">Select Payment Method</h2>
             <div className="space-y-3">
-              {["upi","cod","card","wallet"].map((method) => (
+              {["upi", "cod", "card", "wallet"].map((method) => (
                 <label key={method} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="radio"
@@ -292,6 +300,7 @@ const Checkout = () => {
             </div>
           </div>
 
+          {/* Checkout Button */}
           <button
             className="w-full py-3 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold text-lg"
             onClick={handleCheckout}
