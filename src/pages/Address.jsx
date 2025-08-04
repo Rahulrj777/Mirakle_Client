@@ -8,7 +8,7 @@ const Address = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [editingAddressId, setEditingAddressId] = useState(null);
-  const [setShowAddressForm] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -102,11 +102,8 @@ const Address = () => {
       if (response.ok) {
         const updatedAddress =
           method === "POST"
-            ? data.addresses[data.addresses.length - 1] // new one
-            : data.addresses.find((a) => a._id === editingAddressId); // edited one
-
-            console.log("setAddresses", setAddresses, typeof setAddresses);
-            console.log("selectAddress", selectAddress, typeof selectAddress);
+            ? data.addresses[data.addresses.length - 1]
+            : data.addresses.find((a) => a._id === editingAddressId); 
 
         // Update Redux and LocalStorage
         dispatch(selectAddress(updatedAddress));

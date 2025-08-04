@@ -13,7 +13,7 @@ const userSlice = createSlice({
     setAddress: (state, action) => {
       state.address = action.payload;
     },
-    setUserInfo: (state, action) => {
+    setUserInfo: (state, action) => { 
       state.userInfo = action.payload;
     },
   },
