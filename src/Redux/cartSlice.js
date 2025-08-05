@@ -153,11 +153,12 @@ const cartSlice = createSlice({
       state.addresses = action.payload
     },
     selectAddress: (state, action) => {
-      state.selectedAddress = action.payload
+      state.selectedAddress = action.payload;
       localStorage.setItem("deliveryAddress", JSON.stringify(action.payload));
     },
     initializeSelectedAddress: (state, action) => {
-      state.selectedAddress = action.payload
+      state.selectedAddress = action.payload;
+      localStorage.setItem("deliveryAddress", JSON.stringify(action.payload));
     },
   },
 })
