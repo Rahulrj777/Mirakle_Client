@@ -10,7 +10,6 @@ import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
 import { setCartItem, setUserId, clearUser, setCartReady } from "../Redux/cartSlice"
 
 const Banners = () => {
-  // --- Your existing hooks and state ---
   const [hovered, setHovered] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const intervalRef = useRef(null)
@@ -97,14 +96,18 @@ const Banners = () => {
       setUser(storedUser)
 
       if (storedUser && currentUserId && storedUser._id !== currentUserId) {
-        dispatch(clearUser())
-        dispatch(setUserId(storedUser._id))
+        console.log("User mismatch detected, clearing cart...")
+        dispatch(clearUser()) // Clear current user's cart and ID
+        dispatch(setUserId(storedUser._id)) // Set new user ID
         const correctCart = localStorage.getItem(`cart_${storedUser._id}`)
         if (correctCart) {
           try {
             const parsedCart = JSON.parse(correctCart)
-            if (Array.isArray(parsedCart)) dispatch(setCartItem(parsedCart))
+            if (Array.isArray(parsedCart)) {
+              dispatch(setCartItem(parsedCart))
+            }
           } catch (error) {
+            console.error("Error loading correct cart:", error)
             dispatch(setCartItem([]))
           }
         }
@@ -128,7 +131,9 @@ const Banners = () => {
             if (Array.isArray(parsedCart)) dispatch(setCartItem(parsedCart))
           }
         }
-      } catch {}
+      } catch {
+        console.warn("Error restoring cart from localStorage")
+      }
     }
   }, [dispatch])
 
@@ -144,18 +149,21 @@ const Banners = () => {
   )
 
   const handleLogout = () => {
-    const userData = localStorage.getItem("mirakleUser")
-    let userId = null
+    const userData = localStorage.getItem("mirakleUser");
+    let userId = null;
     if (userData) {
       try {
-        userId = JSON.parse(userData)?.user?._id
-      } catch {}
+        userId = JSON.parse(userData)?.user?._id;
+      } catch {
+        console.log("error");
+        
+      }
     }
-    localStorage.removeItem("mirakleUser")
-    if (userId) localStorage.removeItem(`cart_${userId}`)
-    dispatch(clearUser())
-    dispatch(setCartReady(false))
-    navigate("/login_signup")
+    localStorage.removeItem("mirakleUser");
+    if (userId) localStorage.removeItem(`cart_${userId}`);
+    dispatch(clearUser());
+    dispatch(setCartReady(false));
+    navigate("/login_signup");
   }
 
   const handleSelectSuggestion = useCallback(
@@ -279,7 +287,7 @@ const Banners = () => {
       })
   }, [])
 
-  // Handle click on side category banners
+  // ✅ New: Handle click on side (category) banners
   const handleSideBannerClick = useCallback(
     (banner) => {
       if (banner.type === "category" && banner.title) {
@@ -294,118 +302,151 @@ const Banners = () => {
     [navigate],
   )
 
-  // --- Responsive Layout Start ---
   return (
-    <div className="w-full h-full">
-      {/* Desktop/Tablet Layout */}
-      <div className="hidden md:flex w-full h-full">
-        <div className="w-[80%] mx-auto mt-6 px-4 flex gap-6 h-[510px]">
+    <div className="w-full h-full flex">
+      <div className="w-[80%] mx-auto mt-6 px-4 flex gap-6 h-[510px]">
+        <div
+          className="w-full h-full relative rounded-xl overflow-hidden "
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {/* Slider */}
           <div
-            className="w-full h-full relative rounded-xl overflow-hidden"
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            ref={sliderRef}
+            className="flex h-full rounded-xl overflow-hidden"
+            style={{
+              transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
+              width: `${extendedImages.length * 100}%`,
+            }}
+            onTransitionEnd={handleTransitionEnd}
           >
-            {/* Slider */}
-            <div
-              ref={sliderRef}
-              className="flex h-full rounded-xl overflow-hidden"
-              style={{
-                transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
-                width: `${extendedImages.length * 100}%`,
-              }}
-              onTransitionEnd={handleTransitionEnd}
-            >
-              {extendedImages.map(
-                (img, i) =>
-                  img && (
-                    <img
-                      key={`${img._id || i}-${i}`}
-                      src={img.imageUrl || "/placeholder.svg"}
-                      alt={img.title || `Slide ${i + 1}`}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover flex-shrink-0 rounded-xl"
-                      style={{ width: `${100 / extendedImages.length}%` }}
-                    />
-                  ),
-              )}
-            </div>
-
-            {/* Arrows */}
-            {originalImages.length > 1 && (
-              <>
-                <button
-                  onClick={handlePrev}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-                >
-                  <FiChevronLeft size={22} />
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
-                >
-                  <FiChevronRight size={22} />
-                </button>
-              </>
-            )}
-
-            {/* Dot Indicators */}
-            {originalImages.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                {originalImages.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-full transition duration-300 ${
-                      i === currentIndex - 1 ? "bg-white" : "bg-gray-400"
-                    }`}
+            {extendedImages.map(
+              (img, i) =>
+                img && (
+                  <img
+                    key={`${img._id || i}-${i}`}
+                    src={img.imageUrl || "/placeholder.svg"}
+                    alt={img.title || `Slide ${i + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover flex-shrink-0 rounded-xl"
+                    style={{ width: `${100 / extendedImages.length}%` }}
                   />
-                ))}
-              </div>
+                ),
             )}
           </div>
 
-          {/* Side banners */}
-          <div className="flex-1 overflow-y-auto px-2 flex flex-col gap-4 mt-10">
-            {sideImages.map((item, i) => (
-              <div
-                key={item._id || i}
-                className="relative w-[230px] h-[130px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition cursor-pointer"
-                onClick={() => handleSideBannerClick(item)}
+          {/* Arrows */}
+          {originalImages.length > 1 && (
+            <>
+              <button
+                onClick={handlePrev}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
               >
-                <img
-                  src={item.imageUrl || "/placeholder.svg"}
-                  loading="lazy"
-                  alt={item.title || `Banner ${i + 1}`}
-                  className="w-full h-full object-contain"
+                <FiChevronLeft size={22} />
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
+              >
+                <FiChevronRight size={22} />
+              </button>
+            </>
+          )}
+
+          {/* Dot Indicators */}
+          {originalImages.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+              {originalImages.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full transition duration-300 ${i === currentIndex - 1 ? "bg-white" : "bg-gray-400"}`}
                 />
-                {item.title && (
-                  <div className="absolute bottom-1 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                    {item.title}
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="absolute top-5 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
+          <img src={logo || "/placeholder.svg"} alt="logo" className="w-[150px] h-auto object-contain" />
+          {/* Nav Links */}
+          <nav>
+            <ul className="flex justify-center gap-6 font-semibold text-white text-lg">
+              {[
+                { path: "/", list: "Home" },
+                { path: "/shop/allproduct", list: "Shop" },
+                { path: "/About_Us", list: "About Us" },
+                { path: "/Contact_Us", list: "Contact Us" },
+              ].map((item) => (
+                <li key={item.path} className="cursor-pointer flex flex-col items-center">
+                  <Link
+                    to={item.path}
+                    className={`hover:text-gray-200 transition-colors ${isActive(item.path) ? "text-white font-bold" : "text-white"}`}
+                  >
+                    {item.list}
+                  </Link>
+                  {isActive(item.path) && (
+                    <hr className="mt-[4px] w-full h-[3px] bg-white rounded-[10px] border-none" />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Icons */}
+          <div className="flex items-center gap-5 text-[24px] relative">
+            {user ? (
+              <div ref={dropdownRef} className="relative">
+                <div
+                  className="text-white w-10 h-10 flex items-center justify-center rounded-full cursor-pointer text-lg font-semibold bg-green-500 hover:bg-green-700 transition-colors"
+                  onClick={handleUserClick}
+                >
+                  {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                </div>
+                {showDropdown && (
+                  <div className="absolute top-12 right-0 bg-white shadow-lg rounded-md z-50 w-48 py-2 border">
+                    <div className="px-4 py-2 border-b">
+                      <p className="text-gray-700 text-sm font-medium">{user.name || user.email}</p>
+                      <p className="text-xs text-gray-500">ID: {user._id?.slice(-6)}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 transition-colors"
+                    >
+                      Logout
+                    </button>
                   </div>
                 )}
               </div>
-            ))}
+            ) : (
+              <span onClick={handleUserClick} className="cursor-pointer hover:text-green-600 transition-colors">
+                <FaRegUser className="text-black" />
+              </span>
+            )}
+
+            {/* Cart icon */}
+            <span className="relative cursor-pointer" onClick={handleCartClick}>
+              <HiOutlineShoppingBag className="text-black hover:text-green-600 transition-colors" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {cartCount}
+                </span>
+              )}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Mobile Layout */}
-      <div className="flex flex-col md:hidden w-full p-4">
-        {/* Navbar */}
-        <div className="flex justify-between items-center mb-3">
-          <img src={logo} alt="logo" className="w-[120px]" />
-          <div className="flex gap-4 items-center text-2xl">
-            <HiOutlineShoppingBag className="cursor-pointer" onClick={handleCartClick} />
-            <FaRegUser className="cursor-pointer" onClick={handleUserClick} />
-          </div>
-        </div>
-
+      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
         {/* Search */}
-        <div className="mb-3 relative" ref={searchContainerRef}>
+        <div className="px-2 relative" ref={searchContainerRef}>
+          {" "}
           <input
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
+            // ✅ REMOVED: onBlur from here, handled by useEffect
             placeholder="Search the product..."
             className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
           />
@@ -437,6 +478,7 @@ const Banners = () => {
               ))}
             </ul>
           )}
+          {/* ✅ ADDED: Message for no search results */}
           {searchTerm.trim() && suggestions.length === 0 && (
             <div className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow w-full p-3 text-sm text-gray-500">
               No products found for "{searchTerm}".
@@ -444,45 +486,25 @@ const Banners = () => {
           )}
         </div>
 
-        {/* Banner slider */}
-        <div
-          className="w-full h-[180px] relative rounded-xl overflow-hidden mb-3"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-        >
-          <div
-            ref={sliderRef}
-            className="flex h-full rounded-xl overflow-hidden"
-            style={{
-              transform: `translateX(-${(100 / extendedImages.length) * currentIndex}%)`,
-              width: `${extendedImages.length * 100}%`,
-            }}
-            onTransitionEnd={handleTransitionEnd}
-          >
-            {extendedImages.map(
-              (img, i) =>
-                img && (
-                  <img
-                    key={`${img._id || i}-${i}`}
-                    src={img.imageUrl || "/placeholder.svg"}
-                    alt={img.title || `Slide ${i + 1}`}
-                    className="w-full h-full object-cover flex-shrink-0"
-                    style={{ width: `${100 / extendedImages.length}%` }}
-                  />
-                ),
-            )}
-          </div>
-        </div>
-
-        {/* Side banners stacked */}
-        <div className="flex flex-col gap-3 mt-2">
+        {/* Scrollable Side Banners */}
+        <div className="flex-1 overflow-y-auto px-2 ">
           {sideImages.map((item, i) => (
             <div
               key={item._id || i}
-              className="w-full h-[120px] rounded-xl overflow-hidden shadow cursor-pointer"
+              className="relative w-[230px] h-[130px] mb-4 rounded-xl overflow-hidden shadow hover:shadow-md transition cursor-pointer"
               onClick={() => handleSideBannerClick(item)}
             >
-              <img src={item.imageUrl || "/placeholder.svg"} alt={item.title} className="w-full h-full object-cover" />
+              <img
+                src={item.imageUrl || "/placeholder.svg"}
+                loading="lazy"
+                alt={item.title || `Banner ${i + 1}`}
+                className="w-full h-full object-contain"
+              />
+              {item.title && (
+                <div className="absolute bottom-1 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                  {item.title}
+                </div>
+              )}
             </div>
           ))}
         </div>
