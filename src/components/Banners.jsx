@@ -14,7 +14,6 @@ const Banners = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  // State
   const [user, setUser] = useState(null)
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -32,10 +31,9 @@ const Banners = () => {
   const searchTimeoutRef = useRef(null)
 
   const cartItems = useSelector((state) => state.cart.items)
-  const currentUserId = useSelector((state) => state.cart.userId)
   const cartCount = Array.isArray(cartItems) ? cartItems.length : 0
 
-  // Extended images for slider (looping)
+  // ✅ Looping images for slider
   const extendedImages = useMemo(() => {
     if (originalImages.length < 1) return []
     const first = originalImages[0]
@@ -43,7 +41,7 @@ const Banners = () => {
     return [last, ...originalImages, first]
   }, [originalImages])
 
-  // 🔹 Load user and sync cart
+  // ✅ Load user & sync cart
   useEffect(() => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
@@ -58,7 +56,7 @@ const Banners = () => {
     }
   }, [dispatch])
 
-  // 🔹 Fetch banners
+  // ✅ Fetch banners
   useEffect(() => {
     axios.get(`${API_BASE}/api/banners`)
       .then((res) => {
@@ -72,17 +70,12 @@ const Banners = () => {
       })
   }, [])
 
-  // 🔹 Search
+  // ✅ Search logic
   const handleSearchChange = useCallback((e) => {
     const value = e.target.value
     setSearchTerm(value)
-
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
-
-    if (!value.trim()) {
-      setSuggestions([])
-      return
-    }
+    if (!value.trim()) return setSuggestions([])
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
@@ -94,13 +87,13 @@ const Banners = () => {
     }, 200)
   }, [])
 
-  const handleKeyDown = useCallback((e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" && searchTerm.trim()) {
       navigate(`/shop/allproduct?search=${encodeURIComponent(searchTerm.trim())}`)
       setSuggestions([])
       setSearchTerm("")
     }
-  }, [searchTerm, navigate])
+  }
 
   const handleSelectSuggestion = (id) => {
     navigate(`/product/${id}`)
@@ -108,7 +101,6 @@ const Banners = () => {
     setSuggestions([])
   }
 
-  // 🔹 Logout
   const handleLogout = () => {
     const userId = user?._id
     localStorage.removeItem("mirakleUser")
@@ -118,7 +110,6 @@ const Banners = () => {
     navigate("/login_signup")
   }
 
-  // 🔹 Handle clicks
   const handleCartClick = () => user ? navigate("/AddToCart") : navigate("/login_signup")
   const handleUserClick = () => user ? setShowDropdown((prev) => !prev) : navigate("/login_signup")
   const handleSideBannerClick = (banner) => {
@@ -132,7 +123,7 @@ const Banners = () => {
     }
   }
 
-  // 🔹 Slider functions
+  // ✅ Slider functions
   const slideTo = (index) => {
     if (isTransitioning || !sliderRef.current || extendedImages.length === 0) return
     setIsTransitioning(true)
@@ -155,46 +146,35 @@ const Banners = () => {
     }, 20)
   }
 
-  const startAutoPlay = useCallback(() => {
-    stopAutoPlay()
-    intervalRef.current = setInterval(() => slideTo(currentIndex + 1), 3000)
-  }, [currentIndex])
-
-  const stopAutoPlay = () => intervalRef.current && clearInterval(intervalRef.current)
-
   useEffect(() => {
-    if (!hovered && originalImages.length > 1) startAutoPlay()
-    return stopAutoPlay
-  }, [hovered, originalImages.length, startAutoPlay])
+    if (!hovered && originalImages.length > 1) {
+      intervalRef.current = setInterval(() => slideTo(currentIndex + 1), 3000)
+    }
+    return () => clearInterval(intervalRef.current)
+  }, [hovered, originalImages.length, currentIndex])
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col bg-white">
 
       {/* 🔹 Navbar */}
-      <div className="w-full bg-white shadow px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button className="lg:hidden text-2xl">☰</button>
-          <img src={logo} alt="logo" className="w-[120px]" />
-        </div>
-
-        <div className="flex items-center gap-6 text-xl">
+      <div className="w-full flex items-center justify-between px-4 py-3 border-b">
+        <button className="text-2xl">☰</button>
+        <img src={logo} alt="logo" className="w-[120px]" />
+        <div className="flex items-center gap-4 text-xl">
           {/* User */}
           <div ref={dropdownRef} className="relative">
             {user ? (
               <div
-                className="w-10 h-10 flex items-center justify-center bg-green-500 text-white rounded-full cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded-full cursor-pointer"
                 onClick={handleUserClick}
               >
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
             ) : (
-              <FaRegUser onClick={handleUserClick} className="cursor-pointer hover:text-green-600" />
+              <FaRegUser onClick={handleUserClick} className="cursor-pointer" />
             )}
             {showDropdown && (
-              <div className="absolute top-12 right-0 bg-white shadow-lg rounded-md z-50 w-48 py-2 border">
-                <div className="px-4 py-2 border-b text-sm">
-                  <p className="font-medium">{user.name || user.email}</p>
-                </div>
+              <div className="absolute top-10 right-0 bg-white shadow-lg rounded-md z-50 w-40 py-2 border">
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600"
@@ -207,9 +187,9 @@ const Banners = () => {
 
           {/* Cart */}
           <span className="relative cursor-pointer" onClick={handleCartClick}>
-            <HiOutlineShoppingBag className="hover:text-green-600" />
+            <HiOutlineShoppingBag />
             {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
                 {cartCount}
               </span>
             )}
@@ -218,29 +198,29 @@ const Banners = () => {
       </div>
 
       {/* 🔹 Search */}
-      <div className="p-4 relative" ref={searchContainerRef}>
+      <div className="p-3 relative" ref={searchContainerRef}>
         <input
           type="text"
           value={searchTerm}
           onChange={handleSearchChange}
           onKeyDown={handleKeyDown}
           placeholder="Search the product..."
-          className="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 text-sm"
+          className="w-full px-4 py-2 border rounded-full focus:outline-none text-sm"
         />
         {searchTerm.trim() && suggestions.length > 0 && (
-          <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow max-h-80 overflow-y-auto w-full">
+          <ul className="absolute top-full left-0 z-50 bg-white border mt-1 rounded shadow max-h-60 overflow-y-auto w-full">
             {suggestions.map((item) => (
               <li
                 key={item._id}
                 onClick={() => handleSelectSuggestion(item._id)}
-                className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 flex items-center gap-3"
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-3"
               >
                 <img
                   src={item.images?.[0]?.url || "/placeholder.svg"}
                   alt={item.title || "Product"}
-                  className="w-10 h-10 object-cover rounded"
+                  className="w-8 h-8 object-cover rounded"
                 />
-                <div className="font-medium text-sm">{item.title}</div>
+                <div className="text-sm">{item.title}</div>
               </li>
             ))}
           </ul>
@@ -249,7 +229,7 @@ const Banners = () => {
 
       {/* 🔹 Main Slider */}
       <div
-        className="w-full h-[250px] sm:h-[350px] md:h-[450px] relative overflow-hidden rounded-xl"
+        className="w-full h-[200px] relative overflow-hidden"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
@@ -272,32 +252,31 @@ const Banners = () => {
             />
           ))}
         </div>
-
         {/* Arrows */}
         {originalImages.length > 1 && (
           <>
             <button
               onClick={() => slideTo(currentIndex - 1)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full"
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full"
             >
-              <FiChevronLeft size={22} />
+              <FiChevronLeft size={18} />
             </button>
             <button
               onClick={() => slideTo(currentIndex + 1)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full"
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full"
             >
-              <FiChevronRight size={22} />
+              <FiChevronRight size={18} />
             </button>
           </>
         )}
       </div>
 
-      {/* 🔹 Side Banners */}
-      <div className="w-full mt-4 px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* 🔹 Side Banners (Full width stacked) */}
+      <div className="w-full mt-3 px-3 flex flex-col gap-3">
         {sideImages.map((item, i) => (
           <div
             key={i}
-            className="relative w-full h-[140px] sm:h-[180px] md:h-[220px] rounded-xl overflow-hidden shadow hover:shadow-lg cursor-pointer"
+            className="relative w-full h-[120px] rounded-xl overflow-hidden shadow hover:shadow-md cursor-pointer"
             onClick={() => handleSideBannerClick(item)}
           >
             <img
