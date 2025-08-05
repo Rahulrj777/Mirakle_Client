@@ -44,7 +44,7 @@ const Header = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header className="w-full fixed top-0 left-0 z-50 bg-white shadow">
+    <header className="w-full bg-white shadow">
       {/* 🌐 Desktop Header */}
       <div className="hidden md:flex items-center justify-between px-10 py-5 h-[80px]">
         {/* Logo */}
@@ -142,7 +142,9 @@ const Header = () => {
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50" onClick={() => setIsOpen(false)}>
           <div
-            className="fixed top-0 left-0 w-3/4 h-full bg-white shadow-lg p-5 flex flex-col"
+            className={`fixed top-0 left-0 w-3/4 h-full bg-white shadow-lg p-5 flex flex-col transform transition-transform duration-300 ${
+              isOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
