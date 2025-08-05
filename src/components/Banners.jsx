@@ -4,7 +4,6 @@ import { API_BASE } from "../utils/api"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { HiOutlineShoppingBag } from "react-icons/hi2"
 import { FaRegUser } from "react-icons/fa"
-import { FiMenu, FiX } from "react-icons/fi"
 import { useSelector, useDispatch } from "react-redux"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
@@ -20,18 +19,14 @@ const Banners = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev)
+
   const cartItems = useSelector((state) => state.cart.items)
   const currentUserId = useSelector((state) => state.cart.userId)
+
   const [searchTerm, setSearchTerm] = useState("")
   const searchContainerRef = useRef(null)
   const [suggestions, setSuggestions] = useState([])
-  const [showDropdown, setShowDropdown] = useState(false)
-  const dropdownRef = useRef(null)
-  const [sideImages, setSideImages] = useState([])
-  const isActive = useCallback((path) => location.pathname === path, [location.pathname])
-  const [searchTimeout, setSearchTimeout] = useState(null)
+
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("mirakleUser"))?.user || null
@@ -39,26 +34,40 @@ const Banners = () => {
       return null
     }
   })
+
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef(null)
+  const [sideImages, setSideImages] = useState([])
+
+  const isActive = useCallback((path) => location.pathname === path, [location.pathname])
+
   const extendedImages = useMemo(() => {
     if (originalImages.length < 1) return []
     const first = originalImages[0]
     const last = originalImages[originalImages.length - 1]
     return [last, ...originalImages, first]
   }, [originalImages])
+
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems) ? cartItems.length : 0
   }, [cartItems])
+
+  const [searchTimeout, setSearchTimeout] = useState(null)
+
   const handleSearchChange = useCallback(
     async (e) => {
       const value = e.target.value
       setSearchTerm(value)
+
       if (searchTimeout) {
         clearTimeout(searchTimeout)
       }
+
       if (!value.trim()) {
         setSuggestions([])
         return
       }
+
       const timeout = setTimeout(async () => {
         try {
           const res = await axios.get(`${API_BASE}/api/products/search?query=${value}`)
@@ -88,8 +97,8 @@ const Banners = () => {
 
       if (storedUser && currentUserId && storedUser._id !== currentUserId) {
         console.log("User mismatch detected, clearing cart...")
-        dispatch(clearUser())
-        dispatch(setUserId(storedUser._id))
+        dispatch(clearUser()) // Clear current user's cart and ID
+        dispatch(setUserId(storedUser._id)) // Set new user ID
         const correctCart = localStorage.getItem(`cart_${storedUser._id}`)
         if (correctCart) {
           try {
@@ -236,9 +245,9 @@ const Banners = () => {
   const startAutoPlay = useCallback(() => {
     stopAutoPlay()
     intervalRef.current = setInterval(() => {
-      setCurrentIndex((prev) => prev + 1) 
+      slideTo(currentIndex + 1)
     }, 3000)
-  }, [slideTo])
+  }, [currentIndex, slideTo])
 
   const stopAutoPlay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
@@ -294,10 +303,10 @@ const Banners = () => {
   )
 
   return (
-    <div className="w-full h-full flex flex-col lg:flex-row">
-      <div className="w-full lg:w-[80%] mx-auto mt-6 px-4 flex flex-col gap-6 lg:flex-row h-auto lg:h-[510px]">
+    <div className="w-full h-full flex">
+      <div className="w-[80%] mx-auto mt-6 px-4 flex gap-6 h-[510px]">
         <div
-          className="w-full h-[250px] sm:h-[350px] lg:h-full relative rounded-xl overflow-hidden"
+          className="w-full h-full relative rounded-xl overflow-hidden "
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
@@ -332,14 +341,12 @@ const Banners = () => {
             <>
               <button
                 onClick={handlePrev}
-                aria-label="Previous Slide"
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
               >
                 <FiChevronLeft size={22} />
               </button>
               <button
                 onClick={handleNext}
-                aria-label="Next Slide"
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500/70 text-white p-2 rounded-full shadow hover:bg-gray-700 transition"
               >
                 <FiChevronRight size={22} />
@@ -360,10 +367,10 @@ const Banners = () => {
           )}
         </div>
 
-        <div className="absolute top-5 left-0 w-full lg:w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
-          <img src={logo || "/placeholder.svg"} alt="logo" className="w-[120px] sm:w-[150px] h-auto object-contain" />
+        <div className="absolute top-5 left-0 w-[80%] z-10 px-10 py-5 flex items-center justify-between text-white h-[80px] ">
+          <img src={logo || "/placeholder.svg"} alt="logo" className="w-[150px] h-auto object-contain" />
           {/* Nav Links */}
-          <nav className="hidden lg:block">
+          <nav>
             <ul className="flex justify-center gap-6 font-semibold text-white text-lg">
               {[
                 { path: "/", list: "Home" },
@@ -386,13 +393,8 @@ const Banners = () => {
             </ul>
           </nav>
 
-          {/* Burger Menu (Mobile/Tablet) */}
-          <button className="lg:hidden text-3xl text-black" onClick={toggleSidebar}>
-            <FiMenu />
-          </button>
-
           {/* Icons */}
-          <div className="hidden lg:flex items-center gap-5 text-[24px] relative">
+          <div className="flex items-center gap-5 text-[24px] relative">
             {user ? (
               <div ref={dropdownRef} className="relative">
                 <div
@@ -435,47 +437,7 @@ const Banners = () => {
         </div>
       </div>
 
-      {/* Sidebar (Mobile Menu) */}
-      <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between p-4 border-b">
-          <img src={logo} alt="logo" className="w-[100px]" />
-          <button onClick={toggleSidebar} className="text-2xl">
-            <FiX />
-          </button>
-        </div>
-        <ul className="flex flex-col gap-4 p-6 text-gray-800 font-semibold">
-          {[
-            { path: "/", list: "Home" },
-            { path: "/shop/allproduct", list: "Shop" },
-            { path: "/About_Us", list: "About Us" },
-            { path: "/Contact_Us", list: "Contact Us" },
-          ].map((item) => (
-            <li key={item.path} className="cursor-pointer">
-              <Link
-                to={item.path}
-                onClick={toggleSidebar}
-                className={`block hover:text-green-600 ${isActive(item.path) ? "text-green-600" : ""}`}
-              >
-                {item.list}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Overlay when sidebar is open */}
-      {isSidebarOpen && (
-        <div
-          onClick={toggleSidebar}
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
-        ></div>
-      )}
-
-      <div className="w-full lg:w-[20%] h-auto lg:h-full flex flex-col gap-4 min-h-0 mt-4 lg:mt-10">
+      <div className="w-[20%] h-full flex flex-col gap-4 min-h-0 mt-10">
         {/* Search */}
         <div className="px-2 relative" ref={searchContainerRef}>
           {" "}
