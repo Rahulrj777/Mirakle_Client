@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { HiOutlineShoppingBag } from "react-icons/hi2";
 import { FaRegUser } from "react-icons/fa";
 import { FiMenu, FiX } from "react-icons/fi";
@@ -7,9 +7,11 @@ import logo from "../assets/logo.png";
 import { useSelector, useDispatch } from "react-redux";
 import { clearUser } from "../Redux/cartSlice";
 
-const MobileHeader = () => {
+const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
+
   const cartItems = useSelector((state) => state.cart.items) || [];
   const cartCount = cartItems.length;
 
@@ -39,10 +41,73 @@ const MobileHeader = () => {
     }
   };
 
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <header className="w-full fixed top-0 left-0 z-50 bg-white md:hidden shadow">
-      {/* Top Row */}
-      <div className="flex items-center justify-between px-4 py-3">
+    <header className="w-full fixed top-0 left-0 z-50 bg-white shadow">
+      {/* 🌐 Desktop Header */}
+      <div className="hidden md:flex items-center justify-between px-10 py-5 h-[80px]">
+        {/* Logo */}
+        <Link to="/">
+          <img src={logo} alt="logo" className="w-[150px] object-contain" />
+        </Link>
+
+        {/* Navigation */}
+        <nav>
+          <ul className="flex gap-6 font-semibold text-lg">
+            {[
+              { path: "/", label: "Home" },
+              { path: "/shop/allproduct", label: "Shop" },
+              { path: "/About_Us", label: "About Us" },
+              { path: "/Contact_Us", label: "Contact Us" },
+            ].map((item) => (
+              <li key={item.path} className="cursor-pointer flex flex-col items-center">
+                <Link
+                  to={item.path}
+                  className={`${
+                    isActive(item.path) ? "font-bold text-green-700" : "text-gray-700"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+                {isActive(item.path) && (
+                  <div className="mt-1 w-3/4 h-[3px] bg-green-700 rounded-full" />
+                )}
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Icons */}
+        <div className="flex items-center gap-5 text-[24px] relative">
+          {/* User */}
+          {user ? (
+            <span
+              onClick={() => navigate("/profile")}
+              className="cursor-pointer w-10 h-10 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-700 text-white"
+            >
+              {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+            </span>
+          ) : (
+            <span onClick={() => navigate("/login_signup")} className="cursor-pointer hover:text-green-600">
+              <FaRegUser />
+            </span>
+          )}
+
+          {/* Cart */}
+          <span className="relative cursor-pointer" onClick={handleCartClick}>
+            <HiOutlineShoppingBag className="text-black" />
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                {cartCount}
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {/* 📱 Mobile Header */}
+      <div className="flex md:hidden items-center justify-between px-4 py-3 h-[60px]">
         {/* Hamburger */}
         <button onClick={() => setIsOpen(true)} className="text-2xl text-gray-700">
           <FiMenu />
@@ -55,7 +120,6 @@ const MobileHeader = () => {
 
         {/* Icons */}
         <div className="flex items-center gap-4">
-          {/* User */}
           <span
             onClick={() => (user ? navigate("/profile") : navigate("/login_signup"))}
             className="text-2xl text-gray-700 cursor-pointer"
@@ -63,7 +127,6 @@ const MobileHeader = () => {
             <FaRegUser />
           </span>
 
-          {/* Cart */}
           <span className="relative text-2xl text-gray-700 cursor-pointer" onClick={handleCartClick}>
             <HiOutlineShoppingBag />
             {cartCount > 0 && (
@@ -75,16 +138,7 @@ const MobileHeader = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="px-4 pb-3">
-        <input
-          type="text"
-          placeholder="Search for Products, Brands and More"
-          className="w-full px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-        />
-      </div>
-
-      {/* Side Drawer */}
+      {/* Side Drawer for Mobile */}
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50" onClick={() => setIsOpen(false)}>
           <div
@@ -130,4 +184,4 @@ const MobileHeader = () => {
   );
 };
 
-export default MobileHeader;
+export default Header;
