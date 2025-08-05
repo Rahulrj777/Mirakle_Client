@@ -44,7 +44,7 @@ const Header = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header className="w-full bg-white shadow">
+    <header className="w-full bg-white ">
       {/* 🌐 Desktop Header */}
       <div className="hidden md:flex items-center justify-between px-10 py-5 h-[80px]">
         {/* Logo */}
